@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Star,
+  Heart,
   MapPin,
   Calendar,
   Gauge,
   Bed,
   Bath,
   ChevronRight,
-  MessageCircle,
+  ChevronLeft,
 } from "lucide-react";
 
 const DEMO_WHATSAPP = "5541999999999";
@@ -200,21 +200,22 @@ export default function ListingCard({ item, onViewMore }) {
   return (
     <div className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col relative">
       {/* Image */}
-      <div 
-        className="relative h-64 overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <img
-          src={currentImg}
-          alt={item.title}
-          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = PLACEHOLDER_IMG;
-          }}
-        />
+      <Link to={`/anuncio/${item.id}`} className="block">
+        <div 
+          className="relative h-64 overflow-hidden cursor-pointer"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={currentImg}
+            alt={item.title}
+            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = PLACEHOLDER_IMG;
+            }}
+          />
 
         {/* ✅ Tag no topo esquerdo */}
         <div className="absolute top-4 left-4">
@@ -225,12 +226,39 @@ export default function ListingCard({ item, onViewMore }) {
           </span>
         </div>
 
-        {/* Star */}
+        {/* Heart */}
         <div className="absolute top-4 right-4">
           <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-red-500 transition-colors">
-            <Star size={16} />
+            <Heart size={16} />
           </button>
         </div>
+
+        {/* Botões de navegação - Desktop apenas */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+              }}
+              className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setImgIndex((prev) => (prev + 1) % images.length);
+              }}
+              className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
 
         {/* Carousel Dots + Counter */}
         {images.length > 1 && (
@@ -257,7 +285,8 @@ export default function ListingCard({ item, onViewMore }) {
             </div>
           </>
         )}
-      </div>
+        </div>
+      </Link>
 
       {/* Content */}
       <div className="p-6 flex-1 flex flex-col">
@@ -344,7 +373,7 @@ export default function ListingCard({ item, onViewMore }) {
 
         {/* Actions */}
         <div className="mt-auto flex gap-2">
-          {/* CHAT */}
+          {/* CONTATAR */}
           <a
             href={waLink}
             target="_blank"
@@ -354,13 +383,20 @@ export default function ListingCard({ item, onViewMore }) {
             }}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
               hasWhats
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                ? "bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
                 : "bg-slate-200 text-slate-500 cursor-not-allowed"
             }`}
-            title={hasWhats ? "Iniciar conversa" : "Sem contato configurado"}
+            title={hasWhats ? "Chamar no WhatsApp" : "Sem WhatsApp configurado"}
           >
-            <MessageCircle size={18} />
-            Chat
+            {showWhatsLogo && (
+              <img
+                src={WHATS_LOGO_SRC}
+                alt="WhatsApp"
+                className="w-[18px] h-[18px] object-contain"
+                onError={() => setShowWhatsLogo(false)}
+              />
+            )}
+            Contatar
           </a>
 
           {/* VER MAIS */}

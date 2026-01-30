@@ -54,7 +54,7 @@ export default function BW1Platform() {
         <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
         {/* ✅ padding-bottom grande pra não ficar nada escondido atrás da BottomNav */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-20 pb-28 -mt-16">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-20 pb-28 lg:pb-8 -mt-16">
           <Tabs activeTab={activeTab} onChange={setActiveTab} />
           <ListingsGrid listings={filteredListings} />
           <CTA />

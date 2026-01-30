@@ -14,13 +14,24 @@ import {
   ChevronRight,
   User,
   Phone,
+  Clock,
+  CheckCircle,
+  XCircle,
+  ShieldAlert,
+  Flag,
 } from "lucide-react";
 
 import listings from "./data/listings.js";
 import * as BrandMod from "./content/brand.js";
+import * as NavMod from "./content/navigation.js";
+import * as FooterMod from "./content/footer.js";
 import AppShell from "./components/AppShell.jsx";
+import Navbar from "./components/Navbar.jsx";
+import Footer from "./components/Footer.jsx";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
+const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
+const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 const PLACEHOLDER_IMG =
   "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=1400&q=80";
@@ -93,6 +104,31 @@ export default function ListingDetailPage() {
     return listings.find((l) => String(l.id) === String(id));
   }, [id]);
 
+  // Scroll to top quando a página carrega ou o id muda
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [id]);
+
+  // Detectar quando o botão de contato sai da tela para mostrar barra flutuante
+  useEffect(() => {
+    const handleScroll = () => {
+      if (contactButtonRef.current) {
+        const rect = contactButtonRef.current.getBoundingClientRect();
+        // Se o botão saiu da tela (topo está acima da viewport)
+        setShowFloatingBar(rect.bottom < 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Verificar posição inicial
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [item]);
+
+  const [logoOk, setLogoOk] = useState(true);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
+  const contactButtonRef = useRef(null);
+
   const images = useMemo(() => (item ? normalizeImages(item) : []), [item]);
   const [imgIndex, setImgIndex] = useState(0);
   const touchStartXRef = useRef(0);
@@ -101,48 +137,9 @@ export default function ListingDetailPage() {
   const touchEndYRef = useRef(0);
   const isSwipingRef = useRef(false);
 
-  const [logoOk, setLogoOk] = useState(true);
-  const [hidden, setHidden] = useState(false);
-  const lastYRef = useRef(0);
-  const tickingRef = useRef(false);
-
   useEffect(() => {
     setImgIndex(0);
   }, [id]);
-
-  useEffect(() => {
-    lastYRef.current = window.scrollY || 0;
-
-    const onScroll = () => {
-      if (tickingRef.current) return;
-      tickingRef.current = true;
-
-      requestAnimationFrame(() => {
-        const y = window.scrollY || 0;
-        const lastY = lastYRef.current;
-
-        const goingDown = y > lastY;
-        const goingUp = y < lastY;
-
-        const SHOW_AT_TOP_Y = 10;
-        const HIDE_AFTER_Y = 80;
-        const DELTA = 6;
-
-        if (y <= SHOW_AT_TOP_Y) {
-          setHidden(false);
-        } else if (y > HIDE_AFTER_Y) {
-          if (goingDown && y - lastY > DELTA) setHidden(true);
-          if (goingUp && lastY - y > DELTA) setHidden(false);
-        }
-
-        lastYRef.current = y;
-        tickingRef.current = false;
-      });
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const handleTouchStart = (e) => {
     touchStartXRef.current = e.targetTouches[0].clientX;
@@ -242,25 +239,19 @@ export default function ListingDetailPage() {
     <div className="min-h-screen bg-slate-50">
       <AppShell
         header={
-          <nav
-            className={[
-              "fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10",
-              "transition-transform duration-200 ease-out",
-              hidden ? "-translate-y-full" : "translate-y-0",
-            ].join(" ")}
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-              <div className="flex items-center justify-between">
-                {/* Botão voltar + Logo */}
+          <nav className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-20">
+                {/* Left - Botão Voltar + Logo */}
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => navigate("/")}
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
+                    title="Voltar"
                   >
                     <ArrowLeft size={24} />
                   </button>
 
-                  {/* Logo */}
                   <div
                     className="rounded-xl px-3 py-2 flex items-center"
                     style={{
@@ -283,7 +274,7 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                {/* Ações */}
+                {/* Right - Ações */}
                 <div className="flex items-center gap-2">
                   <button
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
@@ -304,249 +295,564 @@ export default function ListingDetailPage() {
         }
       >
         {/* Conteúdo */}
-        <main className="pb-32">
-          {/* Galeria de imagens */}
-          <div className="relative bg-slate-900">
-            <div
-              className="relative h-[400px] md:h-[500px] overflow-hidden"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-            <img
-              src={currentImg}
-              alt={item.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = PLACEHOLDER_IMG;
-              }}
-            />
+        <main className="pb-20 lg:pb-0">
+          {/* Layout Desktop com Grid - Imagens à esquerda, Info à direita */}
+          <div className="max-w-7xl mx-auto lg:px-4 lg:py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-6">
+              
+              {/* Coluna Esquerda - Galeria de imagens (2/3 no desktop) */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Galeria de imagens - Mobile: Carrossel sem arredondamento, Desktop: Grid com arredondamento */}
+                <div className="relative bg-slate-900 lg:rounded-3xl overflow-hidden">
+                  {/* Mobile: Carrossel */}
+                  <div
+                    className="lg:hidden relative h-[400px] overflow-hidden"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                  >
+                    <img
+                      src={currentImg}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = PLACEHOLDER_IMG;
+                      }}
+                    />
 
-            {/* Tag */}
-            <div className="absolute top-4 left-4">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
-              >
-                {tag}
-              </span>
-            </div>
+                    {/* Tag Mobile */}
+                    <div className="absolute top-4 left-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
+                      >
+                        {tag}
+                      </span>
+                    </div>
 
-            {/* Navegação de imagens */}
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition"
-                >
-                  <ChevronLeft size={24} />
-                </button>
+                    {/* Navegação Mobile */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImage}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition"
+                        >
+                          <ChevronLeft size={24} />
+                        </button>
 
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition"
-                >
-                  <ChevronRight size={24} />
-                </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition"
+                        >
+                          <ChevronRight size={24} />
+                        </button>
 
-                {/* Dots */}
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur">
-                    {images.map((_, i) => (
-                      <button
+                        {/* Dots */}
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur">
+                            {images.map((_, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => setImgIndex(i)}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  i === imgIndex
+                                    ? "w-6 bg-white/90"
+                                    : "w-2.5 bg-white/50"
+                                }`}
+                                aria-label={`Imagem ${i + 1}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Counter */}
+                        <div className="absolute bottom-4 right-4 text-sm px-3 py-1.5 rounded-full bg-black/30 text-white backdrop-blur">
+                          {imgIndex + 1}/{images.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Desktop: Grid de imagens */}
+                  <div className="hidden lg:grid grid-cols-2 gap-2 p-2">
+                    {images.slice(0, 5).map((img, i) => (
+                      <div
                         key={i}
-                        type="button"
-                        onClick={() => setImgIndex(i)}
-                        className={`h-1.5 rounded-full transition-all ${
-                          i === imgIndex
-                            ? "w-6 bg-white/90"
-                            : "w-2.5 bg-white/50"
+                        className={`relative overflow-hidden rounded-xl cursor-pointer group ${
+                          i === 0 ? "col-span-2 row-span-2 h-[400px]" : "h-[199px]"
                         }`}
-                        aria-label={`Imagem ${i + 1}`}
-                      />
+                        onClick={() => setImgIndex(i)}
+                      >
+                        <img
+                          src={img}
+                          alt={`${item.title} - foto ${i + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.src = PLACEHOLDER_IMG;
+                          }}
+                        />
+                        {i === 0 && (
+                          <div className="absolute top-4 left-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
+                            >
+                              {tag}
+                            </span>
+                          </div>
+                        )}
+                        {i === 4 && images.length > 5 && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-white text-2xl font-bold">
+                              +{images.length - 5}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Counter */}
-                <div className="absolute bottom-4 right-4 text-sm px-3 py-1.5 rounded-full bg-black/30 text-white backdrop-blur">
-                  {imgIndex + 1}/{images.length}
+                {/* Descrição - Desktop: Abaixo da galeria, Mobile: Mais abaixo */}
+                <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">Descrição</h2>
+                  <p className="text-slate-600 leading-relaxed">
+                    {item.description ||
+                      "Este é um excelente anúncio. Entre em contato para mais informações!"}
+                  </p>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
 
-        {/* Informações */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Preço e título */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
-            <p className="text-3xl font-extrabold text-slate-900 mb-2">
-              {item.price}
-            </p>
-            <h1 className="text-2xl font-bold text-slate-900 mb-3">
-              {item.title}
-            </h1>
-
-            <div className="flex items-center text-slate-600 mb-2">
-              <MapPin size={16} className="mr-1" />
-              {item.location}
-            </div>
-
-            {createdAtLabel && (
-              <p className="text-sm text-slate-400">{createdAtLabel}</p>
-            )}
-          </div>
-
-          {/* Características */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              Características
-            </h2>
-
-            <div className="grid grid-cols-3 gap-4">
-              {item.type === "vehicle" ? (
-                <>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <Calendar size={24} className="text-blue-500 mb-2" />
-                    <span className="text-xs text-slate-500 mb-1">Ano</span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.year}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <Gauge size={24} className="text-blue-500 mb-2" />
-                    <span className="text-xs text-slate-500 mb-1">KM</span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.km}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <div className="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center text-xs font-bold text-blue-500 mb-2">
-                      F
+                {/* Localização - Desktop */}
+                <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">
+                    Localização
+                  </h2>
+                  <div className="flex items-start gap-3 mb-4">
+                    <MapPin size={20} className="text-blue-500 mt-1" />
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-slate-900 mb-1">
+                        {item.location}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        Veja a localização exata do imóvel/veículo
+                      </p>
                     </div>
-                    <span className="text-xs text-slate-500 mb-1">
-                      Combustível
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.fuel}
-                    </span>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <Bed size={24} className="text-blue-500 mb-2" />
-                    <span className="text-xs text-slate-500 mb-1">Quartos</span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.beds}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <Bath size={24} className="text-blue-500 mb-2" />
-                    <span className="text-xs text-slate-500 mb-1">
-                      Banheiros
-                    </span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.baths}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                    <div className="w-6 h-6 border-2 border-blue-500 rounded flex items-center justify-center text-[10px] font-bold text-blue-500 mb-2">
-                      M²
-                    </div>
-                    <span className="text-xs text-slate-500 mb-1">Área</span>
-                    <span className="text-sm font-bold text-slate-900">
-                      {item.details.area}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+                  
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <MapPin size={18} />
+                    Ver no Google Maps
+                  </a>
+                </div>
 
-          {/* Localização */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              Localização
-            </h2>
-            <div className="flex items-start gap-3">
-              <MapPin size={20} className="text-blue-500 mt-1" />
-              <div>
-                <p className="text-base font-semibold text-slate-900 mb-1">
-                  {item.location}
-                </p>
-                <p className="text-sm text-slate-500">
-                  Veja a localização exata do imóvel/veículo
-                </p>
+                {/* Características - Desktop */}
+                <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
+                  <h2 className="text-lg font-bold text-slate-900 mb-4">
+                    Detalhes
+                  </h2>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    {item.type === "vehicle" ? (
+                      <>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <Calendar size={24} className="text-blue-500 mb-2" />
+                          <span className="text-xs text-slate-500 mb-1">Ano</span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.year}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <Gauge size={24} className="text-blue-500 mb-2" />
+                          <span className="text-xs text-slate-500 mb-1">KM</span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.km}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <div className="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center text-xs font-bold text-blue-500 mb-2">
+                            F
+                          </div>
+                          <span className="text-xs text-slate-500 mb-1">
+                            Combustível
+                          </span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.fuel}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <Bed size={24} className="text-blue-500 mb-2" />
+                          <span className="text-xs text-slate-500 mb-1">Quartos</span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.beds}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <Bath size={24} className="text-blue-500 mb-2" />
+                          <span className="text-xs text-slate-500 mb-1">
+                            Banheiros
+                          </span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.baths}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                          <div className="w-6 h-6 border-2 border-blue-500 rounded flex items-center justify-center text-[10px] font-bold text-blue-500 mb-2">
+                            M²
+                          </div>
+                          <span className="text-xs text-slate-500 mb-1">Área</span>
+                          <span className="text-sm font-bold text-slate-900">
+                            {item.details.area}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Descrição */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Descrição</h2>
-            <p className="text-slate-600 leading-relaxed">
-              {item.description ||
-                "Este é um excelente anúncio. Entre em contato para mais informações!"}
-            </p>
-          </div>
-
-          {/* Vendedor e Contato */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Vendedor</h2>
-            
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <User size={28} className="text-white" />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-slate-900">Anunciante BW1</p>
-                <p className="text-sm text-slate-500">Membro desde 2024</p>
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 pt-4">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">
-                Informações de Contato
-              </h3>
               
-              {hasWhats && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                  <Phone size={18} className="text-blue-500" />
-                  <div>
-                    <p className="text-xs text-slate-500">WhatsApp</p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {rawWhats}
+              {/* Coluna Direita - Informações principais (1/3 no desktop) */}
+              <div className="lg:col-span-1">
+                <div className="lg:sticky lg:top-24 space-y-6">
+                  {/* Preço e título */}
+                  <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
+                    <p className="text-2xl lg:text-3xl font-extrabold text-slate-900 mb-2">
+                      {item.price}
+                    </p>
+                    <h1 className="text-lg lg:text-xl font-bold text-slate-900 mb-2 lg:mb-3">
+                      {item.title}
+                    </h1>
+
+                    <div className="flex items-center text-slate-600 mb-2 lg:mb-3">
+                      <MapPin size={16} className="mr-1" />
+                      {item.location}
+                    </div>
+
+                    {createdAtLabel && (
+                      <p className="text-sm text-slate-400 mb-4">{createdAtLabel}</p>
+                    )}
+
+                    {/* Botões de ação */}
+                    <div className="space-y-2">
+                      {hasWhats && (
+                        <a
+                          ref={contactButtonRef}
+                          href={`tel:${rawWhats}`}
+                          className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                        >
+                          <Phone size={20} />
+                          Iniciar conversa
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                {/* Anunciante - Desktop */}
+                <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
+                  <h2 className="text-base font-bold text-slate-900 mb-4">
+                    Anunciante
+                  </h2>
+                  
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                      <User size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded uppercase">
+                          Profissional
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-slate-900">
+                        BW1 Imóveis
+                      </p>
+                    </div>
+                  </div>
+
+                  <button className="w-full py-2.5 px-4 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-900 rounded-xl font-semibold text-sm transition-all">
+                    Acessar perfil
+                  </button>
+
+                  {/* Informações verificadas */}
+                  <div className="border-t border-slate-100 pt-4 mt-4">
+                    <h3 className="text-xs font-semibold text-slate-600 mb-3">
+                      Informações verificadas
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-500" />
+                        <span className="text-xs text-slate-700">E-mail</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-500" />
+                        <span className="text-xs text-slate-700">Telefone</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dicas de segurança - Desktop */}
+                <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ShieldAlert size={20} className="text-blue-600" />
+                    <h2 className="text-base font-bold text-slate-900">
+                      Dicas de segurança
+                    </h2>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        Não faça pagamentos antes de verificar o que está sendo anunciado.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        Fique atento com excessos de facilidades e preços abaixo do mercado.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                      <p className="text-sm text-slate-700 leading-relaxed">
+                        Se está desapegando, limpe bem não só as mãos, como o produto e deixe-o também bem embrulhado.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button className="w-full mt-4 py-2.5 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
+                    <Flag size={16} />
+                    Denunciar anúncio
+                  </button>
+                </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile - Seções que aparecem abaixo no mobile */}
+            <div className="lg:hidden px-4 space-y-4 mt-4">
+              {/* Características - Mobile */}
+              <div className="bg-white rounded-3xl p-4 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">
+                  Características
+                </h2>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {item.type === "vehicle" ? (
+                    <>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <Calendar size={24} className="text-blue-500 mb-2" />
+                        <span className="text-xs text-slate-500 mb-1">Ano</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.year}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <Gauge size={24} className="text-blue-500 mb-2" />
+                        <span className="text-xs text-slate-500 mb-1">KM</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.km}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <div className="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center text-xs font-bold text-blue-500 mb-2">
+                          F
+                        </div>
+                        <span className="text-xs text-slate-500 mb-1">
+                          Combustível
+                        </span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.fuel}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <Bed size={24} className="text-blue-500 mb-2" />
+                        <span className="text-xs text-slate-500 mb-1">Quartos</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.beds}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <Bath size={24} className="text-blue-500 mb-2" />
+                        <span className="text-xs text-slate-500 mb-1">
+                          Banheiros
+                        </span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.baths}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <div className="w-6 h-6 border-2 border-blue-500 rounded flex items-center justify-center text-[10px] font-bold text-blue-500 mb-2">
+                          M²
+                        </div>
+                        <span className="text-xs text-slate-500 mb-1">Área</span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {item.details.area}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Descrição - Mobile */}
+              <div className="bg-white rounded-3xl p-4 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">Descrição</h2>
+                <p className="text-slate-600 leading-relaxed">
+                  {item.description ||
+                    "Este é um excelente anúncio. Entre em contato para mais informações!"}
+                </p>
+              </div>
+
+              {/* Localização - Mobile */}
+              <div className="bg-white rounded-3xl p-4 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">
+                  Localização
+                </h2>
+                <div className="flex items-start gap-3 mb-4">
+                  <MapPin size={20} className="text-blue-500 mt-1" />
+                  <div className="flex-1">
+                    <p className="text-base font-semibold text-slate-900 mb-1">
+                      {item.location}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      Veja a localização exata do imóvel/veículo
                     </p>
                   </div>
                 </div>
-              )}
+                
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <MapPin size={18} />
+                  Ver no Google Maps
+                </a>
+              </div>
+
+              {/* Vendedor e Contato - Mobile */}
+              <div className="bg-white rounded-3xl p-4 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 mb-4">
+                  Sobre o anunciante
+                </h2>
+                
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <User size={28} className="text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded uppercase">
+                        Profissional
+                      </span>
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 mb-1">
+                      Anunciante BW1
+                    </p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1 mb-1">
+                      <Clock size={12} />
+                      Último acesso há 1 hora
+                    </p>
+                  </div>
+                </div>
+
+                <button className="w-full py-3 px-4 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-900 rounded-xl font-semibold text-sm transition-all mb-6">
+                  Acessar perfil do anunciante
+                </button>
+
+                {/* Informações verificadas */}
+                <div className="border-t border-slate-100 pt-4">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-3">
+                    Informações verificadas
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-green-500" />
+                      <span className="text-sm text-slate-700">E-mail</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-green-500" />
+                      <span className="text-sm text-slate-700">Telefone</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dicas de segurança - Mobile */}
+              <div className="bg-white rounded-3xl p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <ShieldAlert size={22} className="text-blue-600" />
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Dicas de segurança
+                  </h2>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Não faça pagamentos antes de verificar o que está sendo anunciado.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Fique atento com excessos de facilidades e preços abaixo do mercado.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      Se está desapegando, limpe bem não só as mãos, como o produto e deixe-o também bem embrulhado.
+                    </p>
+                  </div>
+                </div>
+
+                <button className="w-full mt-4 py-3 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
+                  <Flag size={18} />
+                  Denunciar anúncio
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
 
-      {/* Barra inferior fixa com botão de chat */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => {
-              if (!hasWhats) e.preventDefault();
-            }}
-            className={`w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-3 ${
-              hasWhats
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
-                : "bg-slate-200 text-slate-500 cursor-not-allowed"
-            }`}
-          >
-            <MessageCircle size={24} />
-            Iniciar Conversa
-          </a>
-        </div>
-      </div>
+          {/* Footer */}
+          <div className="mt-8 lg:mt-12">
+            <Footer brand={BRAND} footer={FOOTER} />
+          </div>
+        </main>
+
+        {/* Barra inferior fixa - Mobile apenas quando botão sair da tela */}
+        {showFloatingBar && (
+          <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
+            <a
+              href={`tel:${rawWhats}`}
+              onClick={(e) => {
+                if (!hasWhats) e.preventDefault();
+              }}
+              className={`w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-3 ${
+                hasWhats
+                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
+                  : "bg-slate-200 text-slate-500 cursor-not-allowed"
+              }`}
+            >
+              <MessageCircle size={24} />
+              Iniciar Conversa
+            </a>
+          </div>
+        )}
       </AppShell>
     </div>
   );
