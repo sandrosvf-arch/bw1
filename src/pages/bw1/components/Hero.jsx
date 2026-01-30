@@ -51,7 +51,7 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 via-30% via-slate-700/30 via-60% via-slate-400/10 via-85% to-slate-50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 to-slate-50" />
 
       {/* ✅ volta pra pt-10 normal, porque o pt-20 já é do layout global */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Star,
   MapPin,
@@ -7,6 +8,7 @@ import {
   Bed,
   Bath,
   ChevronRight,
+  MessageCircle,
 } from "lucide-react";
 
 const DEMO_WHATSAPP = "5541999999999";
@@ -110,27 +112,40 @@ export default function ListingCard({ item, onViewMore }) {
   const imagesKey = images.join("||");
 
   const [imgIndex, setImgIndex] = useState(0);
-  const timerRef = useRef(null);
+  const touchStartRef = useRef(0);
+  const touchEndRef = useRef(0);
 
   useEffect(() => {
     setImgIndex(0);
   }, [item?.id, imagesKey]);
 
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.targetTouches[0].clientX;
+  };
 
-    if (!images || images.length <= 1) return;
+  const handleTouchMove = (e) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
 
-    timerRef.current = setInterval(() => {
+  const handleTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    
+    const diff = touchStartRef.current - touchEndRef.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diff) < minSwipeDistance) return;
+
+    if (diff > 0) {
+      // Swipe left - próxima imagem
       setImgIndex((prev) => (prev + 1) % images.length);
-    }, CAROUSEL_INTERVAL_MS);
+    } else {
+      // Swipe right - imagem anterior
+      setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
-    };
-  }, [imagesKey]);
+    touchStartRef.current = 0;
+    touchEndRef.current = 0;
+  };
 
   const currentImg = images[imgIndex] || PLACEHOLDER_IMG;
 
@@ -159,7 +174,12 @@ export default function ListingCard({ item, onViewMore }) {
   return (
     <div className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col relative">
       {/* Image */}
-      <div className="relative h-64 overflow-hidden">
+      <div 
+        className="relative h-64 overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <img
           src={currentImg}
           alt={item.title}
@@ -298,7 +318,7 @@ export default function ListingCard({ item, onViewMore }) {
 
         {/* Actions */}
         <div className="mt-auto flex gap-2">
-          {/* CONTATAR */}
+          {/* CHAT */}
           <a
             href={waLink}
             target="_blank"
@@ -308,26 +328,18 @@ export default function ListingCard({ item, onViewMore }) {
             }}
             className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
               hasWhats
-                ? "bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
+                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
                 : "bg-slate-200 text-slate-500 cursor-not-allowed"
             }`}
-            title={hasWhats ? "Chamar no WhatsApp" : "Sem WhatsApp configurado"}
+            title={hasWhats ? "Iniciar conversa" : "Sem contato configurado"}
           >
-            {showWhatsLogo && (
-              <img
-                src={WHATS_LOGO_SRC}
-                alt="WhatsApp"
-                className="w-[18px] h-[18px] object-contain"
-                onError={() => setShowWhatsLogo(false)}
-              />
-            )}
-            Contatar
+            <MessageCircle size={18} />
+            Chat
           </a>
 
           {/* VER MAIS */}
-          <button
-            type="button"
-            onClick={() => onViewMore?.(item)}
+          <Link
+            to={`/anuncio/${item.id}`}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white
                        bg-gradient-to-r from-blue-600 to-indigo-700
                        hover:from-blue-700 hover:to-indigo-800
@@ -335,7 +347,7 @@ export default function ListingCard({ item, onViewMore }) {
                        flex items-center justify-center gap-2"
           >
             Ver mais <ChevronRight size={16} />
-          </button>
+          </Link>
         </div>
       </div>
     </div>

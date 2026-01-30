@@ -3,12 +3,14 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import BW1Platform from "./pages/bw1/BW1Platform.jsx";
 import NotificationsPage from "./pages/bw1/NotificationsPage.jsx";
+import ListingDetailPage from "./pages/bw1/ListingDetailPage.jsx";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<BW1Platform />} />
       <Route path="/notificacoes" element={<NotificationsPage />} />
+      <Route path="/anuncio/:id" element={<ListingDetailPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

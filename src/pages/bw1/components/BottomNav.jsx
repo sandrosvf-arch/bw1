@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Search, Plus, Heart, User } from "lucide-react";
+import { Home, Search, Plus, MessageCircle, Menu } from "lucide-react";
 
 /**
  * BottomNav (estilo OLX):
@@ -12,8 +12,8 @@ import { Home, Search, Plus, Heart, User } from "lucide-react";
  * /            (Home)
  * /buscar      (Busca)
  * /anunciar    (Anunciar)
- * /favoritos   (Favoritos)
- * /perfil      (Perfil)
+ * /chat        (Chat)
+ * /menu        (Menu)
  *
  * Ajuste as rotas conforme seu app.
  */
@@ -66,31 +66,21 @@ export default function BottomNav() {
                 to="/anunciar"
                 className={({ isActive }) =>
                   [
-                    "flex flex-col items-center justify-center",
-                    "relative -mt-6",
-                    "transition",
-                    isActive ? "text-white" : "text-white",
+                    "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
+                    isActive ? "text-white bg-blue-600" : "text-white hover:bg-slate-800",
                   ].join(" ")
                 }
                 title="Anunciar"
                 aria-label="Anunciar"
               >
-                <span
-                  className="
-                    w-14 h-14 rounded-2xl
-                    bg-blue-600 hover:bg-blue-700
-                    shadow-xl shadow-blue-900/40
-                    flex items-center justify-center
-                    border border-white/10
-                  "
-                >
-                  <Plus size={24} />
-                </span>
-                <span className="mt-1 text-[11px] font-extrabold">Anunciar</span>
+                <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <Plus size={20} />
+                </div>
+                <span className="text-[11px] font-semibold leading-none">Anunciar</span>
               </NavLink>
 
-              <Item to="/favoritos" label="Favoritos" Icon={Heart} />
-              <Item to="/perfil" label="Perfil" Icon={User} />
+              <Item to="/chat" label="Chat" Icon={MessageCircle} />
+              <Item to="/menu" label="Menu" Icon={Menu} />
             </div>
           </div>
         </div>
