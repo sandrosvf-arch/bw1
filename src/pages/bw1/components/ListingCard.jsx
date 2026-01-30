@@ -112,39 +112,65 @@ export default function ListingCard({ item, onViewMore }) {
   const imagesKey = images.join("||");
 
   const [imgIndex, setImgIndex] = useState(0);
-  const touchStartRef = useRef(0);
-  const touchEndRef = useRef(0);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const isSwipingRef = useRef(false);
 
   useEffect(() => {
     setImgIndex(0);
   }, [item?.id, imagesKey]);
 
   const handleTouchStart = (e) => {
-    touchStartRef.current = e.targetTouches[0].clientX;
+    touchStartXRef.current = e.targetTouches[0].clientX;
+    touchStartYRef.current = e.targetTouches[0].clientY;
+    isSwipingRef.current = false;
   };
 
   const handleTouchMove = (e) => {
-    touchEndRef.current = e.targetTouches[0].clientX;
+    if (!touchStartXRef.current || !touchStartYRef.current) return;
+
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    touchEndYRef.current = e.targetTouches[0].clientY;
+
+    const diffX = Math.abs(touchStartXRef.current - touchEndXRef.current);
+    const diffY = Math.abs(touchStartYRef.current - touchEndYRef.current);
+
+    // Se o movimento horizontal é maior que o vertical, é um swipe horizontal
+    if (diffX > diffY && diffX > 10) {
+      isSwipingRef.current = true;
+      e.preventDefault(); // Previne o scroll da página
+    }
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartRef.current || !touchEndRef.current) return;
-    
-    const diff = touchStartRef.current - touchEndRef.current;
-    const minSwipeDistance = 50;
-
-    if (Math.abs(diff) < minSwipeDistance) return;
-
-    if (diff > 0) {
-      // Swipe left - próxima imagem
-      setImgIndex((prev) => (prev + 1) % images.length);
-    } else {
-      // Swipe right - imagem anterior
-      setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (!isSwipingRef.current) {
+      touchStartXRef.current = 0;
+      touchStartYRef.current = 0;
+      touchEndXRef.current = 0;
+      touchEndYRef.current = 0;
+      return;
     }
 
-    touchStartRef.current = 0;
-    touchEndRef.current = 0;
+    const diffX = touchStartXRef.current - touchEndXRef.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diffX) >= minSwipeDistance) {
+      if (diffX > 0) {
+        // Swipe left - próxima imagem
+        setImgIndex((prev) => (prev + 1) % images.length);
+      } else {
+        // Swipe right - imagem anterior
+        setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+      }
+    }
+
+    touchStartXRef.current = 0;
+    touchStartYRef.current = 0;
+    touchEndXRef.current = 0;
+    touchEndYRef.current = 0;
+    isSwipingRef.current = false;
   };
 
   const currentImg = images[imgIndex] || PLACEHOLDER_IMG;

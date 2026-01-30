@@ -12,6 +12,8 @@ import {
   Heart,
   ChevronLeft,
   ChevronRight,
+  User,
+  Phone,
 } from "lucide-react";
 
 import listings from "./data/listings.js";
@@ -93,8 +95,11 @@ export default function ListingDetailPage() {
 
   const images = useMemo(() => (item ? normalizeImages(item) : []), [item]);
   const [imgIndex, setImgIndex] = useState(0);
-  const touchStartRef = useRef(0);
-  const touchEndRef = useRef(0);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const isSwipingRef = useRef(false);
 
   const [logoOk, setLogoOk] = useState(true);
   const [hidden, setHidden] = useState(false);
@@ -140,29 +145,52 @@ export default function ListingDetailPage() {
   }, []);
 
   const handleTouchStart = (e) => {
-    touchStartRef.current = e.targetTouches[0].clientX;
+    touchStartXRef.current = e.targetTouches[0].clientX;
+    touchStartYRef.current = e.targetTouches[0].clientY;
+    isSwipingRef.current = false;
   };
 
   const handleTouchMove = (e) => {
-    touchEndRef.current = e.targetTouches[0].clientX;
+    if (!touchStartXRef.current || !touchStartYRef.current) return;
+
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    touchEndYRef.current = e.targetTouches[0].clientY;
+
+    const diffX = Math.abs(touchStartXRef.current - touchEndXRef.current);
+    const diffY = Math.abs(touchStartYRef.current - touchEndYRef.current);
+
+    // Se o movimento horizontal é maior que o vertical, é um swipe horizontal
+    if (diffX > diffY && diffX > 10) {
+      isSwipingRef.current = true;
+      e.preventDefault(); // Previne o scroll da página
+    }
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartRef.current || !touchEndRef.current) return;
-
-    const diff = touchStartRef.current - touchEndRef.current;
-    const minSwipeDistance = 50;
-
-    if (Math.abs(diff) < minSwipeDistance) return;
-
-    if (diff > 0) {
-      setImgIndex((prev) => (prev + 1) % images.length);
-    } else {
-      setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (!isSwipingRef.current) {
+      touchStartXRef.current = 0;
+      touchStartYRef.current = 0;
+      touchEndXRef.current = 0;
+      touchEndYRef.current = 0;
+      return;
     }
 
-    touchStartRef.current = 0;
-    touchEndRef.current = 0;
+    const diffX = touchStartXRef.current - touchEndXRef.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diffX) >= minSwipeDistance) {
+      if (diffX > 0) {
+        setImgIndex((prev) => (prev + 1) % images.length);
+      } else {
+        setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+      }
+    }
+
+    touchStartXRef.current = 0;
+    touchStartYRef.current = 0;
+    touchEndXRef.current = 0;
+    touchEndYRef.current = 0;
+    isSwipingRef.current = false;
   };
 
   const nextImage = () => {
@@ -214,7 +242,7 @@ export default function ListingDetailPage() {
     <div className="min-h-screen bg-slate-50">
       <AppShell
         header={
-          <header
+          <nav
             className={[
               "fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10",
               "transition-transform duration-200 ease-out",
@@ -233,17 +261,24 @@ export default function ListingDetailPage() {
                   </button>
 
                   {/* Logo */}
-                  <div className="flex items-center gap-2">
-                    {logoOk && BRAND?.logoSrc && (
+                  <div
+                    className="rounded-xl px-3 py-2 flex items-center"
+                    style={{
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e5e7eb",
+                    }}
+                  >
+                    {logoOk && BRAND?.logoSrc ? (
                       <img
                         src={BRAND.logoSrc}
                         alt={BRAND.name}
-                        className="h-8 w-auto object-contain"
+                        className="h-10 w-auto object-contain"
                         onError={() => setLogoOk(false)}
                       />
-                    )}
-                    {!logoOk && (
-                      <div className="text-lg font-bold">{BRAND.name}</div>
+                    ) : (
+                      <span className="text-xl font-bold tracking-tighter text-slate-900">
+                        {BRAND?.name || "BW1"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -265,7 +300,7 @@ export default function ListingDetailPage() {
                 </div>
               </div>
             </div>
-          </header>
+          </nav>
         }
       >
         {/* Conteúdo */}
@@ -429,13 +464,64 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
+          {/* Localização */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">
+              Localização
+            </h2>
+            <div className="flex items-start gap-3">
+              <MapPin size={20} className="text-blue-500 mt-1" />
+              <div>
+                <p className="text-base font-semibold text-slate-900 mb-1">
+                  {item.location}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Veja a localização exata do imóvel/veículo
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Descrição */}
-          <div className="bg-white rounded-3xl p-6 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Descrição</h2>
             <p className="text-slate-600 leading-relaxed">
               {item.description ||
                 "Este é um excelente anúncio. Entre em contato para mais informações!"}
             </p>
+          </div>
+
+          {/* Vendedor e Contato */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Vendedor</h2>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <User size={28} className="text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Anunciante BW1</p>
+                <p className="text-sm text-slate-500">Membro desde 2024</p>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">
+                Informações de Contato
+              </h3>
+              
+              {hasWhats && (
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <Phone size={18} className="text-blue-500" />
+                  <div>
+                    <p className="text-xs text-slate-500">WhatsApp</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {rawWhats}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
