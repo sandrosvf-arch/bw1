@@ -1,32 +1,20 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, Filter } from "lucide-react";
 
-/**
- * HERO com background trocando automaticamente (3 imagens)
- * ✅ Coloque as imagens em /public:
- *   /hero-1.jpg
- *   /hero-2.jpg
- *   /hero-3.jpg
- *
- * Para mudar as imagens: edite DEFAULT_BG_IMAGES
- * Para mudar o tempo: edite BG_INTERVAL_MS
- */
-
 const DEFAULT_BG_IMAGES = ["/hero-1.jpg", "/hero-2.jpg", "/hero-3.jpg"];
-const BG_INTERVAL_MS = 5000; // 5s (troque como quiser)
+const BG_INTERVAL_MS = 5000;
 
 export default function Hero({ hero, searchTerm, onSearchChange }) {
-  // Se você quiser controlar por content/hero.js, pode passar:
-  // hero.backgroundImages = ["/a.jpg","/b.jpg","/c.jpg"]
   const bgImages = useMemo(() => {
-    const arr = Array.isArray(hero?.backgroundImages) ? hero.backgroundImages : DEFAULT_BG_IMAGES;
+    const arr = Array.isArray(hero?.backgroundImages)
+      ? hero.backgroundImages
+      : DEFAULT_BG_IMAGES;
     return arr.filter(Boolean);
   }, [hero]);
 
   const [idx, setIdx] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
-  // Preload (evita "piscada" quando troca)
   useEffect(() => {
     bgImages.forEach((src) => {
       const img = new Image();
@@ -34,14 +22,11 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
     });
   }, [bgImages]);
 
-  // Rotação automática
   useEffect(() => {
     if (bgImages.length <= 1) return;
 
     const interval = setInterval(() => {
       setFadeOut(true);
-
-      // troca no meio do fade
       setTimeout(() => {
         setIdx((prev) => (prev + 1) % bgImages.length);
         setFadeOut(false);
@@ -55,7 +40,6 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
 
   return (
     <div className="relative bg-slate-900 overflow-hidden">
-      {/* Background */}
       <div className="absolute inset-0 opacity-20">
         <img
           src={currentBg}
@@ -63,12 +47,14 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
             fadeOut ? "opacity-0" : "opacity-100"
           }`}
           alt="Banner"
+          draggable={false}
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 to-slate-50"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/50 via-30% via-slate-700/30 via-60% via-slate-400/10 via-85% to-slate-50" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-32">
+      {/* ✅ volta pra pt-10 normal, porque o pt-20 já é do layout global */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
         <div className="text-center">
           <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
             <span className="block">{hero?.titleLine1}</span>
@@ -79,7 +65,6 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
             {hero?.subtitle}
           </p>
 
-          {/* Search */}
           <div className="mt-10 max-w-xl mx-auto">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
