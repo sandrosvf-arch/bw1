@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, ArrowLeft } from "lucide-react";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -57,6 +57,7 @@ export default function MyListingsPage() {
   const [listings, setListings] = useState(mockMyListings);
   const [filter, setFilter] = useState("all"); // all, active, paused, sold
   const [showMenu, setShowMenu] = useState(null);
+  const [logoOk, setLogoOk] = useState(true);
 
   const filteredListings = listings.filter((item) => {
     if (filter === "all") return true;
@@ -111,14 +112,49 @@ export default function MyListingsPage() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
       <AppShell
         header={
-          <Navbar
-            brand={BRAND}
-            links={NAVIGATION?.links || []}
-            cta={NAVIGATION?.cta}
-          />
+          <nav className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-20">
+                <div className="flex items-center gap-3">
+                  <Link
+                    to="/"
+                    className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
+                    title="Voltar"
+                  >
+                    <ArrowLeft size={24} />
+                  </Link>
+                  <Link to="/">
+                    <div
+                      className="rounded-xl px-3 py-2 flex items-center cursor-pointer hover:opacity-80 transition"
+                      style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      {logoOk ? (
+                        <img
+                          src="/logo-bw1.png"
+                          alt={BRAND?.name || "BW1"}
+                          className="h-10 w-auto"
+                          onError={() => setLogoOk(false)}
+                        />
+                      ) : (
+                        <span className="text-xl font-bold tracking-tighter text-slate-900">
+                          {BRAND?.name || "BW1"}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  <span className="text-base sm:text-lg border-l border-slate-700/80 pl-3">
+                    <span className="font-bold">Meus anúncios</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </nav>
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20 pb-28 lg:pb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20 pb-28 lg:pb-8 pt-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
