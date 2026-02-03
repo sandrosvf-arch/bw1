@@ -1,0 +1,417 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  Heart,
+  MapPin,
+  Calendar,
+  Gauge,
+  Bed,
+  Bath,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
+
+const DEMO_WHATSAPP = "5541999999999";
+const CAROUSEL_INTERVAL_MS = 2500;
+
+const PLACEHOLDER_IMG =
+  "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=1400&q=80";
+
+const WHATS_LOGO_SRC = "/whats-logo.png";
+
+function extractWhats(item) {
+  return (
+    item?.contact?.whatsapp ??
+    item?.contact?.whats ??
+    item?.contact?.phone ??
+    item?.whatsapp ??
+    item?.whats ??
+    item?.phone ??
+    ""
+  );
+}
+
+function normalizeWhatsapp(raw) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return null;
+
+  digits = digits.replace(/^0+/, "");
+
+  if (digits.startsWith("55") && digits.length >= 12) return digits;
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  if (digits.length >= 10) return digits;
+
+  return null;
+}
+
+function normalizeImages(item) {
+  const imgs = [];
+
+  if (Array.isArray(item?.images)) {
+    for (const u of item.images) {
+      if (typeof u === "string" && u.trim()) imgs.push(u.trim());
+    }
+  }
+
+  if (typeof item?.image === "string" && item.image.trim()) {
+    if (!imgs.includes(item.image.trim())) imgs.unshift(item.image.trim());
+  }
+
+  if (imgs.length === 0) imgs.push(PLACEHOLDER_IMG);
+
+  return Array.from(new Set(imgs));
+}
+
+function formatDateBR(value) {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    const [y, m, dd] = String(value).split("-");
+    if (y && m && dd) return `${dd}/${m}/${y}`;
+    return String(value);
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
+
+function FlagChip({ text }) {
+  if (!text) return null;
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold
+                 bg-amber-50 text-amber-800 border border-amber-200"
+      title={text}
+    >
+      {text}
+    </span>
+  );
+}
+
+function TagChip({ tag }) {
+  const t = tag || "—";
+  const isVenda = String(t).toLowerCase().includes("venda");
+  const cls = isVenda
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : "bg-blue-50 text-blue-700 border-blue-200";
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide border ${cls}`}
+      title={t}
+    >
+      {t}
+    </span>
+  );
+}
+
+export default function ListingCard({ item, onViewMore }) {
+  const images = useMemo(() => normalizeImages(item), [item]);
+  const imagesKey = images.join("||");
+
+  const [imgIndex, setImgIndex] = useState(0);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const isSwipingRef = useRef(false);
+
+  useEffect(() => {
+    setImgIndex(0);
+  }, [item?.id, imagesKey]);
+
+  const handleTouchStart = (e) => {
+    touchStartXRef.current = e.targetTouches[0].clientX;
+    touchStartYRef.current = e.targetTouches[0].clientY;
+    isSwipingRef.current = false;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStartXRef.current || !touchStartYRef.current) return;
+
+    touchEndXRef.current = e.targetTouches[0].clientX;
+    touchEndYRef.current = e.targetTouches[0].clientY;
+
+    const diffX = Math.abs(touchStartXRef.current - touchEndXRef.current);
+    const diffY = Math.abs(touchStartYRef.current - touchEndYRef.current);
+
+    // Se o movimento horizontal é maior que o vertical, é um swipe horizontal
+    if (diffX > diffY && diffX > 10) {
+      isSwipingRef.current = true;
+      e.preventDefault(); // Previne o scroll da página
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwipingRef.current) {
+      touchStartXRef.current = 0;
+      touchStartYRef.current = 0;
+      touchEndXRef.current = 0;
+      touchEndYRef.current = 0;
+      return;
+    }
+
+    const diffX = touchStartXRef.current - touchEndXRef.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diffX) >= minSwipeDistance) {
+      if (diffX > 0) {
+        // Swipe left - próxima imagem
+        setImgIndex((prev) => (prev + 1) % images.length);
+      } else {
+        // Swipe right - imagem anterior
+        setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+      }
+    }
+
+    touchStartXRef.current = 0;
+    touchStartYRef.current = 0;
+    touchEndXRef.current = 0;
+    touchEndYRef.current = 0;
+    isSwipingRef.current = false;
+  };
+
+  const currentImg = images[imgIndex] || PLACEHOLDER_IMG;
+
+  const createdAtLabel = item?.createdAt
+    ? `Publicado em ${formatDateBR(item.createdAt)}`
+    : "";
+
+  // Venda/Aluguel
+  const tag = item?.tag || "—";
+  const isVenda = String(tag).toLowerCase().includes("venda");
+  const tagClass = isVenda ? "bg-emerald-500" : "bg-blue-500";
+
+  // WhatsApp
+  const rawWhatsFromItem = extractWhats(item);
+  const rawWhats = rawWhatsFromItem || DEMO_WHATSAPP;
+  const waDigits = normalizeWhatsapp(rawWhats);
+  const hasWhats = Boolean(waDigits);
+
+  const waMsg = encodeURIComponent(
+    `Olá! Vi seu anúncio na BW1 e tenho interesse em: ${item.title} (${item.price}) - ${item.location}.`
+  );
+  const waLink = hasWhats ? `https://wa.me/${waDigits}?text=${waMsg}` : "#";
+
+  const [showWhatsLogo, setShowWhatsLogo] = useState(true);
+
+  return (
+    <div className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col relative">
+      {/* Image */}
+      <Link to={`/anuncio/${item.id}`} className="block">
+        <div 
+          className="relative h-64 overflow-hidden cursor-pointer"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={currentImg}
+            alt={item.title}
+            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = PLACEHOLDER_IMG;
+            }}
+          />
+
+        {/* ✅ Tag no topo esquerdo */}
+        <div className="absolute top-4 left-4">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
+          >
+            {tag}
+          </span>
+        </div>
+
+        {/* Heart */}
+        <div className="absolute top-4 right-4">
+          <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-red-500 transition-colors">
+            <Heart size={16} />
+          </button>
+        </div>
+
+        {/* Botões de navegação - Desktop apenas */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setImgIndex((prev) => (prev - 1 + images.length) % images.length);
+              }}
+              className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setImgIndex((prev) => (prev + 1) % images.length);
+              }}
+              className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
+
+        {/* Carousel Dots + Counter */}
+        {images.length > 1 && (
+          <>
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setImgIndex(i)}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === imgIndex ? "w-6 bg-white/90" : "w-2.5 bg-white/50"
+                    }`}
+                    aria-label={`Imagem ${i + 1}`}
+                    title={`Imagem ${i + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded-full bg-black/30 text-white backdrop-blur">
+              {imgIndex + 1}/{images.length}
+            </div>
+          </>
+        )}
+        </div>
+      </Link>
+
+      {/* Content */}
+      <div className="p-6 flex-1 flex flex-col">
+        {/* ✅ Preço + chips (tag venda/aluguel + flag extra) */}
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-slate-900 text-2xl font-extrabold leading-none">
+            {item.price}
+          </p>
+
+          <div className="flex items-center gap-2">
+            {/* ✅ Venda/Aluguel ao lado do preço */}
+            <TagChip tag={tag} />
+            {/* Flag extra opcional */}
+            <FlagChip text={item?.flag} />
+          </div>
+        </div>
+
+        <h3 className="mt-3 text-lg font-bold text-slate-900 line-clamp-1">
+          {item.title}
+        </h3>
+
+        {/* Cidade + Data */}
+        <div className="mt-2 mb-4">
+          <div className="flex items-center text-slate-500 text-sm">
+            <MapPin size={14} className="mr-1" />
+            {item.location}
+          </div>
+
+          {createdAtLabel && (
+            <div className="text-xs text-slate-400 mt-1">{createdAtLabel}</div>
+          )}
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-3 gap-2 py-4 border-t border-slate-100 mb-4">
+          {item.type === "vehicle" ? (
+            <>
+              <div className="text-center">
+                <Calendar size={18} className="mx-auto mb-1 text-blue-500" />
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.year}
+                </span>
+              </div>
+              <div className="text-center border-l border-slate-100">
+                <Gauge size={18} className="mx-auto mb-1 text-blue-500" />
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.km}
+                </span>
+              </div>
+              <div className="text-center border-l border-slate-100">
+                <div className="w-4 h-4 mx-auto mb-1 rounded-full border-2 border-blue-500 flex items-center justify-center text-[10px] font-bold text-blue-500">
+                  F
+                </div>
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.fuel}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-center">
+                <Bed size={18} className="mx-auto mb-1 text-blue-500" />
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.beds} Quartos
+                </span>
+              </div>
+              <div className="text-center border-l border-slate-100">
+                <Bath size={18} className="mx-auto mb-1 text-blue-500" />
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.baths} Banheiros
+                </span>
+              </div>
+              <div className="text-center border-l border-slate-100">
+                <div className="w-4 h-4 mx-auto mb-1 border-2 border-blue-500 rounded flex items-center justify-center text-[8px]">
+                  M²
+                </div>
+                <span className="text-xs text-slate-600 font-medium">
+                  {item.details.area}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-auto flex gap-2">
+          {/* CONTATAR */}
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => {
+              if (!hasWhats) e.preventDefault();
+            }}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+              hasWhats
+                ? "bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
+                : "bg-slate-200 text-slate-500 cursor-not-allowed"
+            }`}
+            title={hasWhats ? "Chamar no WhatsApp" : "Sem WhatsApp configurado"}
+          >
+            {showWhatsLogo && (
+              <img
+                src={WHATS_LOGO_SRC}
+                alt="WhatsApp"
+                className="w-[18px] h-[18px] object-contain"
+                onError={() => setShowWhatsLogo(false)}
+              />
+            )}
+            Contatar
+          </a>
+
+          {/* VER MAIS */}
+          <Link
+            to={`/anuncio/${item.id}`}
+            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white
+                       bg-gradient-to-r from-blue-600 to-indigo-700
+                       hover:from-blue-700 hover:to-indigo-800
+                       shadow-sm hover:shadow-md transition-all
+                       flex items-center justify-center gap-2"
+          >
+            Ver mais <ChevronRight size={16} />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
