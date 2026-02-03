@@ -15,30 +15,12 @@ export default function Footer(props) {
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <span className="text-2xl font-bold text-white tracking-tighter">
               {safeName}
             </span>
             <p className="mt-4 text-sm">{safeDesc}</p>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Veículos</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white">Carros Esportivos</a></li>
-              <li><a href="#" className="hover:text-white">SUVs de Luxo</a></li>
-              <li><a href="#" className="hover:text-white">Blindados</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Imóveis</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white">Apartamentos</a></li>
-              <li><a href="#" className="hover:text-white">Casas em Condomínio</a></li>
-              <li><a href="#" className="hover:text-white">Coberturas</a></li>
-            </ul>
           </div>
 
           <div>

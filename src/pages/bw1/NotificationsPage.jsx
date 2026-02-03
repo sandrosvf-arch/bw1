@@ -2,6 +2,9 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Check } from "lucide-react";
 import NOTIFICATIONS from "./content/notifications.js";
+import * as BrandMod from "./content/brand.js";
+
+const BRAND = BrandMod.default ?? BrandMod.BRAND;
 
 function formatWhen(iso) {
   const d = new Date(iso);
@@ -37,6 +40,7 @@ function formatWhen(iso) {
 export default function NotificationsPage() {
   const [items, setItems] = useState(() => NOTIFICATIONS);
   const [tab, setTab] = useState("all"); // all | unread
+  const [logoOk, setLogoOk] = React.useState(true);
 
   const unreadCount = useMemo(() => items.filter((n) => n.unread).length, [items]);
 
@@ -65,7 +69,30 @@ export default function NotificationsPage() {
               <ArrowLeft size={20} />
             </Link>
 
-            <div>
+            <Link to="/">
+              <div
+                className="rounded-xl px-3 py-2 flex items-center cursor-pointer hover:opacity-80 transition"
+                style={{
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                {logoOk ? (
+                  <img
+                    src="/logo-bw1.png"
+                    alt={BRAND?.name || "BW1"}
+                    className="h-10 w-auto"
+                    onError={() => setLogoOk(false)}
+                  />
+                ) : (
+                  <span className="text-xl font-bold tracking-tighter text-slate-900">
+                    {BRAND?.name || "BW1"}
+                  </span>
+                )}
+              </div>
+            </Link>
+
+            <div className="border-l border-slate-700/80 pl-3">
               <div className="text-white font-extrabold text-base">Notificações</div>
               <div className="text-slate-300 text-[12px]">
                 {unreadCount > 0 ? `${unreadCount} não lidas` : "Tudo em dia"}
@@ -119,10 +146,11 @@ export default function NotificationsPage() {
             </div>
           ) : (
             filteredItems.map((n) => (
-              <button
+              <Link
                 key={n.id}
+                to={n.link || "/"}
                 onClick={() => markOneRead(n.id)}
-                className="w-full text-left px-5 py-4 hover:bg-slate-50 transition border-b border-slate-100"
+                className="block w-full text-left px-5 py-4 hover:bg-slate-50 transition border-b border-slate-100"
               >
                 <div className="flex items-start gap-3">
                   <span
@@ -142,7 +170,7 @@ export default function NotificationsPage() {
                     <div className="text-sm text-slate-600 mt-0.5">{n.text}</div>
                   </div>
                 </div>
-              </button>
+              </Link>
             ))
           )}
         </div>

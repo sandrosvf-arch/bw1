@@ -63,7 +63,7 @@ export default function BottomNav() {
 
               {/* Botão central destacado */}
               <NavLink
-                to="/anunciar"
+                to="/criar-anuncio"
                 className={({ isActive }) =>
                   [
                     "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
@@ -79,7 +79,23 @@ export default function BottomNav() {
                 <span className="text-[11px] font-semibold leading-none">Anunciar</span>
               </NavLink>
 
-              <Item to="/chat" label="Chat" Icon={MessageCircle} />
+              <NavLink
+                to="/meus-anuncios"
+                className={({ isActive }) =>
+                  [
+                    "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
+                    isActive ? "text-white" : "text-slate-300 hover:text-white",
+                  ].join(" ")
+                }
+                title="Conta"
+                aria-label="Conta"
+              >
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  U
+                </div>
+                <span className="text-[11px] font-semibold leading-none">Conta</span>
+              </NavLink>
+
               <Item to="/menu" label="Menu" Icon={Menu} />
             </div>
           </div>

@@ -28,6 +28,7 @@ import * as FooterMod from "./content/footer.js";
 import AppShell from "./components/AppShell.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
+import BottomNav from "./components/BottomNav.jsx";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
@@ -245,7 +246,7 @@ export default function ListingDetailPage() {
                 {/* Left - Botão Voltar + Logo */}
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => navigate("/")}
+                    onClick={() => navigate(-1)}
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Voltar"
                   >
@@ -834,25 +835,7 @@ export default function ListingDetailPage() {
           </div>
         </main>
 
-        {/* Barra inferior fixa - Mobile apenas quando botão sair da tela */}
-        {showFloatingBar && (
-          <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
-            <a
-              href={`tel:${rawWhats}`}
-              onClick={(e) => {
-                if (!hasWhats) e.preventDefault();
-              }}
-              className={`w-full py-4 rounded-2xl text-base font-bold transition-all flex items-center justify-center gap-3 ${
-                hasWhats
-                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
-                  : "bg-slate-200 text-slate-500 cursor-not-allowed"
-              }`}
-            >
-              <MessageCircle size={24} />
-              Iniciar Conversa
-            </a>
-          </div>
-        )}
+        <BottomNav />
       </AppShell>
     </div>
   );

@@ -1,0 +1,322 @@
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Home, Bed, Bath, DollarSign, MapPin } from "lucide-react";
+
+import Navbar from "./components/Navbar";
+import BottomNav from "./components/BottomNav";
+import AppShell from "./components/AppShell";
+import Hero from "./components/Hero";
+import ListingsGrid from "./components/ListingsGrid";
+import CTA from "./components/CTA";
+import Footer from "./components/Footer";
+
+import * as BrandMod from "./content/brand.js";
+import * as NavMod from "./content/navigation.js";
+import * as HeroMod from "./content/hero.js";
+import * as FooterMod from "./content/footer.js";
+
+import listings from "./data/listings.js";
+
+const BRAND = BrandMod.default ?? BrandMod.BRAND;
+const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
+const HERO = HeroMod.default ?? HeroMod.HERO;
+const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+
+export default function PropertiesPage() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    dealType: "all",
+    minPrice: "",
+    maxPrice: "",
+    city: "",
+    minBeds: "",
+    minBaths: "",
+    minArea: "",
+  });
+
+  const filteredListings = useMemo(() => {
+    return listings.filter((item) => {
+      // Apenas imóveis
+      if (item.type !== "property") return false;
+
+      // Busca
+      const s = searchTerm.toLowerCase();
+      const matchesSearch =
+        !s ||
+        item.title.toLowerCase().includes(s) ||
+        item.location.toLowerCase().includes(s);
+
+      // Tipo de negócio
+      const matchesDealType =
+        filters.dealType === "all" || item.tag === filters.dealType;
+
+      // Preço
+      const priceValue = parseFloat(
+        item.price.replace(/[^\d,]/g, "").replace(",", ".")
+      );
+      const matchesMinPrice =
+        !filters.minPrice || priceValue >= parseFloat(filters.minPrice);
+      const matchesMaxPrice =
+        !filters.maxPrice || priceValue <= parseFloat(filters.maxPrice);
+
+      // Cidade
+      const matchesCity =
+        !filters.city ||
+        item.location.toLowerCase().includes(filters.city.toLowerCase());
+
+      // Quartos
+      const matchesBeds =
+        !filters.minBeds ||
+        (item.details?.beds && item.details.beds >= parseInt(filters.minBeds));
+
+      // Banheiros
+      const matchesBaths =
+        !filters.minBaths ||
+        (item.details?.baths &&
+          item.details.baths >= parseInt(filters.minBaths));
+
+      // Área
+      const areaValue = item.details?.area
+        ? parseInt(item.details.area.replace(/\D/g, ""))
+        : 0;
+      const matchesArea =
+        !filters.minArea || areaValue >= parseInt(filters.minArea);
+
+      return (
+        matchesSearch &&
+        matchesDealType &&
+        matchesMinPrice &&
+        matchesMaxPrice &&
+        matchesCity &&
+        matchesBeds &&
+        matchesBaths &&
+        matchesArea
+      );
+    });
+  }, [searchTerm, filters]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters({ ...filters, [key]: value });
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      dealType: "all",
+      minPrice: "",
+      maxPrice: "",
+      city: "",
+      minBeds: "",
+      minBaths: "",
+      minArea: "",
+    });
+  };
+
+  const hasActiveFilters =
+    filters.dealType !== "all" ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.city ||
+    filters.minBeds ||
+    filters.minBaths ||
+    filters.minArea;
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
+      <AppShell
+        header={
+          <Navbar
+            brand={BRAND}
+            links={NAVIGATION?.links || []}
+            cta={NAVIGATION?.cta}
+          />
+        }
+      >
+        <Hero
+          hero={{ ...HERO, titleLine2: "Imóveis de Luxo" }}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+        />
+
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-20 pb-28 lg:pb-8 -mt-16">
+          {/* Tabs de navegação */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white p-1.5 rounded-2xl shadow-lg inline-flex">
+              <button
+                onClick={() => navigate("/")}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-600 hover:bg-slate-50"
+              >
+                Todos
+              </button>
+
+              <button
+                onClick={() => navigate("/veiculos")}
+                className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-600 hover:bg-slate-50"
+              >
+                Veículos
+              </button>
+
+              <button
+                className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 bg-emerald-600 text-white shadow-md"
+              >
+                <Home size={16} /> Imóveis
+              </button>
+            </div>
+          </div>
+
+          {/* Filtros específicos para imóveis */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Home size={20} className="text-emerald-600" />
+                Filtros para Imóveis
+              </h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm font-semibold text-emerald-600 hover:text-emerald-800"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Tipo de negócio */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Tipo de negócio
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["all", "Venda", "Aluguel"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => handleFilterChange("dealType", type)}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition ${
+                        filters.dealType === type
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {type === "all" ? "Todos" : type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preço */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <DollarSign size={16} className="inline mr-1" />
+                  Preço
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    placeholder="Mínimo"
+                    value={filters.minPrice}
+                    onChange={(e) =>
+                      handleFilterChange("minPrice", e.target.value)
+                    }
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Máximo"
+                    value={filters.maxPrice}
+                    onChange={(e) =>
+                      handleFilterChange("maxPrice", e.target.value)
+                    }
+                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Cidade */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <MapPin size={16} className="inline mr-1" />
+                  Cidade
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: São Paulo"
+                  value={filters.city}
+                  onChange={(e) => handleFilterChange("city", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Quartos mínimos */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <Bed size={16} className="inline mr-1" />
+                  Quartos mínimos
+                </label>
+                <input
+                  type="number"
+                  placeholder="Ex: 2"
+                  value={filters.minBeds}
+                  onChange={(e) =>
+                    handleFilterChange("minBeds", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Banheiros mínimos */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <Bath size={16} className="inline mr-1" />
+                  Banheiros mínimos
+                </label>
+                <input
+                  type="number"
+                  placeholder="Ex: 1"
+                  value={filters.minBaths}
+                  onChange={(e) =>
+                    handleFilterChange("minBaths", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Área mínima */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Área mínima (m²)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Ex: 80"
+                  value={filters.minArea}
+                  onChange={(e) =>
+                    handleFilterChange("minArea", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Resultados */}
+          {hasActiveFilters && (
+            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <p className="text-sm text-emerald-800">
+                <span className="font-semibold">
+                  {filteredListings.length} imóvel(is) encontrado(s)
+                </span>
+              </p>
+            </div>
+          )}
+
+          <ListingsGrid listings={filteredListings} />
+          <CTA />
+          <Footer brand={BRAND} footer={FOOTER} />
+        </main>
+
+        <BottomNav />
+      </AppShell>
+    </div>
+  );
+}

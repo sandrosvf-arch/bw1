@@ -112,6 +112,7 @@ export default function ListingCard({ item, onViewMore }) {
   const imagesKey = images.join("||");
 
   const [imgIndex, setImgIndex] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
   const touchStartXRef = useRef(0);
   const touchStartYRef = useRef(0);
   const touchEndXRef = useRef(0);
@@ -121,6 +122,33 @@ export default function ListingCard({ item, onViewMore }) {
   useEffect(() => {
     setImgIndex(0);
   }, [item?.id, imagesKey]);
+
+  useEffect(() => {
+    // Verificar se está nos favoritos
+    const saved = localStorage.getItem("bw1-favorites");
+    if (saved) {
+      const favorites = JSON.parse(saved);
+      setIsFavorite(favorites.includes(item.id));
+    }
+  }, [item.id]);
+
+  const toggleFavorite = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const saved = localStorage.getItem("bw1-favorites");
+    let favorites = saved ? JSON.parse(saved) : [];
+    
+    if (favorites.includes(item.id)) {
+      favorites = favorites.filter((id) => id !== item.id);
+      setIsFavorite(false);
+    } else {
+      favorites.push(item.id);
+      setIsFavorite(true);
+    }
+    
+    localStorage.setItem("bw1-favorites", JSON.stringify(favorites));
+  };
 
   const handleTouchStart = (e) => {
     touchStartXRef.current = e.targetTouches[0].clientX;
@@ -228,8 +256,15 @@ export default function ListingCard({ item, onViewMore }) {
 
         {/* Heart */}
         <div className="absolute top-4 right-4">
-          <button className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-red-500 transition-colors">
-            <Heart size={16} />
+          <button 
+            onClick={toggleFavorite}
+            className={`p-2 backdrop-blur-md rounded-full transition-colors ${
+              isFavorite 
+                ? "bg-white text-red-500" 
+                : "bg-white/20 text-white hover:bg-white hover:text-red-500"
+            }`}
+          >
+            <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
           </button>
         </div>
 

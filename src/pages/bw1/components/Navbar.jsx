@@ -81,26 +81,28 @@ export default function Navbar({ brand, links, cta }) {
         <div className="flex items-center justify-between h-20">
           {/* Left */}
           <div className="flex items-center gap-3">
-            <div
-              className="rounded-xl px-3 py-2 flex items-center"
-              style={{
-                backgroundColor: COLORS.logoBg,
-                border: `1px solid ${COLORS.logoBorder}`,
-              }}
-            >
-              {logoOk ? (
-                <img
-                  src="/logo-bw1.png"
-                  alt={brand?.name || "BW1"}
-                  className="h-10 w-auto"
-                  onError={() => setLogoOk(false)}
-                />
-              ) : (
-                <span className="text-xl font-bold tracking-tighter text-slate-900">
-                  {brand?.name || "BW1"}
-                </span>
-              )}
-            </div>
+            <Link to="/">
+              <div
+                className="rounded-xl px-3 py-2 flex items-center cursor-pointer hover:opacity-80 transition"
+                style={{
+                  backgroundColor: COLORS.logoBg,
+                  border: `1px solid ${COLORS.logoBorder}`,
+                }}
+              >
+                {logoOk ? (
+                  <img
+                    src="/logo-bw1.png"
+                    alt={brand?.name || "BW1"}
+                    className="h-10 w-auto"
+                    onError={() => setLogoOk(false)}
+                  />
+                ) : (
+                  <span className="text-xl font-bold tracking-tighter text-slate-900">
+                    {brand?.name || "BW1"}
+                  </span>
+                )}
+              </div>
+            </Link>
 
             <span className="text-base sm:text-lg border-l border-slate-700/80 pl-3">
               <span className="font-extrabold tracking-wide" style={{ color: COLORS.carros }}>
@@ -117,18 +119,6 @@ export default function Navbar({ brand, links, cta }) {
 
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-baseline space-x-2">
-              {links?.map((l) => (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  className="hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  {l.label}
-                </a>
-              ))}
-            </div>
-
             <Link
               to="/notificacoes"
               className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
@@ -139,12 +129,16 @@ export default function Navbar({ brand, links, cta }) {
               <Badge />
             </Link>
 
-            <a
-              href={cta?.href || "#"}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full font-medium transition-all shadow-lg shadow-blue-900/50"
+            <Link
+              to="/menu"
+              className="flex items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-lg transition"
+              title="Meu perfil"
             >
-              {cta?.label || "Entrar"}
-            </a>
+              <span className="text-sm font-medium">Meus</span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                U
+              </div>
+            </Link>
           </div>
 
           {/* Mobile */}

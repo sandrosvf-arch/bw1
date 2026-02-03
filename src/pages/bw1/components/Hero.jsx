@@ -73,21 +73,11 @@ export default function Hero({ hero, searchTerm, onSearchChange }) {
 
               <input
                 type="text"
-                className="block w-full pl-10 pr-12 py-4 border-none rounded-2xl leading-5 bg-white shadow-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 sm:text-sm transition-all"
+                className="block w-full pl-10 pr-4 py-4 border-none rounded-2xl leading-5 bg-white shadow-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 sm:text-sm transition-all"
                 placeholder={hero?.searchPlaceholder || "Busque por modelo, cidade ou tipo..."}
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
               />
-
-              <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
-                <button
-                  type="button"
-                  className="bg-slate-100 p-2 rounded-xl text-slate-500 hover:bg-slate-200"
-                  title="Filtro (visual)"
-                >
-                  <Filter size={18} />
-                </button>
-              </div>
             </div>
           </div>
 
