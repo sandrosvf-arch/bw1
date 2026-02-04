@@ -25,6 +25,7 @@ const listings = [
       doors: "4"
     },
     tag: "Venda",
+    badge: "super-destaque",
     contact: { whatsapp: "+55 (41) 99999-9999" },
   },
   {
@@ -50,6 +51,7 @@ const listings = [
       doors: "5"
     },
     tag: "Venda",
+    badge: "destaque",
     contact: { whatsapp: "+55 (11) 97777-1111" },
   },
   {
@@ -129,6 +131,7 @@ const listings = [
       floor: "alto"
     },
     tag: "Venda",
+    badge: "super-destaque",
     contact: { whatsapp: "+55 (47) 98888-7777" },
   },
   {

@@ -158,6 +158,21 @@ export default function CreateListingPage() {
                 </div>
                 <span className="font-semibold hidden sm:inline">Fotos</span>
               </div>
+              <div className="w-12 h-0.5 bg-slate-200"></div>
+              <div
+                className={`flex items-center gap-2 ${
+                  step >= 4 ? "text-blue-600" : "text-slate-400"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                    step >= 4 ? "bg-blue-600 text-white" : "bg-slate-200"
+                  }`}
+                >
+                  4
+                </div>
+                <span className="font-semibold hidden sm:inline">Planos</span>
+              </div>
             </div>
           </div>
 
@@ -175,12 +190,12 @@ export default function CreateListingPage() {
                   }}
                   className="p-6 border-2 border-slate-200 rounded-xl hover:border-blue-600 hover:bg-blue-50 transition-all group"
                 >
-                  <div className="text-4xl mb-3">🚗</div>
+                  <div className="text-4xl mb-3">&#128664;</div>
                   <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600">
                     Veículo
                   </h3>
                   <p className="text-sm text-slate-600 mt-1">
-                    Carros, motos, caminhões...
+                    Carros, SUVs, Caminhonetes...
                   </p>
                 </button>
 
@@ -191,7 +206,7 @@ export default function CreateListingPage() {
                   }}
                   className="p-6 border-2 border-slate-200 rounded-xl hover:border-emerald-600 hover:bg-emerald-50 transition-all group"
                 >
-                  <div className="text-4xl mb-3">🏠</div>
+                  <div className="text-4xl mb-3">&#127968;</div>
                   <h3 className="text-xl font-bold text-slate-900 group-hover:text-emerald-600">
                     Imóvel
                   </h3>
@@ -725,10 +740,177 @@ export default function CreateListingPage() {
                   Voltar
                 </button>
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => setStep(4)}
                   className="flex-1 py-3 px-6 rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800 transition shadow-lg"
                 >
-                  Publicar anúncio
+                  Continuar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Planos de Monetização */}
+          {step === 4 && (
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                Impulsione seu anúncio
+              </h2>
+              <p className="text-slate-600 mb-8">
+                Escolha um plano para dar mais visibilidade e vender mais rápido
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Plano Básico - Grátis */}
+                <div className="border-2 border-slate-200 rounded-2xl p-6 hover:border-slate-300 transition">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-slate-900">Básico</h3>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-bold rounded-full">
+                      Grátis
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-3xl font-extrabold text-slate-900">R$ 0</p>
+                    <p className="text-sm text-slate-500">Publicação simples</p>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-2 text-sm text-slate-600">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      Anúncio ativo por 30 dias
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-600">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      Até 5 fotos
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-600">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      Aparece nos resultados normais
+                    </li>
+                  </ul>
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                  >
+                    Publicar grátis
+                  </button>
+                </div>
+
+                {/* Plano Destaque */}
+                <div className="border-2 border-blue-600 rounded-2xl p-6 relative bg-blue-50/50">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
+                    MAIS POPULAR
+                  </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-slate-900">Destaque</h3>
+                    <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full">
+                      Recomendado
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-3xl font-extrabold text-blue-600">R$ 29</p>
+                    <p className="text-sm text-slate-500">Por 30 dias</p>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                      <strong>Aparece 3x mais</strong> nos resultados
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                      <strong>Badge "Destaque"</strong> no anúncio
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                      Até 10 fotos
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                      Prioridade no chat
+                    </li>
+                  </ul>
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg"
+                  >
+                    Escolher Destaque
+                  </button>
+                </div>
+
+                {/* Plano Super Destaque */}
+                <div className="border-2 border-amber-500 rounded-2xl p-6 bg-gradient-to-br from-amber-50 to-orange-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-slate-900">Super Destaque</h3>
+                    <span className="px-3 py-1 bg-amber-500 text-white text-sm font-bold rounded-full">
+                      Premium
+                    </span>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-3xl font-extrabold text-amber-600">R$ 59</p>
+                    <p className="text-sm text-slate-500">Por 30 dias</p>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
+                      <strong>Sempre no topo</strong> da categoria
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
+                      <strong>Badge "Super Destaque"</strong> dourado
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
+                      Até 20 fotos
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
+                      Destaque na home por 7 dias
+                    </li>
+                    <li className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
+                      Estatísticas detalhadas
+                    </li>
+                  </ul>
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition shadow-lg"
+                  >
+                    Escolher Super Destaque
+                  </button>
+                </div>
+              </div>
+
+              {/* Add-ons Extras */}
+              <div className="border-t border-slate-200 pt-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-4">
+                  Recursos extras (opcional)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center gap-4 p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 cursor-pointer transition">
+                    <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900">Renovação Automática</p>
+                      <p className="text-sm text-slate-600">Seu anúncio nunca expira</p>
+                    </div>
+                    <span className="font-bold text-blue-600">+R$ 15</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-4 p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 cursor-pointer transition">
+                    <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900">Refresh Diário</p>
+                      <p className="text-sm text-slate-600">Volta ao topo todo dia</p>
+                    </div>
+                    <span className="font-bold text-blue-600">+R$ 20</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Botões finais */}
+              <div className="flex gap-4 mt-8">
+                <button
+                  onClick={() => setStep(3)}
+                  className="flex-1 py-3 px-6 rounded-xl font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition"
+                >
+                  Voltar
                 </button>
               </div>
             </div>

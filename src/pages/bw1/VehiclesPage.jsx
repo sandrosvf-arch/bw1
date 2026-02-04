@@ -340,14 +340,14 @@ export default function VehiclesPage() {
               <button
                 className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 bg-blue-600 text-white shadow-md"
               >
-                <Car size={16} /> Veiculos
+                <Car size={16} /> Veículos
               </button>
 
               <button
                 onClick={() => navigate("/imoveis")}
                 className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-50"
               >
-                <HomeIcon size={16} /> Imoveis
+                <HomeIcon size={16} /> Imóveis
               </button>
             </div>
           </div>
@@ -401,7 +401,7 @@ export default function VehiclesPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Car size={20} className="text-blue-600" />
-                  Filtros para Veiculos
+                  Filtros para Veículos
                 </h2>
                 {hasActiveFilters && (
                   <button

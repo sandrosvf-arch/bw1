@@ -246,12 +246,26 @@ export default function ListingCard({ item, onViewMore }) {
           />
 
         {/* ✅ Tag no topo esquerdo */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
           <span
             className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
           >
             {tag}
           </span>
+          
+          {/* Badge de Destaque */}
+          {item.badge === "destaque" && (
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-blue-600 text-white shadow-lg border-2 border-white">
+              ⭐ DESTAQUE
+            </span>
+          )}
+          
+          {/* Badge de Super Destaque */}
+          {item.badge === "super-destaque" && (
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg border-2 border-white animate-pulse">
+              ⭐ SUPER DESTAQUE
+            </span>
+          )}
         </div>
 
         {/* Heart */}

@@ -331,13 +331,13 @@ export default function PropertiesPage() {
                 onClick={() => navigate("/veiculos")}
                 className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-50"
               >
-                <Car size={16} /> Veiculos
+                <Car size={16} /> Veículos
               </button>
 
               <button
                 className="px-6 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 bg-emerald-600 text-white shadow-md"
               >
-                <HomeIcon size={16} /> Imoveis
+                <HomeIcon size={16} /> Imóveis
               </button>
             </div>
           </div>
@@ -390,7 +390,7 @@ export default function PropertiesPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <HomeIcon size={20} className="text-emerald-600" />
-                  Filtros para Imoveis
+                  Filtros para Imóveis
                 </h2>
                 {hasActiveFilters && (
                   <button
