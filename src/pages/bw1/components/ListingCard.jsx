@@ -230,7 +230,7 @@ export default function ListingCard({ item, onViewMore }) {
       {/* Image */}
       <Link to={`/anuncio/${item.id}`} className="block">
         <div 
-          className="relative h-64 overflow-hidden cursor-pointer"
+          className="relative h-64 overflow-hidden cursor-pointer rounded-t-3xl"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -246,26 +246,12 @@ export default function ListingCard({ item, onViewMore }) {
           />
 
         {/* ✅ Tag no topo esquerdo */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="absolute top-4 left-4">
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
+            className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
           >
             {tag}
           </span>
-          
-          {/* Badge de Destaque */}
-          {item.badge === "destaque" && (
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-blue-600 text-white shadow-lg border-2 border-white">
-              ⭐ DESTAQUE
-            </span>
-          )}
-          
-          {/* Badge de Super Destaque */}
-          {item.badge === "super-destaque" && (
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg border-2 border-white animate-pulse">
-              ⭐ SUPER DESTAQUE
-            </span>
-          )}
         </div>
 
         {/* Heart */}
@@ -336,6 +322,23 @@ export default function ListingCard({ item, onViewMore }) {
         )}
         </div>
       </Link>
+
+      {/* Badges de Destaque - Fora da imagem, embaixo */}
+      {(item.badge === "destaque" || item.badge === "super-destaque") && (
+        <div className="w-full">
+          {item.badge === "destaque" && (
+            <div className="w-full py-2 px-4 bg-blue-600 text-white text-center text-xs font-bold uppercase tracking-wide">
+              ⭐ DESTAQUE
+            </div>
+          )}
+          
+          {item.badge === "super-destaque" && (
+            <div className="w-full py-2 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center text-xs font-bold uppercase tracking-wide">
+              ⭐ SUPER DESTAQUE
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-6 flex-1 flex flex-col">

@@ -102,7 +102,9 @@ export default function ListingDetailPage() {
   const navigate = useNavigate();
 
   const item = useMemo(() => {
-    return listings.find((l) => String(l.id) === String(id));
+    const found = listings.find((l) => String(l.id) === String(id));
+    console.log('ListingDetailPage - ID:', id, 'Item found:', found);
+    return found;
   }, [id]);
 
   // Scroll to top quando a página carrega ou o id muda
@@ -112,6 +114,8 @@ export default function ListingDetailPage() {
 
   // Detectar quando o botão de contato sai da tela para mostrar barra flutuante
   useEffect(() => {
+    if (!item) return;
+    
     const handleScroll = () => {
       if (contactButtonRef.current) {
         const rect = contactButtonRef.current.getBoundingClientRect();
@@ -130,7 +134,26 @@ export default function ListingDetailPage() {
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const contactButtonRef = useRef(null);
 
-  const images = useMemo(() => (item ? normalizeImages(item) : []), [item]);
+  const images = useMemo(() => {
+    if (!item) return [PLACEHOLDER_IMG];
+    
+    const imgs = [];
+
+    if (Array.isArray(item?.images)) {
+      for (const u of item.images) {
+        if (typeof u === "string" && u.trim()) imgs.push(u.trim());
+      }
+    }
+
+    if (typeof item?.image === "string" && item.image.trim()) {
+      if (!imgs.includes(item.image.trim())) imgs.unshift(item.image.trim());
+    }
+
+    if (imgs.length === 0) imgs.push(PLACEHOLDER_IMG);
+
+    return Array.from(new Set(imgs));
+  }, [item]);
+  
   const [imgIndex, setImgIndex] = useState(0);
   const touchStartXRef = useRef(0);
   const touchStartYRef = useRef(0);
@@ -253,8 +276,9 @@ export default function ListingDetailPage() {
                     <ArrowLeft size={24} />
                   </button>
 
-                  <div
-                    className="rounded-xl px-3 py-2 flex items-center"
+                  <button
+                    onClick={() => navigate("/")}
+                    className="rounded-xl px-3 py-2 flex items-center hover:opacity-80 transition cursor-pointer"
                     style={{
                       backgroundColor: "#ffffff",
                       border: "1px solid #e5e7eb",
@@ -272,7 +296,7 @@ export default function ListingDetailPage() {
                         {BRAND?.name || "BW1"}
                       </span>
                     )}
-                  </div>
+                  </button>
                 </div>
 
                 {/* Right - Ações */}
@@ -586,7 +610,7 @@ export default function ListingDetailPage() {
                       
                       {hasWhats && (
                         <a
-                          href={`https://wa.me/${normalizedWhats}?text=${encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`)}`}
+                          href={`https://wa.me/${waDigits}?text=${encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`)}`}
                           target="_blank"
                           rel="noreferrer"
                           className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
