@@ -872,12 +872,10 @@ export default function ListingDetailPage() {
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="mt-8 lg:mt-12">
-            <Footer brand={BRAND} footer={FOOTER} />
-          </div>
         </main>
+
+        {/* Footer */}
+        <Footer brand={BRAND} footer={FOOTER} />
 
         <BottomNav />
       </AppShell>

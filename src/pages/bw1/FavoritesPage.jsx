@@ -77,7 +77,7 @@ export default function FavoritesPage() {
           </nav>
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-20 pb-28 lg:pb-8 pt-6">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 pt-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900 mb-2">
               Meus Favoritos
@@ -110,10 +110,9 @@ export default function FavoritesPage() {
           ) : (
             <ListingsGrid listings={favoriteListings} />
           )}
-
-          <Footer brand={BRAND} footer={FOOTER} />
         </main>
 
+        <Footer brand={BRAND} footer={FOOTER} />
         <BottomNav />
       </AppShell>
     </div>

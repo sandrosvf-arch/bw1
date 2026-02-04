@@ -99,7 +99,7 @@ export default function SearchPage() {
           />
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20 pb-28 lg:pb-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8">
           <h1 className="text-3xl font-bold text-slate-900 mb-6">
             Buscar anúncios
           </h1>
@@ -248,10 +248,9 @@ export default function SearchPage() {
           </div>
 
           <ListingsGrid listings={filteredListings} />
-
-          <Footer brand={BRAND} footer={FOOTER} />
         </main>
 
+        <Footer brand={BRAND} footer={FOOTER} />
         <BottomNav />
       </AppShell>
     </div>

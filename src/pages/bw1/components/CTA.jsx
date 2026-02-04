@@ -2,7 +2,7 @@ import React from "react";
 
 export default function CTA() {
   return (
-    <div className="mt-12 mb-12 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
+    <div className="mt-12 mb-0 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="text-center md:text-left">
           <h2 className="text-3xl font-bold mb-4">

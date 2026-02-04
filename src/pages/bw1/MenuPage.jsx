@@ -109,7 +109,7 @@ export default function MenuPage() {
           </nav>
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20 pb-28 lg:pb-8 pt-6">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8 pt-6">
           {/* Perfil rápido */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
             <div className="flex items-center gap-4">
@@ -332,10 +332,9 @@ export default function MenuPage() {
             <LogOut size={20} />
             Sair
           </button>
-
-          <Footer brand={BRAND} footer={FOOTER} />
         </main>
 
+        <Footer brand={BRAND} footer={FOOTER} />
         <BottomNav />
       </AppShell>
     </div>

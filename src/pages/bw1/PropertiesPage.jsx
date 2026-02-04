@@ -302,7 +302,7 @@ export default function PropertiesPage() {
           </nav>
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-20 pb-28 lg:pb-8 pt-6">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 pt-6">
           {/* Barra de busca */}
           <div className="mb-6">
             <div className="relative">
@@ -645,9 +645,9 @@ export default function PropertiesPage() {
 
           <ListingsGrid listings={filteredListings} />
           <CTA />
-          <Footer brand={BRAND} footer={FOOTER} />
         </main>
 
+        <Footer brand={BRAND} footer={FOOTER} />
         <BottomNav />
       </AppShell>
     </div>

@@ -154,7 +154,7 @@ export default function MyListingsPage() {
           </nav>
         }
       >
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-20 pb-28 lg:pb-8 pt-6">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8 pt-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
             <div>
@@ -319,10 +319,9 @@ export default function MyListingsPage() {
               ))}
             </div>
           )}
-
-          <Footer brand={BRAND} footer={FOOTER} />
         </main>
 
+        <Footer brand={BRAND} footer={FOOTER} />
         <BottomNav />
       </AppShell>
     </div>
