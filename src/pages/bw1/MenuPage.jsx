@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   User,
   Heart,
@@ -13,6 +14,7 @@ import {
   Home as HomeIcon,
   Package,
   ArrowLeft,
+  LogIn,
 } from "lucide-react";
 
 import BottomNav from "./components/BottomNav";
@@ -61,7 +63,13 @@ const CategoryCard = ({ icon, label, onClick }) => (
 
 export default function MenuPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [logoOk, setLogoOk] = React.useState(true);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
@@ -110,15 +118,39 @@ export default function MenuPage() {
         }
       >
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8 pt-6">
-          {/* Perfil rápido */}
+          {/* Perfil - Foto editável */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                <User size={32} />
+              <div className="relative">
+                {user?.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name}
+                    className="w-16 h-16 rounded-full object-cover border-4 border-white/30"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <button 
+                  onClick={() => {/* TODO: Implementar upload */}}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg hover:bg-blue-50 transition"
+                  title="Alterar foto"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                </button>
               </div>
               <div>
-                <h2 className="text-xl font-bold">Olá, Usuário!</h2>
-                <p className="text-blue-100">usuario@email.com</p>
+                <h2 className="text-xl font-bold">
+                  {user?.name}
+                </h2>
+                <p className="text-blue-100">
+                  {user?.email}
+                </p>
               </div>
             </div>
           </div>
@@ -328,7 +360,10 @@ export default function MenuPage() {
           </div>
 
           {/* Sair */}
-          <button className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition mb-8">
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition mb-8"
+          >
             <LogOut size={20} />
             Sair
           </button>

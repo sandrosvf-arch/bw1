@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Plus, MessageCircle, Menu } from "lucide-react";
+import { Home, Plus, MessageCircle, Menu, User } from "lucide-react";
+import { useAuth } from "../../../contexts/AuthContext";
 
 /**
  * BottomNav (estilo OLX):
@@ -38,6 +39,8 @@ function Item({ to, label, Icon }) {
 }
 
 export default function BottomNav() {
+  const { user, isAuthenticated } = useAuth();
+
   return (
     <div className="fixed left-0 right-0 bottom-0 z-[9998] pointer-events-none">
       {/* Safe area + padding */}
@@ -90,9 +93,21 @@ export default function BottomNav() {
                 title="Conta"
                 aria-label="Conta"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                  U
-                </div>
+                {isAuthenticated && user?.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name}
+                    className="w-6 h-6 rounded-full object-cover border-2 border-blue-500"
+                  />
+                ) : isAuthenticated ? (
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
+                    <User size={14} className="text-slate-300" />
+                  </div>
+                )}
                 <span className="text-[11px] font-semibold leading-none">Conta</span>
               </NavLink>
 

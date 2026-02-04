@@ -688,12 +688,6 @@ export default function ListingDetailPage() {
                         Fique atento com excessos de facilidades e preços abaixo do mercado.
                       </p>
                     </div>
-                    
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                      <p className="text-sm text-slate-700 leading-relaxed">
-                        Se está desapegando, limpe bem não só as mãos, como o produto e deixe-o também bem embrulhado.
-                      </p>
-                    </div>
                   </div>
 
                   <button className="w-full mt-4 py-2.5 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
@@ -879,12 +873,6 @@ export default function ListingDetailPage() {
                   <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
                     <p className="text-sm text-slate-700 leading-relaxed">
                       Fique atento com excessos de facilidades e preços abaixo do mercado.
-                    </p>
-                  </div>
-                  
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-sm text-slate-700 leading-relaxed">
-                      Se está desapegando, limpe bem não só as mãos, como o produto e deixe-o também bem embrulhado.
                     </p>
                   </div>
                 </div>

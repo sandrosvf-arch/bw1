@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, LogIn, User } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../../contexts/AuthContext";
 import NOTIFICATIONS from "../content/notifications";
 
 const COLORS = {
@@ -13,6 +14,7 @@ const COLORS = {
 
 export default function Navbar({ brand, links, cta }) {
   const [logoOk, setLogoOk] = useState(true);
+  const { user, isAuthenticated } = useAuth();
 
   // show/hide on scroll
   const [hidden, setHidden] = useState(false);
@@ -128,21 +130,10 @@ export default function Navbar({ brand, links, cta }) {
               <Bell size={22} className="block" />
               <Badge />
             </Link>
-
-            <Link
-              to="/menu"
-              className="flex items-center gap-2 hover:bg-white/10 px-3 py-2 rounded-lg transition"
-              title="Meu perfil"
-            >
-              <span className="text-sm font-medium">Meus</span>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                U
-              </div>
-            </Link>
           </div>
 
           {/* Mobile */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
             <Link
               to="/notificacoes"
               className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
