@@ -31,12 +31,17 @@ export default function PropertiesPage() {
     dealType: "all",
     minPrice: "",
     maxPrice: "",
+    country: "Brasil",
+    state: "",
     city: "",
-    location: "",
     propertyType: "all",
     minBeds: "",
     minBaths: "",
     minArea: "",
+    minParkingSpaces: "",
+    acceptsPets: "all",
+    furnished: "all",
+    floor: "all",
   });
 
   const filteredListings = useMemo(() => {
@@ -67,22 +72,19 @@ export default function PropertiesPage() {
       return price >= minPrice && price <= maxPrice;
     });
 
-    // Cidade
+    // Localização hierárquica (País -> Estado -> Cidade)
     if (filters.city) {
+      // Se cidade está definida, filtra pela cidade
       result = result.filter((item) =>
         item.location.toLowerCase().includes(filters.city.toLowerCase())
       );
-    }
-
-    // Localização ("Buscando em")
-    if (filters.location) {
-      const loc = filters.location.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.location?.toLowerCase().includes(loc) ||
-          item.city?.toLowerCase().includes(loc)
+    } else if (filters.state) {
+      // Se apenas estado está definido, filtra pelo estado
+      result = result.filter((item) =>
+        item.location.toLowerCase().includes(filters.state.toLowerCase())
       );
     }
+    // Se apenas país (Brasil) está definido, mostra todos (não filtra)
 
     // Tipo de imóvel
     if (filters.propertyType !== "all") {
@@ -121,8 +123,70 @@ export default function PropertiesPage() {
       });
     }
 
+    // Vagas de Garagem
+    if (filters.minParkingSpaces) {
+      result = result.filter((item) => {
+        const parkingValue = item.details?.parkingSpaces
+          ? parseInt(item.details.parkingSpaces)
+          : 0;
+        return parkingValue >= parseInt(filters.minParkingSpaces);
+      });
+    }
+
+    // Aceita Pet
+    if (filters.acceptsPets !== "all") {
+      result = result.filter(
+        (item) =>
+          item.details?.acceptsPets &&
+          item.details.acceptsPets === filters.acceptsPets
+      );
+    }
+
+    // Mobiliado
+    if (filters.furnished !== "all") {
+      result = result.filter(
+        (item) =>
+          item.details?.furnished &&
+          item.details.furnished === filters.furnished
+      );
+    }
+
+    // Andar
+    if (filters.floor !== "all") {
+      result = result.filter(
+        (item) => item.details?.floor && item.details.floor === filters.floor
+      );
+    }
+
+    // Função para calcular score de proximidade
+    const getProximityScore = (item) => {
+      const itemLocation = item.location.toLowerCase();
+      
+      // Se cidade está definida, prioriza matches de cidade
+      if (filters.city) {
+        const searchCity = filters.city.toLowerCase();
+        if (itemLocation === searchCity || itemLocation.startsWith(searchCity + ",")) return 3;
+        if (itemLocation.includes(searchCity)) return 2;
+      }
+      
+      // Se estado está definido, prioriza matches de estado
+      if (filters.state) {
+        const searchState = filters.state.toLowerCase();
+        if (itemLocation.includes(searchState)) return 1;
+      }
+      
+      return 0;
+    };
+
     // Ordenação
-    if (sortBy === "price-asc") {
+    if (sortBy === "relevance") {
+      // Ordenação padrão: prioriza localização próxima
+      result.sort((a, b) => {
+        const scoreA = getProximityScore(a);
+        const scoreB = getProximityScore(b);
+        return scoreB - scoreA;
+      });
+    } else if (sortBy === "price-asc") {
       result.sort((a, b) => {
         const priceA = parseFloat(
           a.price.replace(/[^\d,]/g, "").replace(",", ".")
@@ -162,12 +226,17 @@ export default function PropertiesPage() {
       dealType: "all",
       minPrice: "",
       maxPrice: "",
+      country: "Brasil",
+      state: "",
       city: "",
-      location: "",
       propertyType: "all",
       minBeds: "",
       minBaths: "",
       minArea: "",
+      minParkingSpaces: "",
+      acceptsPets: "all",
+      furnished: "all",
+      floor: "all",
     });
   };
 
@@ -175,12 +244,16 @@ export default function PropertiesPage() {
     filters.dealType !== "all" ||
     filters.minPrice ||
     filters.maxPrice ||
+    filters.state ||
     filters.city ||
-    filters.location ||
     filters.propertyType !== "all" ||
     filters.minBeds ||
     filters.minBaths ||
-    filters.minArea;
+    filters.minArea ||
+    filters.minParkingSpaces ||
+    filters.acceptsPets !== "all" ||
+    filters.furnished !== "all" ||
+    filters.floor !== "all";
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
@@ -330,21 +403,42 @@ export default function PropertiesPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Localização (Buscando em) */}
+                {/* Localização Hierárquica */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     <MapPin size={16} className="inline mr-1" />
-                    Buscando em
+                    Localização
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Paraná"
-                    value={filters.location}
-                    onChange={(e) =>
-                      handleFilterChange("location", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <div className="space-y-2">
+                    {/* País */}
+                    <input
+                      type="text"
+                      placeholder="País"
+                      value={filters.country}
+                      disabled
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-100 cursor-not-allowed"
+                    />
+                    {/* Estado */}
+                    <input
+                      type="text"
+                      placeholder="Estado (Ex: Paraná)"
+                      value={filters.state}
+                      onChange={(e) =>
+                        handleFilterChange("state", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {/* Cidade */}
+                    <input
+                      type="text"
+                      placeholder="Cidade (Ex: Curitiba)"
+                      value={filters.city}
+                      onChange={(e) =>
+                        handleFilterChange("city", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Tipo de Imóvel */}
@@ -364,6 +458,8 @@ export default function PropertiesPage() {
                     <option value="casa">Casas</option>
                     <option value="terreno">Terrenos</option>
                     <option value="comercial">Comerciais</option>
+                    <option value="sitio">Sítios</option>
+                    <option value="fazenda">Fazendas</option>
                   </select>
                 </div>
 
@@ -417,23 +513,6 @@ export default function PropertiesPage() {
                   </div>
                 </div>
 
-                {/* Cidade */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    <MapPin size={16} className="inline mr-1" />
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: São Paulo"
-                    value={filters.city}
-                    onChange={(e) =>
-                      handleFilterChange("city", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
                 {/* Quartos mínimos */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -482,6 +561,83 @@ export default function PropertiesPage() {
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"
                   />
+                </div>
+
+                {/* Vagas mínimas */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Vagas mínimas
+                  </label>
+                  <select
+                    value={filters.minParkingSpaces}
+                    onChange={(e) =>
+                      handleFilterChange("minParkingSpaces", e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="">Qualquer</option>
+                    <option value="1">1+ vaga</option>
+                    <option value="2">2+ vagas</option>
+                    <option value="3">3+ vagas</option>
+                    <option value="4">4+ vagas</option>
+                  </select>
+                </div>
+
+                {/* Aceita Pet */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Aceita Pet
+                  </label>
+                  <select
+                    value={filters.acceptsPets}
+                    onChange={(e) =>
+                      handleFilterChange("acceptsPets", e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="all">Tanto faz</option>
+                    <option value="yes">Sim</option>
+                    <option value="no">Não</option>
+                    <option value="negotiate">A negociar</option>
+                  </select>
+                </div>
+
+                {/* Mobiliado */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Mobiliado
+                  </label>
+                  <select
+                    value={filters.furnished}
+                    onChange={(e) =>
+                      handleFilterChange("furnished", e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="all">Tanto faz</option>
+                    <option value="yes">Sim, mobiliado</option>
+                    <option value="semi">Semi-mobiliado</option>
+                    <option value="no">Não mobiliado</option>
+                  </select>
+                </div>
+
+                {/* Andar */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Andar/Posição
+                  </label>
+                  <select
+                    value={filters.floor}
+                    onChange={(e) => handleFilterChange("floor", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                  >
+                    <option value="all">Qualquer</option>
+                    <option value="terreo">Térreo</option>
+                    <option value="baixo">Baixo (1-5)</option>
+                    <option value="medio">Médio (6-10)</option>
+                    <option value="alto">Alto (11+)</option>
+                    <option value="cobertura">Cobertura</option>
+                  </select>
                 </div>
               </div>
             </div>

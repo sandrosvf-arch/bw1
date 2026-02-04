@@ -11,6 +11,8 @@ import MyListingsPage from "./pages/bw1/MyListingsPage.jsx";
 import CreateListingPage from "./pages/bw1/CreateListingPage.jsx";
 import MenuPage from "./pages/bw1/MenuPage.jsx";
 import FavoritesPage from "./pages/bw1/FavoritesPage.jsx";
+import ChatPage from "./pages/bw1/ChatPage.jsx";
+import ChatConversationPage from "./pages/bw1/ChatConversationPage.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 export default function App() {
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="/criar-anuncio" element={<CreateListingPage />} />
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/favoritos" element={<FavoritesPage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/:conversationId" element={<ChatConversationPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Search, Plus, MessageCircle, Menu } from "lucide-react";
+import { Home, Plus, MessageCircle, Menu } from "lucide-react";
 
 /**
  * BottomNav (estilo OLX):
@@ -59,7 +59,7 @@ export default function BottomNav() {
           >
             <div className="grid grid-cols-5 items-center">
               <Item to="/" label="Início" Icon={Home} />
-              <Item to="/buscar" label="Buscar" Icon={Search} />
+              <Item to="/chat" label="Chat" Icon={MessageCircle} />
 
               {/* Botão central destacado */}
               <NavLink

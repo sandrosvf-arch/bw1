@@ -28,13 +28,23 @@ export default function VehiclesPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [filters, setFilters] = useState({
-    location: "",
+    country: "Brasil",
+    state: "",
+    city: "",
     category: "all",
     dealType: "all",
     minPrice: "",
     maxPrice: "",
     minYear: "",
+    maxYear: "",
+    specificYear: "",
+    minKm: "",
     maxKm: "",
+    fuel: "all",
+    bodyType: "all",
+    transmission: "all",
+    color: "all",
+    doors: "all",
   });
 
   const filteredListings = useMemo(() => {
@@ -49,15 +59,51 @@ export default function VehiclesPage() {
         item.title.toLowerCase().includes(s) ||
         item.location.toLowerCase().includes(s);
 
-      // Localização
-      const matchesLocation =
-        !filters.location ||
-        item.location.toLowerCase().includes(filters.location.toLowerCase());
+      // Localização hierárquica (País -> Estado -> Cidade)
+      let matchesLocation = true;
+      if (filters.city) {
+        // Se cidade está definida, filtra pela cidade
+        const itemLocation = item.location.toLowerCase();
+        const searchCity = filters.city.toLowerCase();
+        matchesLocation = itemLocation.includes(searchCity);
+      } else if (filters.state) {
+        // Se apenas estado está definido, filtra pelo estado
+        const itemLocation = item.location.toLowerCase();
+        const searchState = filters.state.toLowerCase();
+        matchesLocation = itemLocation.includes(searchState);
+      }
+      // Se apenas país (Brasil) está definido, mostra todos (não filtra)
 
       // Categoria de veículo
       const matchesCategory =
         filters.category === "all" ||
+        (item.category && item.category.toLowerCase() === filters.category.toLowerCase()) ||
         item.title.toLowerCase().includes(filters.category.toLowerCase());
+
+      // Combustível
+      const matchesFuel =
+        filters.fuel === "all" ||
+        (item.details?.fuel && item.details.fuel.toLowerCase() === filters.fuel.toLowerCase());
+
+      // Tipo de Carroceria
+      const matchesBodyType =
+        filters.bodyType === "all" ||
+        (item.details?.bodyType && item.details.bodyType.toLowerCase() === filters.bodyType.toLowerCase());
+
+      // Câmbio
+      const matchesTransmission =
+        filters.transmission === "all" ||
+        (item.details?.transmission && item.details.transmission.toLowerCase() === filters.transmission.toLowerCase());
+
+      // Cor
+      const matchesColor =
+        filters.color === "all" ||
+        (item.details?.color && item.details.color.toLowerCase() === filters.color.toLowerCase());
+
+      // Número de Portas
+      const matchesDoors =
+        filters.doors === "all" ||
+        (item.details?.doors && item.details.doors.toString() === filters.doors);
 
       // Tipo de negócio
       const matchesDealType =
@@ -73,17 +119,33 @@ export default function VehiclesPage() {
         !filters.maxPrice || priceValue <= parseFloat(filters.maxPrice);
 
       // Ano
-      const matchesYear =
-        !filters.minYear ||
-        (item.details?.year &&
-          parseInt(item.details.year) >= parseInt(filters.minYear));
+      let matchesYear = true;
+      if (filters.specificYear) {
+        // Se ano específico foi definido, só corresponde a esse ano
+        matchesYear = item.details?.year && 
+          parseInt(item.details.year) === parseInt(filters.specificYear);
+      } else {
+        // Caso contrário, usa o range de anos
+        const matchesMinYear =
+          !filters.minYear ||
+          (item.details?.year &&
+            parseInt(item.details.year) >= parseInt(filters.minYear));
+        const matchesMaxYear =
+          !filters.maxYear ||
+          (item.details?.year &&
+            parseInt(item.details.year) <= parseInt(filters.maxYear));
+        matchesYear = matchesMinYear && matchesMaxYear;
+      }
 
       // KM
       const kmValue = item.details?.km
         ? parseInt(item.details.km.replace(/\D/g, ""))
         : 999999;
-      const matchesKm =
+      const matchesMinKm =
+        !filters.minKm || kmValue >= parseInt(filters.minKm);
+      const matchesMaxKm =
         !filters.maxKm || kmValue <= parseInt(filters.maxKm);
+      const matchesKm = matchesMinKm && matchesMaxKm;
 
       return (
         matchesSearch &&
@@ -93,12 +155,44 @@ export default function VehiclesPage() {
         matchesMinPrice &&
         matchesMaxPrice &&
         matchesYear &&
-        matchesKm
+        matchesKm &&
+        matchesFuel &&
+        matchesBodyType &&
+        matchesTransmission &&
+        matchesColor &&
+        matchesDoors
       );
     });
 
+    // Função para calcular score de proximidade
+    const getProximityScore = (item) => {
+      const itemLocation = item.location.toLowerCase();
+      
+      // Se cidade está definida, prioriza matches de cidade
+      if (filters.city) {
+        const searchCity = filters.city.toLowerCase();
+        if (itemLocation === searchCity || itemLocation.startsWith(searchCity + ",")) return 3;
+        if (itemLocation.includes(searchCity)) return 2;
+      }
+      
+      // Se estado está definido, prioriza matches de estado
+      if (filters.state) {
+        const searchState = filters.state.toLowerCase();
+        if (itemLocation.includes(searchState)) return 1;
+      }
+      
+      return 0;
+    };
+
     // Ordenação
-    if (sortBy === "price-asc") {
+    if (sortBy === "relevance") {
+      // Ordenação padrão: prioriza localização próxima
+      result.sort((a, b) => {
+        const scoreA = getProximityScore(a);
+        const scoreB = getProximityScore(b);
+        return scoreB - scoreA;
+      });
+    } else if (sortBy === "price-asc") {
       result.sort((a, b) => {
         const priceA = parseFloat(a.price.replace(/[^\d,]/g, "").replace(",", "."));
         const priceB = parseFloat(b.price.replace(/[^\d,]/g, "").replace(",", "."));
@@ -133,24 +227,43 @@ export default function VehiclesPage() {
 
   const clearFilters = () => {
     setFilters({
-      location: "",
+      country: "Brasil",
+      state: "",
+      city: "",
       category: "all",
       dealType: "all",
       minPrice: "",
       maxPrice: "",
       minYear: "",
+      maxYear: "",
+      specificYear: "",
+      minKm: "",
       maxKm: "",
+      fuel: "all",
+      bodyType: "all",
+      transmission: "all",
+      color: "all",
+      doors: "all",
     });
   };
 
   const hasActiveFilters =
-    filters.location ||
+    filters.state ||
+    filters.city ||
     filters.category !== "all" ||
     filters.dealType !== "all" ||
     filters.minPrice ||
     filters.maxPrice ||
     filters.minYear ||
-    filters.maxKm;
+    filters.maxYear ||
+    filters.specificYear ||
+    filters.minKm ||
+    filters.maxKm ||
+    filters.fuel !== "all" ||
+    filters.bodyType !== "all" ||
+    filters.transmission !== "all" ||
+    filters.color !== "all" ||
+    filters.doors !== "all";
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
@@ -301,21 +414,42 @@ export default function VehiclesPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Localização (Buscando em) */}
+                {/* Localização Hierárquica */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     <MapPin size={16} className="inline mr-1" />
-                    Buscando em
+                    Localização
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Paraná"
-                    value={filters.location}
-                    onChange={(e) =>
-                      handleFilterChange("location", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="space-y-2">
+                    {/* País */}
+                    <input
+                      type="text"
+                      placeholder="País"
+                      value={filters.country}
+                      disabled
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-100 cursor-not-allowed"
+                    />
+                    {/* Estado */}
+                    <input
+                      type="text"
+                      placeholder="Estado (Ex: Paraná)"
+                      value={filters.state}
+                      onChange={(e) =>
+                        handleFilterChange("state", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    {/* Cidade */}
+                    <input
+                      type="text"
+                      placeholder="Cidade (Ex: Curitiba)"
+                      value={filters.city}
+                      onChange={(e) =>
+                        handleFilterChange("city", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
 
                 {/* Categoria */}
@@ -330,12 +464,12 @@ export default function VehiclesPage() {
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
-                    <option value="all">Carros, vans e utilitários</option>
-                    <option value="carro">Carros</option>
-                    <option value="van">Vans</option>
-                    <option value="utilitário">Utilitários</option>
-                    <option value="suv">SUVs</option>
-                    <option value="pickup">Picapes</option>
+                    <option value="all">Todos os veículos</option>
+                    <option value="carro">Carro</option>
+                    <option value="moto">Moto</option>
+                    <option value="caminhao">Caminhão</option>
+                    <option value="van">Van</option>
+                    <option value="pickup">Pickup</option>
                   </select>
                 </div>
 
@@ -389,36 +523,183 @@ export default function VehiclesPage() {
                   </div>
                 </div>
 
-                {/* Ano mínimo */}
+                {/* Ano */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     <Calendar size={16} className="inline mr-1" />
-                    Ano mínimo
+                    Ano
                   </label>
-                  <input
-                    type="number"
-                    placeholder="Ex: 2020"
-                    value={filters.minYear}
-                    onChange={(e) =>
-                      handleFilterChange("minYear", e.target.value)
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="De"
+                        value={filters.minYear}
+                        onChange={(e) => {
+                          handleFilterChange("minYear", e.target.value);
+                          if (e.target.value) {
+                            handleFilterChange("specificYear", "");
+                          }
+                        }}
+                        disabled={!!filters.specificYear}
+                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Até"
+                        value={filters.maxYear}
+                        onChange={(e) => {
+                          handleFilterChange("maxYear", e.target.value);
+                          if (e.target.value) {
+                            handleFilterChange("specificYear", "");
+                          }
+                        }}
+                        disabled={!!filters.specificYear}
+                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="Ou ano específico (Ex: 2020)"
+                        value={filters.specificYear}
+                        onChange={(e) => {
+                          handleFilterChange("specificYear", e.target.value);
+                          if (e.target.value) {
+                            handleFilterChange("minYear", "");
+                            handleFilterChange("maxYear", "");
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* KM máxima */}
+                {/* KM */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     <Gauge size={16} className="inline mr-1" />
-                    KM máxima
+                    Quilometragem (KM)
                   </label>
-                  <input
-                    type="number"
-                    placeholder="Ex: 50000"
-                    value={filters.maxKm}
-                    onChange={(e) => handleFilterChange("maxKm", e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      placeholder="De"
+                      value={filters.minKm}
+                      onChange={(e) => handleFilterChange("minKm", e.target.value)}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Até"
+                      value={filters.maxKm}
+                      onChange={(e) => handleFilterChange("maxKm", e.target.value)}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Combustível */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Combustível
+                  </label>
+                  <select
+                    value={filters.fuel}
+                    onChange={(e) => handleFilterChange("fuel", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="Flex">Flex</option>
+                    <option value="Gasolina">Gasolina</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="Elétrico">Elétrico</option>
+                    <option value="Híbrido">Híbrido</option>
+                  </select>
+                </div>
+
+                {/* Tipo de Carroceria */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Tipo de Carroceria
+                  </label>
+                  <select
+                    value={filters.bodyType}
+                    onChange={(e) => handleFilterChange("bodyType", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="Hatch">Hatch</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Pickup">Pickup</option>
+                    <option value="Van">Van</option>
+                    <option value="Caminhonete">Caminhonete</option>
+                    <option value="Conversível">Conversível</option>
+                    <option value="Coupé">Coupé</option>
+                    <option value="Minivan">Minivan</option>
+                  </select>
+                </div>
+
+                {/* Câmbio */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Câmbio
+                  </label>
+                  <select
+                    value={filters.transmission}
+                    onChange={(e) => handleFilterChange("transmission", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="Manual">Manual</option>
+                    <option value="Automático">Automático</option>
+                    <option value="Automatizado">Automatizado (CVT)</option>
+                  </select>
+                </div>
+
+                {/* Cor */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Cor
+                  </label>
+                  <select
+                    value={filters.color}
+                    onChange={(e) => handleFilterChange("color", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Todas</option>
+                    <option value="Branco">Branco</option>
+                    <option value="Preto">Preto</option>
+                    <option value="Prata">Prata</option>
+                    <option value="Cinza">Cinza</option>
+                    <option value="Vermelho">Vermelho</option>
+                    <option value="Azul">Azul</option>
+                    <option value="Verde">Verde</option>
+                    <option value="Amarelo">Amarelo</option>
+                    <option value="Bege">Bege</option>
+                    <option value="Marrom">Marrom</option>
+                    <option value="Laranja">Laranja</option>
+                    <option value="Outro">Outro</option>
+                  </select>
+                </div>
+
+                {/* Número de Portas */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Número de Portas
+                  </label>
+                  <select
+                    value={filters.doors}
+                    onChange={(e) => handleFilterChange("doors", e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Todas</option>
+                    <option value="2">2 portas</option>
+                    <option value="4">4 portas</option>
+                    <option value="5">5 portas</option>
+                  </select>
                 </div>
               </div>
             </div>

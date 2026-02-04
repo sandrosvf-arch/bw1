@@ -541,14 +541,58 @@ export default function ListingDetailPage() {
 
                     {/* Botões de ação */}
                     <div className="space-y-2">
+                      <button
+                        ref={contactButtonRef}
+                        onClick={() => {
+                          // Criar ou recuperar conversa
+                          const conversations = JSON.parse(localStorage.getItem('bw1_conversations') || '[]');
+                          
+                          // Verificar se já existe conversa com este anúncio
+                          let conversation = conversations.find(c => c.listingId === item.id);
+                          
+                          if (!conversation) {
+                            // Criar nova conversa
+                            conversation = {
+                              id: Date.now(),
+                              listingId: item.id,
+                              listingTitle: item.title,
+                              listingImage: images[0],
+                              listingPrice: item.price,
+                              userName: 'BW1 Imóveis',
+                              userAvatar: null,
+                              lastMessage: 'Olá! Tenho interesse neste anúncio.',
+                              timestamp: new Date().toISOString(),
+                              unread: 0,
+                              messages: [
+                                {
+                                  id: 1,
+                                  text: 'Olá! Tenho interesse neste anúncio.',
+                                  sender: 'me',
+                                  timestamp: new Date().toISOString()
+                                }
+                              ]
+                            };
+                            conversations.unshift(conversation);
+                            localStorage.setItem('bw1_conversations', JSON.stringify(conversations));
+                          }
+                          
+                          navigate(`/chat/${conversation.id}`);
+                        }}
+                        className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle size={20} />
+                        Chat Interno
+                      </button>
+                      
                       {hasWhats && (
                         <a
-                          ref={contactButtonRef}
-                          href={`tel:${rawWhats}`}
-                          className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                          href={`https://wa.me/${normalizedWhats}?text=${encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
                         >
                           <Phone size={20} />
-                          Iniciar conversa
+                          WhatsApp
                         </a>
                       )}
                     </div>

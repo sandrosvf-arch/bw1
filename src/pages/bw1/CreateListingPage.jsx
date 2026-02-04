@@ -25,18 +25,26 @@ export default function CreateListingPage() {
     description: "",
     price: "",
     dealType: "Venda",
-    location: "",
-    city: "",
+    country: "Brasil",
     state: "",
+    city: "",
     whatsapp: "",
     // Veículos
     year: "",
     km: "",
     fuel: "",
+    bodyType: "", // Tipo de carroceria
+    transmission: "", // Câmbio
+    color: "", // Cor
+    doors: "", // Número de portas
     // Imóveis
     beds: "",
     baths: "",
     area: "",
+    parkingSpaces: "", // Vagas de garagem
+    acceptsPets: "", // Aceita pet
+    furnished: "", // Mobiliado
+    floor: "", // Andar
   });
   const [images, setImages] = useState([]);
 
@@ -55,8 +63,22 @@ export default function CreateListingPage() {
   };
 
   const handleSubmit = () => {
+    // Gera o campo location automaticamente baseado na hierarquia
+    const location = formData.city && formData.state 
+      ? `${formData.city}, ${formData.state}`
+      : formData.state || formData.city || "Brasil";
+    
+    // Cria o objeto de anúncio com location gerado
+    const listingData = {
+      ...formData,
+      location, // location gerado automaticamente
+      images,
+    };
+    
+    console.log("Dados do anúncio:", listingData);
+    
     // Aqui você implementaria o envio real para o backend
-    alert("Anúncio criado com sucesso!");
+    alert("Anúncio criado com sucesso!\n\nLocalização: " + location);
     navigate("/meus-anuncios");
   };
 
@@ -214,7 +236,9 @@ export default function CreateListingPage() {
                         <option value="apartamento">Apartamento</option>
                         <option value="casa">Casa</option>
                         <option value="terreno">Terreno</option>
-                        <option value="comercial">Comercial</option>
+                        <option value="comercial">Comércio/Loja</option>
+                        <option value="sitio">Sítio</option>
+                        <option value="fazenda">Fazenda</option>
                       </>
                     )}
                   </select>
@@ -346,6 +370,94 @@ export default function CreateListingPage() {
                         </select>
                       </div>
                     </div>
+                    
+                    {/* Tipo de Carroceria */}
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Tipo de Carroceria
+                      </label>
+                      <select
+                        value={formData.bodyType}
+                        onChange={(e) => handleInputChange("bodyType", e.target.value)}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Selecione (opcional)</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="Hatch">Hatch</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Pickup">Pickup</option>
+                        <option value="Van">Van</option>
+                        <option value="Caminhonete">Caminhonete</option>
+                        <option value="Conversível">Conversível</option>
+                        <option value="Coupé">Coupé</option>
+                        <option value="Minivan">Minivan</option>
+                      </select>
+                    </div>
+                    
+                    {/* Campos adicionais em grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Câmbio */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Câmbio *
+                        </label>
+                        <select
+                          value={formData.transmission}
+                          onChange={(e) => handleInputChange("transmission", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">Selecione...</option>
+                          <option value="Manual">Manual</option>
+                          <option value="Automático">Automático</option>
+                          <option value="Automatizado">Automatizado (CVT)</option>
+                        </select>
+                      </div>
+                      
+                      {/* Cor */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Cor *
+                        </label>
+                        <select
+                          value={formData.color}
+                          onChange={(e) => handleInputChange("color", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required
+                        >
+                          <option value="">Selecione...</option>
+                          <option value="Branco">Branco</option>
+                          <option value="Preto">Preto</option>
+                          <option value="Prata">Prata</option>
+                          <option value="Cinza">Cinza</option>
+                          <option value="Vermelho">Vermelho</option>
+                          <option value="Azul">Azul</option>
+                          <option value="Verde">Verde</option>
+                          <option value="Amarelo">Amarelo</option>
+                          <option value="Bege">Bege</option>
+                          <option value="Marrom">Marrom</option>
+                          <option value="Laranja">Laranja</option>
+                          <option value="Outro">Outro</option>
+                        </select>
+                      </div>
+                      
+                      {/* Número de Portas */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Portas
+                        </label>
+                        <select
+                          value={formData.doors}
+                          onChange={(e) => handleInputChange("doors", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione (opcional)</option>
+                          <option value="2">2 portas</option>
+                          <option value="4">4 portas</option>
+                          <option value="5">5 portas</option>
+                        </select>
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -390,38 +502,129 @@ export default function CreateListingPage() {
                         />
                       </div>
                     </div>
+                    
+                    {/* Novos campos essenciais */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Vagas de Garagem */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Vagas de Garagem
+                        </label>
+                        <select
+                          value={formData.parkingSpaces}
+                          onChange={(e) => handleInputChange("parkingSpaces", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione (opcional)</option>
+                          <option value="0">Sem vaga</option>
+                          <option value="1">1 vaga</option>
+                          <option value="2">2 vagas</option>
+                          <option value="3">3 vagas</option>
+                          <option value="4">4+ vagas</option>
+                        </select>
+                      </div>
+                      
+                      {/* Aceita Pet */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Aceita Pet
+                        </label>
+                        <select
+                          value={formData.acceptsPets}
+                          onChange={(e) => handleInputChange("acceptsPets", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione (opcional)</option>
+                          <option value="yes">Sim</option>
+                          <option value="no">Não</option>
+                          <option value="negotiate">A negociar</option>
+                        </select>
+                      </div>
+                      
+                      {/* Mobiliado */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Mobiliado
+                        </label>
+                        <select
+                          value={formData.furnished}
+                          onChange={(e) => handleInputChange("furnished", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione (opcional)</option>
+                          <option value="yes">Sim, mobiliado</option>
+                          <option value="semi">Semi-mobiliado</option>
+                          <option value="no">Não mobiliado</option>
+                        </select>
+                      </div>
+                      
+                      {/* Andar */}
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                          Andar/Posição
+                        </label>
+                        <select
+                          value={formData.floor}
+                          onChange={(e) => handleInputChange("floor", e.target.value)}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">Selecione (opcional)</option>
+                          <option value="terreo">Térreo</option>
+                          <option value="baixo">Baixo (1-5)</option>
+                          <option value="medio">Médio (6-10)</option>
+                          <option value="alto">Alto (11+)</option>
+                          <option value="cobertura">Cobertura</option>
+                        </select>
+                      </div>
+                    </div>
                   </>
                 )}
 
-                {/* Localização */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      <MapPin size={16} className="inline mr-1" />
-                      Cidade *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
-                      placeholder="São Paulo"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
+                {/* Localização Hierárquica */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    <MapPin size={16} className="inline mr-1" />
+                    Localização *
+                  </label>
+                  <div className="space-y-3">
+                    {/* País */}
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">País</label>
+                      <input
+                        type="text"
+                        value={formData.country}
+                        disabled
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl bg-slate-100 cursor-not-allowed text-slate-600"
+                      />
+                    </div>
+                    {/* Estado */}
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Estado *</label>
+                      <input
+                        type="text"
+                        value={formData.state}
+                        onChange={(e) => handleInputChange("state", e.target.value)}
+                        placeholder="Ex: Paraná, São Paulo, Rio de Janeiro"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    {/* Cidade */}
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Cidade *</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
+                        placeholder="Ex: Curitiba, São Paulo, Rio de Janeiro"
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Estado *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
-                      placeholder="SP"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    💡 A localização completa será: {formData.city ? `${formData.city}, ` : ""}{formData.state || "[Estado]"}
+                  </p>
                 </div>
 
                 {/* WhatsApp */}
