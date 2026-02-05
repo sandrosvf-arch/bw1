@@ -2,6 +2,7 @@ services:
   - type: web
     name: bw1-backend
     env: node
+    rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: node dist/index.js
     envVars:
