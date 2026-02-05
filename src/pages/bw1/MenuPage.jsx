@@ -140,21 +140,21 @@ export default function MenuPage() {
               </div>
             </button>
           ) : (
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
-              <div className="flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-4 mb-8 text-white">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold mb-1">
+                  <h2 className="text-base font-bold mb-1">
                     Faça login para acessar todas as funcionalidades
                   </h2>
-                  <p className="text-blue-100">
+                  <p className="text-sm text-blue-100">
                     Acesse seus favoritos, chat e muito mais
                   </p>
                 </div>
                 <button
                   onClick={() => navigate('/login')}
-                  className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition flex items-center gap-2 whitespace-nowrap"
+                  className="px-4 py-2 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition flex items-center gap-2 whitespace-nowrap text-sm"
                 >
-                  <LogIn size={20} />
+                  <LogIn size={18} />
                   Entrar
                 </button>
               </div>
