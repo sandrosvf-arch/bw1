@@ -198,8 +198,8 @@ export default function MenuPage() {
                   <Car size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Veiculos</h3>
-                  <p className="text-sm text-slate-600">Todos os tipos de veiculos</p>
+                  <h3 className="text-lg font-bold text-slate-900">Veículos</h3>
+                  <p className="text-sm text-slate-600">Todos os tipos de veículos</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -243,19 +243,19 @@ export default function MenuPage() {
                   onClick={() => navigate("/veiculos")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition text-left"
                 >
-                  Caminhoes
+                  Caminhões
                 </button>
                 <button
                   onClick={() => navigate("/veiculos")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition text-left"
                 >
-                  Utilitarios
+                  Utilitários
                 </button>
                 <button
                   onClick={() => navigate("/veiculos")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition text-left"
                 >
-                  Pecas e acessorios
+                  Peças e acessórios
                 </button>
               </div>
             </div>
@@ -266,8 +266,8 @@ export default function MenuPage() {
                   <HomeIcon size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Imoveis</h3>
-                  <p className="text-sm text-slate-600">Todos os tipos de imoveis</p>
+                  <h3 className="text-lg font-bold text-slate-900">Imóveis</h3>
+                  <p className="text-sm text-slate-600">Todos os tipos de imóveis</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -287,13 +287,13 @@ export default function MenuPage() {
                   onClick={() => navigate("/imoveis")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition text-left"
                 >
-                  Chacaras
+                  Chácaras
                 </button>
                 <button
                   onClick={() => navigate("/imoveis")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition text-left"
                 >
-                  Sitios e fazendas
+                  Sítios e fazendas
                 </button>
                 <button
                   onClick={() => navigate("/imoveis")}
@@ -305,13 +305,13 @@ export default function MenuPage() {
                   onClick={() => navigate("/imoveis")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition text-left"
                 >
-                  Comercio
+                  Comércio
                 </button>
                 <button
                   onClick={() => navigate("/imoveis")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition text-left"
                 >
-                  Galpoes
+                  Galpões
                 </button>
                 <button
                   onClick={() => navigate("/imoveis")}
@@ -323,7 +323,7 @@ export default function MenuPage() {
                   onClick={() => navigate("/imoveis")}
                   className="px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition text-left"
                 >
-                  Estudios
+                  Estúdios
                 </button>
               </div>
             </div>
@@ -331,12 +331,12 @@ export default function MenuPage() {
 
           <div className="mb-8">
             <h2 className="text-xl font-bold text-slate-900 mb-4">
-              Configuracoes
+              Configurações
             </h2>
             <div className="space-y-3">
               <MenuItem
                 icon={Settings}
-                label="Configuracoes"
+                label="Configurações"
                 onClick={() => navigate("/configuracoes")}
               />
               <MenuItem
@@ -346,7 +346,7 @@ export default function MenuPage() {
               />
               <MenuItem
                 icon={Shield}
-                label="Privacidade e seguranca"
+                label="Privacidade e segurança"
                 onClick={() => navigate("/privacidade")}
               />
             </div>
