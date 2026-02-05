@@ -118,42 +118,64 @@ export default function MenuPage() {
         }
       >
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 lg:pb-8 pt-6">
-          {/* Perfil - Foto editável */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                {user?.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt={user.name}
-                    className="w-16 h-16 rounded-full object-cover border-4 border-white/30"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <button 
-                  onClick={() => {/* TODO: Implementar upload */}}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg hover:bg-blue-50 transition"
-                  title="Alterar foto"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                    <circle cx="12" cy="13" r="4"/>
-                  </svg>
-                </button>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">
-                  {user?.name}
-                </h2>
-                <p className="text-blue-100">
-                  {user?.email}
-                </p>
+          {/* Perfil - Foto editável (apenas se logado) */}
+          {isAuthenticated ? (
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {user?.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={user.name}
+                      className="w-16 h-16 rounded-full object-cover border-4 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold">
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <button 
+                    onClick={() => {/* TODO: Implementar upload */}}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-lg hover:bg-blue-50 transition"
+                    title="Alterar foto"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </button>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">
+                    {user?.name}
+                  </h2>
+                  <p className="text-blue-100">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-8 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold mb-1">
+                    Faça login para acessar todas as funcionalidades
+                  </h2>
+                  <p className="text-blue-100">
+                    Acesse seus favoritos, chat e muito mais
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition flex items-center gap-2 whitespace-nowrap"
+                >
+                  <LogIn size={20} />
+                  Entrar
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Categorias principais */}
           <div className="mb-8">
@@ -309,28 +331,23 @@ export default function MenuPage() {
               <MenuItem
                 icon={Heart}
                 label="Favoritos"
-                onClick={() => navigate("/favoritos")}
+                onClick={() => isAuthenticated ? navigate("/favoritos") : navigate("/login")}
               />
               <MenuItem
                 icon={Package}
                 label="Meus anúncios"
-                onClick={() => navigate("/meus-anuncios")}
-              />
-              <MenuItem
-                icon={Heart}
-                label="Favoritos"
-                onClick={() => navigate("/favoritos")}
+                onClick={() => isAuthenticated ? navigate("/meus-anuncios") : navigate("/login")}
               />
               <MenuItem
                 icon={Bell}
                 label="Notificações"
-                badge="3"
-                onClick={() => navigate("/notificacoes")}
+                badge={isAuthenticated ? "3" : undefined}
+                onClick={() => isAuthenticated ? navigate("/notificacoes") : navigate("/login")}
               />
               <MenuItem
                 icon={User}
                 label="Perfil"
-                onClick={() => navigate("/perfil")}
+                onClick={() => isAuthenticated ? navigate("/perfil") : navigate("/login")}
               />
             </div>
           </div>
@@ -359,14 +376,16 @@ export default function MenuPage() {
             </div>
           </div>
 
-          {/* Sair */}
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition mb-8"
-          >
-            <LogOut size={20} />
-            Sair
-          </button>
+          {/* Sair (apenas se logado) */}
+          {isAuthenticated && (
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition mb-8"
+            >
+              <LogOut size={20} />
+              Sair
+            </button>
+          )}
         </main>
 
         <Footer brand={BRAND} footer={FOOTER} />

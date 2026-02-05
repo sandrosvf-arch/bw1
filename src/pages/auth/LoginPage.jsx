@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Mail, Lock, Loader } from 'lucide-react';
+import Navbar from '../bw1/components/Navbar';
+import * as BrandMod from '../bw1/content/brand.js';
+import * as NavMod from '../bw1/content/navigation.js';
+
+const BRAND = BrandMod.default ?? BrandMod.BRAND;
+const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -39,23 +45,31 @@ export default function LoginPage() {
     }));
   };
 
+  const handleGoogleLogin = () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    window.location.href = `${API_URL}/auth/google`;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Card */}
-        <div className="bg-white rounded-3xl shadow-xl p-8">
-          {/* Logo/Título */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-              <LogIn size={32} className="text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Navbar brand={BRAND} links={NAVIGATION} hideNotifications={true} />
+      
+      <div className="flex items-center justify-center p-4 pt-32">
+        <div className="max-w-md w-full">
+          {/* Card */}
+          <div className="bg-white rounded-3xl shadow-xl p-8">
+            {/* Logo/Título */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+                <LogIn size={32} className="text-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                Bem-vindo de volta!
+              </h1>
+              <p className="text-slate-600">
+                Entre na sua conta BW1
+              </p>
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-              Bem-vindo de volta!
-            </h1>
-            <p className="text-slate-600">
-              Entre na sua conta BW1
-            </p>
-          </div>
 
           {/* Erro */}
           {error && (
@@ -137,6 +151,7 @@ export default function LoginPage() {
           {/* Google Login */}
           <button
             type="button"
+            onClick={handleGoogleLogin}
             className="w-full py-3 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-xl transition flex items-center justify-center gap-3 font-semibold text-slate-700"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -158,14 +173,8 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-
-        {/* Voltar */}
-        <div className="text-center mt-4">
-          <Link to="/" className="text-slate-600 hover:text-slate-900 text-sm font-medium">
-            ← Voltar para home
-          </Link>
-        </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -12,7 +12,7 @@ const COLORS = {
   logoBorder: "#e5e7eb",
 };
 
-export default function Navbar({ brand, links, cta }) {
+export default function Navbar({ brand, links, cta, hideNotifications = false }) {
   const [logoOk, setLogoOk] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
@@ -120,30 +120,34 @@ export default function Navbar({ brand, links, cta }) {
           </div>
 
           {/* Desktop */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/notificacoes"
-              className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
-              title="Notificações"
-              aria-label="Notificações"
-            >
-              <Bell size={22} className="block" />
-              <Badge />
-            </Link>
-          </div>
+          {!hideNotifications && (
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/notificacoes"
+                className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
+                title="Notificações"
+                aria-label="Notificações"
+              >
+                <Bell size={22} className="block" />
+                <Badge />
+              </Link>
+            </div>
+          )}
 
           {/* Mobile */}
-          <div className="md:hidden flex items-center gap-2">
-            <Link
-              to="/notificacoes"
-              className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
-              title="Notificações"
-              aria-label="Notificações"
-            >
-              <Bell size={24} className="block" />
-              <Badge />
-            </Link>
-          </div>
+          {!hideNotifications && (
+            <div className="md:hidden flex items-center gap-2">
+              <Link
+                to="/notificacoes"
+                className="relative w-10 h-10 flex items-center justify-center rounded-md text-gray-300 hover:text-white hover:bg-white/10 transition"
+                title="Notificações"
+                aria-label="Notificações"
+              >
+                <Bell size={24} className="block" />
+                <Badge />
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>

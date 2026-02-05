@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { supabase } from '../config/supabase';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 
@@ -45,10 +45,12 @@ router.post('/register', async (req, res) => {
     if (error) throw error;
 
     // Gerar token
+    const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
+    const jwtOptions: SignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any };
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret,
+      jwtOptions
     );
 
     res.status(201).json({
@@ -94,10 +96,12 @@ router.post('/login', async (req, res) => {
     }
 
     // Gerar token
+    const jwtSecret = process.env.JWT_SECRET || 'default-secret-key';
+    const jwtOptions: SignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any };
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret,
+      jwtOptions
     );
 
     res.json({

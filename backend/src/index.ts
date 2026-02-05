@@ -2,7 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import passport from './config/passport';
 import authRoutes from './routes/auth.routes';
+import googleAuthRoutes from './routes/google-auth.routes';
 import listingsRoutes from './routes/listings.routes';
 import chatRoutes from './routes/chat.routes';
 import usersRoutes from './routes/users.routes';
@@ -40,6 +42,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(passport.initialize());
 
 // Health check
 app.get('/health', (req, res) => {
@@ -48,6 +51,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/auth', googleAuthRoutes);
 app.use('/api/listings', listingsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', usersRoutes);
