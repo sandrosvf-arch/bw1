@@ -82,7 +82,7 @@ export default function BottomNav() {
                 <span className="text-[11px] font-semibold leading-none">Chat</span>
                 {unreadMessages > 0 && (
                   <span
-                    style={{ top: -2, right: 8 }}
+                    style={{ top: -2, right: 12 }}
                     className="absolute min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-slate-900 pointer-events-none"
                   >
                     {unreadMessages > 99 ? "99+" : unreadMessages}
