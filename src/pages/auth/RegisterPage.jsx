@@ -66,7 +66,10 @@ export default function RegisterPage() {
   };
 
   const handleGoogleRegister = () => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const isDev = import.meta.env.DEV;
+    const API_URL = isDev 
+      ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
+      : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
     window.location.href = `${API_URL}/auth/google`;
   };
 
