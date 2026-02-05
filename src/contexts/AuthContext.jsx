@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('bw1_token');
     
     if (!token) {
+      setUser(null);
+      setIsAuthenticated(false);
       setLoading(false);
       return;
     }
@@ -36,7 +38,11 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Auth check failed:', error);
-      logout();
+      // Limpar estado sem chamar logout para evitar loop
+      api.setToken(null);
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('bw1_token');
     } finally {
       setLoading(false);
     }

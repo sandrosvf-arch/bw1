@@ -66,9 +66,10 @@ export default function MenuPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const [logoOk, setLogoOk] = React.useState(true);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logout();
-    navigate('/');
+    // Força atualização da página após logout
+    window.location.href = '/';
   };
 
   return (
