@@ -40,6 +40,9 @@ function Item({ to, label, Icon }) {
 
 export default function BottomNav() {
   const { user, isAuthenticated } = useAuth();
+  
+  // TODO: Substituir por contador real de mensagens não lidas
+  const unreadMessages = 2;
 
   return (
     <div className="fixed left-0 right-0 bottom-0 z-[9998] pointer-events-none">
@@ -62,7 +65,30 @@ export default function BottomNav() {
           >
             <div className="grid grid-cols-5 items-center">
               <Item to="/" label="Início" Icon={Home} />
-              <Item to="/chat" label="Chat" Icon={MessageCircle} />
+              
+              {/* Chat com contador */}
+              <NavLink
+                to="/chat"
+                className={({ isActive }) =>
+                  [
+                    "relative flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
+                    isActive ? "text-white" : "text-slate-300 hover:text-white",
+                  ].join(" ")
+                }
+                title="Chat"
+                aria-label="Chat"
+              >
+                <MessageCircle size={22} />
+                <span className="text-[11px] font-semibold leading-none">Chat</span>
+                {unreadMessages > 0 && (
+                  <span
+                    style={{ top: 4, right: 4 }}
+                    className="absolute min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-slate-900 pointer-events-none"
+                  >
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
+              </NavLink>
 
               {/* Botão central destacado */}
               <NavLink
