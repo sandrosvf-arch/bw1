@@ -12,6 +12,7 @@ import SearchPage from "./pages/bw1/SearchPage.jsx";
 import MyListingsPage from "./pages/bw1/MyListingsPage.jsx";
 import CreateListingPage from "./pages/bw1/CreateListingPage.jsx";
 import MenuPage from "./pages/bw1/MenuPage.jsx";
+import AccountPage from "./pages/bw1/AccountPage.jsx";
 import FavoritesPage from "./pages/bw1/FavoritesPage.jsx";
 import ChatPage from "./pages/bw1/ChatPage.jsx";
 import ChatConversationPage from "./pages/bw1/ChatConversationPage.jsx";
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/meus-anuncios" element={<ProtectedRoute><MyListingsPage /></ProtectedRoute>} />
         <Route path="/criar-anuncio" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
         <Route path="/menu" element={<MenuPage />} />
+        <Route path="/conta" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
         <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatConversationPage /></ProtectedRoute>} />

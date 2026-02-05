@@ -83,7 +83,7 @@ export default function BottomNav() {
               </NavLink>
 
               <NavLink
-                to="/meus-anuncios"
+                to="/conta"
                 className={({ isActive }) =>
                   [
                     "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
