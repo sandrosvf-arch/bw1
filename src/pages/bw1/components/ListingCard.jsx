@@ -240,8 +240,8 @@ export default function ListingCard({ item, onViewMore }) {
 
   const currentImg = images[imgIndex] || PLACEHOLDER_IMG;
 
-  const createdAtLabel = item?.createdAt
-    ? `Publicado em ${formatDateBR(item.createdAt)}`
+  const createdAtLabel = item?.created_at
+    ? `Publicado em ${formatDateBR(item.created_at)}`
     : "";
 
   // Venda/Aluguel

@@ -310,8 +310,8 @@ export default function ListingDetailPage() {
   const isVenda = String(tag).toLowerCase().includes("venda");
   const tagClass = isVenda ? "bg-emerald-500" : "bg-blue-500";
 
-  const createdAtLabel = item?.createdAt
-    ? `Publicado em ${formatDateBR(item.createdAt)}`
+  const createdAtLabel = item?.created_at
+    ? `Publicado em ${formatDateBR(item.created_at)}`
     : "";
 
   return (
