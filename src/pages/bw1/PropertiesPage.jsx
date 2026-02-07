@@ -20,6 +20,34 @@ const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
+// Helper para buscar em location (suporta string ou objeto)
+function searchInLocation(location, searchTerm) {
+  if (!location || !searchTerm) return false;
+  const term = searchTerm.toLowerCase();
+  
+  if (typeof location === 'string') {
+    return location.toLowerCase().includes(term);
+  }
+  
+  if (typeof location === 'object') {
+    const city = (location.city || '').toLowerCase();
+    const state = (location.state || '').toLowerCase();
+    const neighborhood = (location.neighborhood || '').toLowerCase();
+    return city.includes(term) || state.includes(term) || neighborhood.includes(term);
+  }
+  
+  return false;
+}
+
+// Helper para converter preço em número
+function parsePrice(price) {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') {
+    return parseFloat(price.replace(/[^\d,]/g, "").replace(",", "."));
+  }
+  return 0;
+}
+
 export default function PropertiesPage() {
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
@@ -71,7 +99,7 @@ export default function PropertiesPage() {
       result = result.filter(
         (item) =>
           item.title.toLowerCase().includes(s) ||
-          item.location.toLowerCase().includes(s)
+          searchInLocation(item.location, s)
       );
     }
 
@@ -84,9 +112,7 @@ export default function PropertiesPage() {
     const minPrice = parseFloat(filters.minPrice) || 0;
     const maxPrice = parseFloat(filters.maxPrice) || Infinity;
     result = result.filter((item) => {
-      const price = parseFloat(
-        item.price.replace(/[^\d,]/g, "").replace(",", ".")
-      );
+      const price = parsePrice(item.price);
       return price >= minPrice && price <= maxPrice;
     });
 
@@ -94,12 +120,12 @@ export default function PropertiesPage() {
     if (filters.city) {
       // Se cidade está definida, filtra pela cidade
       result = result.filter((item) =>
-        item.location.toLowerCase().includes(filters.city.toLowerCase())
+        searchInLocation(item.location, filters.city)
       );
     } else if (filters.state) {
       // Se apenas estado está definido, filtra pelo estado
       result = result.filter((item) =>
-        item.location.toLowerCase().includes(filters.state.toLowerCase())
+        searchInLocation(item.location, filters.state)
       );
     }
     // Se apenas país (Brasil) está definido, mostra todos (não filtra)

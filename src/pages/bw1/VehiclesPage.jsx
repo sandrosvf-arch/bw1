@@ -20,6 +20,34 @@ const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
+// Helper para buscar em location (suporta string ou objeto)
+function searchInLocation(location, searchTerm) {
+  if (!location || !searchTerm) return false;
+  const term = searchTerm.toLowerCase();
+  
+  if (typeof location === 'string') {
+    return location.toLowerCase().includes(term);
+  }
+  
+  if (typeof location === 'object') {
+    const city = (location.city || '').toLowerCase();
+    const state = (location.state || '').toLowerCase();
+    const neighborhood = (location.neighborhood || '').toLowerCase();
+    return city.includes(term) || state.includes(term) || neighborhood.includes(term);
+  }
+  
+  return false;
+}
+
+// Helper para converter preço em número
+function parsePrice(price) {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') {
+    return parseFloat(price.replace(/[^\d,]/g, "").replace(",", "."));
+  }
+  return 0;
+}
+
 export default function VehiclesPage() {
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
@@ -75,20 +103,16 @@ export default function VehiclesPage() {
       const matchesSearch =
         !s ||
         item.title.toLowerCase().includes(s) ||
-        item.location.toLowerCase().includes(s);
+        searchInLocation(item.location, s);
 
       // Localização hierárquica (País -> Estado -> Cidade)
       let matchesLocation = true;
       if (filters.city) {
         // Se cidade está definida, filtra pela cidade
-        const itemLocation = item.location.toLowerCase();
-        const searchCity = filters.city.toLowerCase();
-        matchesLocation = itemLocation.includes(searchCity);
+        matchesLocation = searchInLocation(item.location, filters.city);
       } else if (filters.state) {
         // Se apenas estado está definido, filtra pelo estado
-        const itemLocation = item.location.toLowerCase();
-        const searchState = filters.state.toLowerCase();
-        matchesLocation = itemLocation.includes(searchState);
+        matchesLocation = searchInLocation(item.location, filters.state);
       }
       // Se apenas país (Brasil) está definido, mostra todos (não filtra)
 
@@ -128,9 +152,7 @@ export default function VehiclesPage() {
         filters.dealType === "all" || item.tag === filters.dealType;
 
       // Preço
-      const priceValue = parseFloat(
-        item.price.replace(/[^\d,]/g, "").replace(",", ".")
-      );
+      const priceValue = parsePrice(item.price);
       const matchesMinPrice =
         !filters.minPrice || priceValue >= parseFloat(filters.minPrice);
       const matchesMaxPrice =

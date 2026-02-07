@@ -38,7 +38,7 @@ export default function SearchPage() {
       result = result.filter(
         (item) =>
           item.title.toLowerCase().includes(term) ||
-          item.location.toLowerCase().includes(term)
+          searchInLocation(item.location, term)
       );
     }
 
@@ -51,16 +51,14 @@ export default function SearchPage() {
     const minPrice = parseFloat(filters.minPrice) || 0;
     const maxPrice = parseFloat(filters.maxPrice) || Infinity;
     result = result.filter((item) => {
-      const price = parseFloat(
-        item.price.replace(/[^\d,]/g, "").replace(",", ".")
-      );
+      const price = parsePrice(item.price);
       return price >= minPrice && price <= maxPrice;
     });
 
     // Localização
     if (filters.location) {
       result = result.filter((item) =>
-        item.location.toLowerCase().includes(filters.location.toLowerCase())
+        searchInLocation(item.location, filters.location)
       );
     }
 
