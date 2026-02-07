@@ -21,7 +21,7 @@ import {
   Flag,
 } from "lucide-react";
 
-import listings from "./data/listings.js";
+import api from "../../services/api";
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as FooterMod from "./content/footer.js";
@@ -97,15 +97,60 @@ function formatDateBR(value) {
   }).format(d);
 }
 
+function formatLocation(location) {
+  if (!location) return "—";
+  
+  if (typeof location === "string") return location;
+  
+  if (typeof location === "object" && location !== null) {
+    const parts = [];
+    if (location.neighborhood) parts.push(location.neighborhood);
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    return parts.length > 0 ? parts.join(", ") : "Localização não informada";
+  }
+  
+  return String(location);
+}
+
+function formatPrice(price) {
+  if (!price) return "—";
+  
+  if (typeof price === "string" && price.includes("R$")) return price;
+  
+  const num = typeof price === "number" ? price : parseFloat(price);
+  if (isNaN(num)) return price;
+  
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(num);
+}
+
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const item = useMemo(() => {
-    const found = listings.find((l) => String(l.id) === String(id));
-    console.log('ListingDetailPage - ID:', id, 'Item found:', found);
-    return found;
+  useEffect(() => {
+    loadListing();
   }, [id]);
+
+  const loadListing = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getListing(id);
+      setItem(response.listing);
+    } catch (error) {
+      console.error('Erro ao carregar anúncio:', error);
+      setItem(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Scroll to top quando a página carrega ou o id muda
   useEffect(() => {
@@ -222,6 +267,16 @@ export default function ListingDetailPage() {
     setImgIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600">Carregando anúncio...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!item) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -246,7 +301,7 @@ export default function ListingDetailPage() {
   const hasWhats = Boolean(waDigits);
 
   const waMsg = encodeURIComponent(
-    `Olá! Vi seu anúncio na BW1 e tenho interesse em: ${item.title} (${item.price}) - ${item.location}.`
+    `Olá! Vi seu anúncio na BW1 e tenho interesse em: ${item.title} (${formatPrice(item.price)}) - ${formatLocation(item.location)}.`
   );
   const waLink = hasWhats ? `https://wa.me/${waDigits}?text=${waMsg}` : "#";
 
@@ -455,7 +510,7 @@ export default function ListingDetailPage() {
                     <MapPin size={20} className="text-blue-500 mt-1" />
                     <div className="flex-1">
                       <p className="text-base font-semibold text-slate-900 mb-1">
-                        {item.location}
+                        {formatLocation(item.location)}
                       </p>
                       <p className="text-sm text-slate-500">
                         Veja a localização exata do imóvel/veículo
@@ -464,7 +519,7 @@ export default function ListingDetailPage() {
                   </div>
                   
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatLocation(item.location))}`}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
@@ -481,20 +536,20 @@ export default function ListingDetailPage() {
                   </h2>
 
                   <div className="grid grid-cols-3 gap-4">
-                    {item.type === "vehicle" ? (
+                    {item.category === "vehicle" ? (
                       <>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                           <Calendar size={24} className="text-blue-500 mb-2" />
                           <span className="text-xs text-slate-500 mb-1">Ano</span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.year}
+                            {item.details?.year}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                           <Gauge size={24} className="text-blue-500 mb-2" />
                           <span className="text-xs text-slate-500 mb-1">KM</span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.km}
+                            {item.details?.km}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -505,7 +560,7 @@ export default function ListingDetailPage() {
                             Combustível
                           </span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.fuel}
+                            {item.details?.fuel}
                           </span>
                         </div>
                       </>
@@ -515,7 +570,7 @@ export default function ListingDetailPage() {
                           <Bed size={24} className="text-blue-500 mb-2" />
                           <span className="text-xs text-slate-500 mb-1">Quartos</span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.beds}
+                            {item.details?.bedrooms || item.details?.beds || 0}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -524,7 +579,7 @@ export default function ListingDetailPage() {
                             Banheiros
                           </span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.baths}
+                            {item.details?.bathrooms || item.details?.baths || 0}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -533,7 +588,7 @@ export default function ListingDetailPage() {
                           </div>
                           <span className="text-xs text-slate-500 mb-1">Área</span>
                           <span className="text-sm font-bold text-slate-900">
-                            {item.details.area}
+                            {item.details?.area}
                           </span>
                         </div>
                       </>
@@ -548,7 +603,7 @@ export default function ListingDetailPage() {
                   {/* Preço e título */}
                   <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
                     <p className="text-2xl lg:text-3xl font-extrabold text-slate-900 mb-2">
-                      {item.price}
+                      {formatPrice(item.price)}
                     </p>
                     <h1 className="text-lg lg:text-xl font-bold text-slate-900 mb-2 lg:mb-3">
                       {item.title}
@@ -556,7 +611,7 @@ export default function ListingDetailPage() {
 
                     <div className="flex items-center text-slate-600 mb-2 lg:mb-3">
                       <MapPin size={16} className="mr-1" />
-                      {item.location}
+                      {formatLocation(item.location)}
                     </div>
 
                     {createdAtLabel && (
@@ -708,20 +763,20 @@ export default function ListingDetailPage() {
                 </h2>
 
                 <div className="grid grid-cols-3 gap-4">
-                  {item.type === "vehicle" ? (
+                  {item.category === "vehicle" ? (
                     <>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                         <Calendar size={24} className="text-blue-500 mb-2" />
                         <span className="text-xs text-slate-500 mb-1">Ano</span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.year}
+                          {item.details?.year}
                         </span>
                       </div>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                         <Gauge size={24} className="text-blue-500 mb-2" />
                         <span className="text-xs text-slate-500 mb-1">KM</span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.km}
+                          {item.details?.km}
                         </span>
                       </div>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -732,7 +787,7 @@ export default function ListingDetailPage() {
                           Combustível
                         </span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.fuel}
+                          {item.details?.fuel}
                         </span>
                       </div>
                     </>
@@ -742,7 +797,7 @@ export default function ListingDetailPage() {
                         <Bed size={24} className="text-blue-500 mb-2" />
                         <span className="text-xs text-slate-500 mb-1">Quartos</span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.beds}
+                          {item.details?.bedrooms || item.details?.beds || 0}
                         </span>
                       </div>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -751,7 +806,7 @@ export default function ListingDetailPage() {
                           Banheiros
                         </span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.baths}
+                          {item.details?.bathrooms || item.details?.baths || 0}
                         </span>
                       </div>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
@@ -760,7 +815,7 @@ export default function ListingDetailPage() {
                         </div>
                         <span className="text-xs text-slate-500 mb-1">Área</span>
                         <span className="text-sm font-bold text-slate-900">
-                          {item.details.area}
+                          {item.details?.area}
                         </span>
                       </div>
                     </>
@@ -786,7 +841,7 @@ export default function ListingDetailPage() {
                   <MapPin size={20} className="text-blue-500 mt-1" />
                   <div className="flex-1">
                     <p className="text-base font-semibold text-slate-900 mb-1">
-                      {item.location}
+                      {formatLocation(item.location)}
                     </p>
                     <p className="text-sm text-slate-500">
                       Veja a localização exata do imóvel/veículo
@@ -795,7 +850,7 @@ export default function ListingDetailPage() {
                 </div>
                 
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatLocation(item.location))}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
