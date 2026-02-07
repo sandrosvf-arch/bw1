@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Car, Calendar, DollarSign, MapPin, Gauge, Filter, ArrowUpDown, Home as HomeIcon, Search, ArrowLeft } from "lucide-react";
+import api from "../../services/api";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -14,8 +15,6 @@ import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
 
-import listings from "./data/listings.js";
-
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
@@ -27,6 +26,8 @@ export default function VehiclesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     country: "Brasil",
     state: "",
@@ -46,6 +47,23 @@ export default function VehiclesPage() {
     color: "all",
     doors: "all",
   });
+
+  useEffect(() => {
+    loadListings();
+  }, []);
+
+  const loadListings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getListings({ category: 'vehicle' });
+      setListings(response.listings || []);
+    } catch (error) {
+      console.error('Erro ao carregar veículos:', error);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {

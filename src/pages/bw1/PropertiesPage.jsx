@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft } from "lucide-react";
+import api from "../../services/api";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -14,8 +15,6 @@ import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
 
-import listings from "./data/listings.js";
-
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
@@ -27,6 +26,8 @@ export default function PropertiesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     dealType: "all",
     minPrice: "",
@@ -44,8 +45,25 @@ export default function PropertiesPage() {
     floor: "all",
   });
 
+  useEffect(() => {
+    loadListings();
+  }, []);
+
+  const loadListings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getListings({ category: 'property' });
+      setListings(response.listings || []);
+    } catch (error) {
+      console.error('Erro ao carregar imóveis:', error);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredListings = useMemo(() => {
-    let result = listings.filter((item) => item.type === "property");
+    let result = listings.filter((item) => item.category === "property");
 
     // Busca
     if (searchTerm) {

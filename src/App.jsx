@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import keepAliveService from "./services/keepAlive.js";
 
 import BW1Platform from "./pages/bw1/BW1Platform.jsx";
 import NotificationsPage from "./pages/bw1/NotificationsPage.jsx";
@@ -22,6 +23,15 @@ import OAuthCallbackPage from "./pages/auth/OAuthCallbackPage.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 export default function App() {
+  // Iniciar serviço de keep-alive para manter o backend ativo
+  useEffect(() => {
+    keepAliveService.start();
+    
+    return () => {
+      keepAliveService.stop();
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <ScrollToTop />

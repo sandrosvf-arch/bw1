@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import api from "../../services/api";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -13,31 +14,48 @@ import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
-
-import listings from "./data/listings.js";
+import * as ListingsMod from "./data/listings.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+const LOCAL_LISTINGS = ListingsMod.default ?? ListingsMod.listings ?? [];
 
 export default function BW1Platform() {
-  const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadListings();
+  }, []);
+
+  const loadListings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getListings();
+      setListings(response.listings || []);
+    } catch (error) {
+      console.error('Erro ao carregar anúncios da API, usando dados locais:', error);
+      // Fallback para dados locais se a API falhar
+      setListings(LOCAL_LISTINGS);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredListings = useMemo(() => {
     let filtered = listings.filter((item) => {
-      const matchesTab =
-        activeTab === "all" ||
-        item.type === (activeTab === "vehicles" ? "vehicle" : "property");
-
       const s = searchTerm.toLowerCase();
       const matchesSearch =
+        !searchTerm ||
         item.title.toLowerCase().includes(s) ||
-        item.location.toLowerCase().includes(s);
+        (item.location?.city || item.location || '').toLowerCase().includes(s) ||
+        (item.location?.state || '').toLowerCase().includes(s);
 
-      return matchesTab && matchesSearch;
+      return matchesSearch;
     });
 
     if (ordering === "price-asc") {
@@ -55,7 +73,31 @@ export default function BW1Platform() {
     }
 
     return filtered;
-  }, [activeTab, searchTerm, ordering]);
+  }, [searchTerm, ordering, listings]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
+        <AppShell
+          header={
+            <Navbar
+              brand={BRAND}
+              links={NAVIGATION?.links || []}
+              cta={NAVIGATION?.cta}
+            />
+          }
+        >
+          <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
+            <div className="text-center py-12">
+              <p className="text-slate-600">Carregando anúncios...</p>
+            </div>
+          </main>
+        </AppShell>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
@@ -72,7 +114,7 @@ export default function BW1Platform() {
 
         {/* ✅ padding-bottom grande pra não ficar nada escondido atrás da BottomNav */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
-          <Tabs activeTab={activeTab} onChange={setActiveTab} />
+          <Tabs />
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900">Todos os anúncios</h2>
             <select

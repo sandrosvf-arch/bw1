@@ -77,6 +77,43 @@ function formatDateBR(value) {
   }).format(d);
 }
 
+function formatLocation(location) {
+  if (!location) return "—";
+  
+  // Se já é uma string, retorna
+  if (typeof location === "string") return location;
+  
+  // Se é um objeto, formata
+  if (typeof location === "object" && location !== null) {
+    const parts = [];
+    if (location.neighborhood) parts.push(location.neighborhood);
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    return parts.length > 0 ? parts.join(", ") : "Localização não informada";
+  }
+  
+  // Se for qualquer outra coisa, tenta converter para string
+  return String(location);
+}
+
+function formatPrice(price) {
+  if (!price) return "—";
+  
+  // Se já é uma string formatada, retorna
+  if (typeof price === "string" && price.includes("R$")) return price;
+  
+  // Se é número, formata
+  const num = typeof price === "number" ? price : parseFloat(price);
+  if (isNaN(num)) return price;
+  
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(num);
+}
+
 function FlagChip({ text }) {
   if (!text) return null;
   return (
@@ -219,7 +256,7 @@ export default function ListingCard({ item, onViewMore }) {
   const hasWhats = Boolean(waDigits);
 
   const waMsg = encodeURIComponent(
-    `Olá! Vi seu anúncio na BW1 e tenho interesse em: ${item.title} (${item.price}) - ${item.location}.`
+    `Olá! Vi seu anúncio na BW1 e tenho interesse em: ${item.title} (${item.price}) - ${formatLocation(item.location)}.`
   );
   const waLink = hasWhats ? `https://wa.me/${waDigits}?text=${waMsg}` : "#";
 
@@ -345,7 +382,7 @@ export default function ListingCard({ item, onViewMore }) {
         {/* ✅ Preço + chips (tag venda/aluguel + flag extra) */}
         <div className="flex items-center justify-between gap-3">
           <p className="text-slate-900 text-2xl font-extrabold leading-none">
-            {item.price}
+            {formatPrice(item.price)}
           </p>
 
           <div className="flex items-center gap-2">
@@ -360,11 +397,11 @@ export default function ListingCard({ item, onViewMore }) {
           {item.title}
         </h3>
 
-        {/* Cidade + Data */}
+        {/* Cidade + Data - Updated 2026-02-07 */}
         <div className="mt-2 mb-4">
           <div className="flex items-center text-slate-500 text-sm">
             <MapPin size={14} className="mr-1" />
-            {item.location}
+            <span>{formatLocation(item.location)}</span>
           </div>
 
           {createdAtLabel && (
@@ -374,18 +411,18 @@ export default function ListingCard({ item, onViewMore }) {
 
         {/* Features */}
         <div className="grid grid-cols-3 gap-2 py-4 border-t border-slate-100 mb-4">
-          {item.type === "vehicle" ? (
+          {item.category === "vehicle" ? (
             <>
               <div className="text-center">
                 <Calendar size={18} className="mx-auto mb-1 text-blue-500" />
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.year}
+                  {item.details?.year || "—"}
                 </span>
               </div>
               <div className="text-center border-l border-slate-100">
                 <Gauge size={18} className="mx-auto mb-1 text-blue-500" />
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.km}
+                  {item.details?.km ? `${item.details.km} km` : "—"}
                 </span>
               </div>
               <div className="text-center border-l border-slate-100">
@@ -393,7 +430,7 @@ export default function ListingCard({ item, onViewMore }) {
                   F
                 </div>
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.fuel}
+                  {item.details?.fuel || "—"}
                 </span>
               </div>
             </>
@@ -402,13 +439,13 @@ export default function ListingCard({ item, onViewMore }) {
               <div className="text-center">
                 <Bed size={18} className="mx-auto mb-1 text-blue-500" />
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.beds} Quartos
+                  {item.details?.bedrooms || item.details?.beds || 0} Quartos
                 </span>
               </div>
               <div className="text-center border-l border-slate-100">
                 <Bath size={18} className="mx-auto mb-1 text-blue-500" />
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.baths} Banheiros
+                  {item.details?.bathrooms || item.details?.baths || 0} Banheiros
                 </span>
               </div>
               <div className="text-center border-l border-slate-100">
@@ -416,7 +453,7 @@ export default function ListingCard({ item, onViewMore }) {
                   M²
                 </div>
                 <span className="text-xs text-slate-600 font-medium">
-                  {item.details.area}
+                  {item.details?.area || "—"}
                 </span>
               </div>
             </>
