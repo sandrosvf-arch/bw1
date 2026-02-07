@@ -36,7 +36,15 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ listings: data || [], total: count });
+    // Processar dados para garantir que campos JSONB sejam objetos
+    const processedData = (data || []).map(listing => ({
+      ...listing,
+      location: typeof listing.location === 'string' ? JSON.parse(listing.location) : listing.location,
+      details: typeof listing.details === 'string' ? JSON.parse(listing.details) : listing.details,
+      contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
+    }));
+
+    res.json({ listings: processedData, total: count });
   } catch (error) {
     console.error('Get listings error:', error);
     res.status(500).json({ error: 'Failed to get listings' });
@@ -61,7 +69,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Listing not found' });
     }
 
-    res.json({ listing: data });
+    // Processar dados para garantir que campos JSONB sejam objetos
+    const processedListing = {
+      ...data,
+      location: typeof data.location === 'string' ? JSON.parse(data.location) : data.location,
+      details: typeof data.details === 'string' ? JSON.parse(data.details) : data.details,
+      contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
+    };
+
+    res.json({ listing: processedListing });
   } catch (error) {
     console.error('Get listing error:', error);
     res.status(500).json({ error: 'Failed to get listing' });
@@ -108,7 +124,15 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
 
     if (error) throw error;
 
-    res.status(201).json({ listing: data });
+    // Processar dados para garantir que campos JSONB sejam objetos
+    const processedListing = {
+      ...data,
+      location: typeof data.location === 'string' ? JSON.parse(data.location) : data.location,
+      details: typeof data.details === 'string' ? JSON.parse(data.details) : data.details,
+      contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
+    };
+
+    res.status(201).json({ listing: processedListing });
   } catch (error) {
     console.error('Create listing error:', error);
     res.status(500).json({ error: 'Failed to create listing' });
@@ -143,7 +167,15 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
     if (error) throw error;
 
-    res.json({ listing: data });
+    // Processar dados para garantir que campos JSONB sejam objetos
+    const processedListing = {
+      ...data,
+      location: typeof data.location === 'string' ? JSON.parse(data.location) : data.location,
+      details: typeof data.details === 'string' ? JSON.parse(data.details) : data.details,
+      contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
+    };
+
+    res.json({ listing: processedListing });
   } catch (error) {
     console.error('Update listing error:', error);
     res.status(500).json({ error: 'Failed to update listing' });
@@ -191,7 +223,15 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
 
     if (error) throw error;
 
-    res.json({ listings: data || [] });
+    // Processar dados para garantir que campos JSONB sejam objetos
+    const processedData = (data || []).map(listing => ({
+      ...listing,
+      location: typeof listing.location === 'string' ? JSON.parse(listing.location) : listing.location,
+      details: typeof listing.details === 'string' ? JSON.parse(listing.details) : listing.details,
+      contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
+    }));
+
+    res.json({ listings: processedData });
   } catch (error) {
     console.error('Get my listings error:', error);
     res.status(500).json({ error: 'Failed to get listings' });

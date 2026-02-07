@@ -100,8 +100,27 @@ function formatDateBR(value) {
 function formatLocation(location) {
   if (!location) return "—";
   
-  if (typeof location === "string") return location;
+  // Se é uma string JSON, tenta fazer parse
+  if (typeof location === "string") {
+    // Se parece com JSON (começa com {), tenta parsear
+    if (location.trim().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(location);
+        const parts = [];
+        if (parsed.neighborhood) parts.push(parsed.neighborhood);
+        if (parsed.city) parts.push(parsed.city);
+        if (parsed.state) parts.push(parsed.state);
+        return parts.length > 0 ? parts.join(", ") : "Localização não informada";
+      } catch (e) {
+        console.warn("Erro ao parsear location:", e);
+        return location;
+      }
+    }
+    // Se já é uma string formatada, retorna
+    return location;
+  }
   
+  // Se é um objeto, formata
   if (typeof location === "object" && location !== null) {
     const parts = [];
     if (location.neighborhood) parts.push(location.neighborhood);
