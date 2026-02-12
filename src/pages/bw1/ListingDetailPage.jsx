@@ -162,6 +162,9 @@ export default function ListingDetailPage() {
     try {
       setLoading(true);
       const response = await api.getListing(id);
+      console.log('📋 Listing loaded:', response.listing);
+      console.log('🏷️ dealType:', response.listing?.dealType);
+      console.log('🏷️ tag:', response.listing?.tag);
       setItem(response.listing);
     } catch (error) {
       console.error('Erro ao carregar anúncio:', error);
@@ -622,14 +625,14 @@ export default function ListingDetailPage() {
                   {/* Preço e título */}
                   <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
                     {/* Tag de Venda/Aluguel */}
-                    {item.dealType && (
+                    {(item.dealType || item.tag) && (
                       <div className="mb-3">
                         <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase ${
-                          item.dealType === 'Venda' 
+                          (item.dealType || item.tag) === 'Venda' 
                             ? 'bg-blue-100 text-blue-700' 
                             : 'bg-green-100 text-green-700'
                         }`}>
-                          {item.dealType}
+                          {item.dealType || item.tag}
                         </span>
                       </div>
                     )}
