@@ -328,9 +328,10 @@ export default function ListingDetailPage() {
   const waLink = hasWhats ? `https://wa.me/${waDigits}?text=${waMsg}` : "#";
 
   const currentImg = images[imgIndex] || PLACEHOLDER_IMG;
-  const tag = item?.tag || "—";
-  const isVenda = String(tag).toLowerCase().includes("venda");
-  const tagClass = isVenda ? "bg-emerald-500" : "bg-blue-500";
+  const tag = item?.dealType || item?.tag || "—";
+  const tagLower = String(tag).toLowerCase().trim();
+  const isVenda = tagLower === "venda" || tagLower.includes("venda");
+  const tagClass = isVenda ? "bg-green-600" : "bg-blue-600";
 
   const createdAtLabel = item?.created_at
     ? `Publicado em ${formatDateBR(item.created_at)}`
@@ -628,9 +629,9 @@ export default function ListingDetailPage() {
                     {(item.dealType || item.tag) && (
                       <div className="mb-3">
                         <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase ${
-                          (item.dealType || item.tag) === 'Venda' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'bg-green-100 text-green-700'
+                          String(item.dealType || item.tag).toLowerCase().trim() === 'venda' || String(item.dealType || item.tag).toLowerCase().includes('venda')
+                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                            : 'bg-blue-100 text-blue-700 border border-blue-200'
                         }`}>
                           {item.dealType || item.tag}
                         </span>
