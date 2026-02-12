@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, ArrowLeft } from "lucide-react";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -15,72 +17,75 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
-// Mock data - seus anúncios
-const mockMyListings = [
-  {
-    id: 1,
-    title: "Honda Civic 2020 Automático",
-    price: "R$ 95.000",
-    image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=400&q=80",
-    type: "vehicle",
-    status: "active", // active, paused, sold
-    views: 234,
-    contacts: 12,
-    createdAt: "2026-01-15",
-  },
-  {
-    id: 2,
-    title: "Apartamento 3 Quartos - Centro",
-    price: "R$ 450.000",
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80",
-    type: "property",
-    status: "active",
-    views: 567,
-    contacts: 28,
-    createdAt: "2026-01-20",
-  },
-  {
-    id: 3,
-    title: "Moto Yamaha MT-03 2019",
-    price: "R$ 22.000",
-    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=400&q=80",
-    type: "vehicle",
-    status: "paused",
-    views: 89,
-    contacts: 3,
-    createdAt: "2026-01-10",
-  },
-];
-
 export default function MyListingsPage() {
   const navigate = useNavigate();
-  const [listings, setListings] = useState(mockMyListings);
+  const { isAuthenticated } = useAuth();
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, active, paused, sold
   const [showMenu, setShowMenu] = useState(null);
   const [logoOk, setLogoOk] = useState(true);
 
-  const filteredListings = listings.filter((item) => {
-    if (filter === "all") return true;
-    return item.status === filter;
-  });
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    loadMyListings();
+  }, [isAuthenticated]);
 
-  const handleDelete = (id) => {
-    if (confirm("Tem certeza que deseja excluir este anúncio?")) {
-      setListings(listings.filter((item) => item.id !== id));
+  const loadMyListings = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getMyListings();
+      setListings(response.listings || []);
+    } catch (error) {
+      console.error("Erro ao carregar anúncios:", error);
+      alert("Erro ao carregar seus anúncios. Verifique se você está logado.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleToggleStatus = (id) => {
-    setListings(
-      listings.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: item.status === "active" ? "paused" : "active",
-            }
-          : item
-      )
-    );
+  const filteredListings = listings.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "paused") return item.status === "paused" || item.status === "inactive";
+    return item.status === filter;
+  });
+
+  const handleDelete = async (id) => {
+    if (confirm("Tem certeza que deseja excluir este anúncio?")) {
+      try {
+        await api.deleteListing(id);
+        setListings(listings.filter((item) => item.id !== id));
+        alert("Anúncio excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir anúncio. Tente novamente.");
+      }
+    }
+  };
+
+  const handleToggleStatus = async (id) => {
+    const listing = listings.find((item) => item.id === id);
+    const newStatus = listing.status === "active" ? "inactive" : "active";
+    
+    try {
+      await api.updateListing(id, { status: newStatus });
+      setListings(
+        listings.map((item) =>
+          item.id === id ? { ...item, status: newStatus } : item
+        )
+      );
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
+      alert("Erro ao alterar status do anúncio.");
+    }
+  };
+
+  const formatPrice = (price) => {
+    if (typeof price === "string" && price.startsWith("R$")) return price;
+    return `R$ ${Number(price).toLocaleString("pt-BR")}`;
   };
 
   const getStatusBadge = (status) => {
@@ -91,6 +96,7 @@ export default function MyListingsPage() {
             Ativo
           </span>
         );
+      case "inactive":
       case "paused":
         return (
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">
@@ -186,7 +192,7 @@ export default function MyListingsPage() {
               {
                 value: "paused",
                 label: "Pausados",
-                count: listings.filter((l) => l.status === "paused").length,
+                count: listings.filter((l) => l.status === "paused" || l.status === "inactive").length,
               },
               {
                 value: "sold",
@@ -209,7 +215,14 @@ export default function MyListingsPage() {
           </div>
 
           {/* Lista de anúncios */}
-          {filteredListings.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+              <div className="text-6xl mb-4">⏳</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                Carregando seus anúncios...
+              </h3>
+            </div>
+          ) : filteredListings.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
               <div className="text-6xl mb-4">📦</div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">
@@ -235,14 +248,20 @@ export default function MyListingsPage() {
                 >
                   {/* Imagem */}
                   <div
-                    className="w-full sm:w-48 h-48 sm:h-32 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer"
+                    className="w-full sm:w-48 h-48 sm:h-32 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer bg-slate-200"
                     onClick={() => navigate(`/anuncio/${listing.id}`)}
                   >
-                    <img
-                      src={listing.image}
-                      alt={listing.title}
-                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                    />
+                    {listing.images && listing.images.length > 0 ? (
+                      <img
+                        src={listing.images[0]}
+                        alt={listing.title}
+                        className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-4xl">
+                        📷
+                      </div>
+                    )}
                   </div>
 
                   {/* Conteúdo */}
@@ -258,7 +277,7 @@ export default function MyListingsPage() {
                         {getStatusBadge(listing.status)}
                       </div>
                       <p className="text-2xl font-extrabold text-slate-900 mb-3">
-                        {listing.price}
+                        {formatPrice(listing.price)}
                       </p>
                     </div>
 
@@ -266,11 +285,11 @@ export default function MyListingsPage() {
                     <div className="flex items-center gap-6 text-sm text-slate-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Eye size={16} />
-                        <span>{listing.views} visualizações</span>
+                        <span>{listing.views || 0} visualizações</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-lg">💬</span>
-                        <span>{listing.contacts} contatos</span>
+                        <span>{listing.contacts || 0} contatos</span>
                       </div>
                     </div>
 

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, X, MapPin, DollarSign, Image as ImageIcon } from "lucide-react";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -17,7 +19,9 @@ const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [step, setStep] = useState(1); // 1: Categoria, 2: Detalhes, 3: Fotos
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: "", // vehicle ou property
     category: "",
@@ -47,39 +51,250 @@ export default function CreateListingPage() {
     floor: "", // Andar
   });
   const [images, setImages] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [customColor, setCustomColor] = useState('');
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
   };
 
-  const handleImageUpload = (e) => {
+  // Formatação de preço em tempo real
+  const handlePriceChange = (value) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    if (numbers === '') {
+      setFormData({ ...formData, price: '' });
+      return;
+    }
+    
+    // Converte para número e formata
+    const numberValue = parseInt(numbers) / 100;
+    const formatted = numberValue.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+    
+    setFormData({ ...formData, price: formatted });
+  };
+
+  // Converter imagem para base64
+  const convertToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Comprimir imagem para reduzir tamanho
+  const compressImage = (file, maxWidth = 1200, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Redimensionar mantendo proporção
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Converter para base64 com compressão
+          canvas.toBlob(
+            (blob) => {
+              const reader = new FileReader();
+              reader.readAsDataURL(blob);
+              reader.onloadend = () => {
+                resolve(reader.result);
+              };
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map((file) => URL.createObjectURL(file));
-    setImages([...images, ...newImages]);
+    
+    if (files.length === 0) return;
+    
+    if (images.length + files.length > 10) {
+      alert('Você pode adicionar no máximo 10 fotos.');
+      return;
+    }
+    
+    setUploadingImages(true);
+    
+    try {
+      const newImages = [];
+      
+      for (const file of files) {
+        // Verificar tamanho do arquivo (máx 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`A imagem ${file.name} é muito grande. Máximo 5MB por imagem.`);
+          continue;
+        }
+        
+        // Verificar tipo
+        if (!file.type.startsWith('image/')) {
+          alert(`${file.name} não é uma imagem válida.`);
+          continue;
+        }
+        
+        // Comprimir e converter para base64
+        const compressed = await compressImage(file);
+        newImages.push(compressed);
+      }
+      
+      setImages([...images, ...newImages]);
+      
+      if (newImages.length > 0) {
+        alert(`✅ ${newImages.length} foto(s) adicionada(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro ao processar imagens:', error);
+      alert('Erro ao processar as imagens. Tente novamente.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleImageUrlAdd = () => {
+    const url = prompt("Cole a URL da imagem (ex: https://exemplo.com/foto.jpg):");
+    if (url && url.trim()) {
+      setImages([...images, url.trim()]);
+    }
   };
 
   const removeImage = (index) => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    // Gera o campo location automaticamente baseado na hierarquia
-    const location = formData.city && formData.state 
-      ? `${formData.city}, ${formData.state}`
-      : formData.state || formData.city || "Brasil";
-    
-    // Cria o objeto de anúncio com location gerado
-    const listingData = {
-      ...formData,
-      location, // location gerado automaticamente
-      images,
-    };
-    
-    console.log("Dados do anúncio:", listingData);
-    
-    // Aqui você implementaria o envio real para o backend
-    alert("Anúncio criado com sucesso!\n\nLocalização: " + location);
-    navigate("/meus-anuncios");
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+
+      // Verificar autenticação
+      if (!isAuthenticated) {
+        alert("❌ Você precisa estar logado para criar um anúncio.\n\nFaça login ou crie uma conta para continuar.");
+        navigate("/login");
+        return;
+      }
+
+      // Validação básica
+      if (!formData.title || !formData.price || !formData.category) {
+        alert("Por favor, preencha todos os campos obrigatórios (título, preço e categoria).");
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.state || !formData.city) {
+        alert("Por favor, preencha o Estado e a Cidade.");
+        setLoading(false);
+        return;
+      }
+
+      // Validar imagens (aceita URLs http/https e base64)
+      const validImages = images.filter(img => {
+        // Aceita base64 (data:image/...)
+        if (img.startsWith('data:image/')) {
+          return true;
+        }
+        // Aceita URLs http/https válidas
+        return img.startsWith('http://') || img.startsWith('https://');
+      });
+
+      // Monta o objeto location
+      const location = {
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+      };
+
+      // Monta o objeto details dependendo do tipo
+      const details = {};
+      if (formData.type === "vehicle") {
+        if (formData.year) details.year = String(formData.year);
+        if (formData.km) details.km = formData.km;
+        if (formData.fuel) details.fuel = formData.fuel;
+        if (formData.bodyType) details.bodyType = formData.bodyType;
+        if (formData.transmission) details.transmission = formData.transmission;
+        if (formData.color) details.color = formData.color;
+        if (formData.doors) details.doors = formData.doors;
+      } else if (formData.type === "property") {
+        if (formData.beds) details.beds = formData.beds;
+        if (formData.baths) details.baths = formData.baths;
+        if (formData.area) details.area = formData.area;
+        if (formData.parkingSpaces) details.parkingSpaces = formData.parkingSpaces;
+        if (formData.acceptsPets) details.acceptsPets = formData.acceptsPets;
+        if (formData.furnished) details.furnished = formData.furnished;
+        if (formData.floor) details.floor = formData.floor;
+      }
+
+      // Monta o objeto contact
+      const contact = {
+        whatsapp: formData.whatsapp,
+      };
+
+      // Converter preço formatado para número
+      const priceNumber = formData.price.replace(/[^\d,]/g, '').replace(',', '.');
+
+      // Prepara os dados para enviar ao backend
+      const listingData = {
+        title: formData.title,
+        description: formData.description,
+        price: priceNumber, // Preço em formato numérico
+        category: formData.category,
+        type: formData.type,
+        dealType: formData.dealType,
+        location,
+        images: validImages, // Apenas imagens válidas (URLs http/https ou base64)
+        details,
+        contact,
+      };
+
+      console.log("Enviando anúncio:", listingData);
+      console.log("Imagens válidas:", validImages);
+      console.log("Details:", details);
+
+      // Envia para o backend
+      const response = await api.createListing(listingData);
+
+      console.log("Anúncio criado com sucesso:", response);
+
+      alert(`✅ Anúncio criado com sucesso!\n\nLocalização: ${formData.city}, ${formData.state}`);
+      
+      // Navegar para a página do tipo correto para ver o anúncio aparecer
+      if (formData.type === "vehicle") {
+        navigate("/veiculos");
+      } else {
+        navigate("/imoveis");
+      }
+    } catch (error) {
+      console.error("Erro ao criar anúncio:", error);
+      alert(`❌ Erro ao criar anúncio: ${error.message}\n\nVerifique se você está logado e tente novamente.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -329,11 +544,14 @@ export default function CreateListingPage() {
                   <input
                     type="text"
                     value={formData.price}
-                    onChange={(e) => handleInputChange("price", e.target.value)}
-                    placeholder="R$ 50.000"
+                    onChange={(e) => handlePriceChange(e.target.value)}
+                    placeholder="R$ 50.000,00"
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    💡 Digite apenas números. Ex: 50000 = R$ 500,00
+                  </p>
                 </div>
 
                 {/* Campos específicos para veículos */}
@@ -435,10 +653,19 @@ export default function CreateListingPage() {
                           Cor *
                         </label>
                         <select
-                          value={formData.color}
-                          onChange={(e) => handleInputChange("color", e.target.value)}
+                          value={formData.color && formData.color !== 'Outro' && !['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Azul', 'Verde', 'Amarelo', 'Bege', 'Marrom', 'Laranja'].includes(formData.color) ? 'Outro' : formData.color}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === 'Outro') {
+                              setCustomColor('');
+                              handleInputChange("color", '');
+                            } else {
+                              setCustomColor('');
+                              handleInputChange("color", value);
+                            }
+                          }}
                           className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
+                          required={!customColor}
                         >
                           <option value="">Selecione...</option>
                           <option value="Branco">Branco</option>
@@ -454,6 +681,25 @@ export default function CreateListingPage() {
                           <option value="Laranja">Laranja</option>
                           <option value="Outro">Outro</option>
                         </select>
+                        
+                        {/* Campo customizado quando seleciona "Outro" ou quando a cor não está na lista */}
+                        {(formData.color === '' || formData.color === 'Outro' || (formData.color && !['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Azul', 'Verde', 'Amarelo', 'Bege', 'Marrom', 'Laranja'].includes(formData.color))) && (
+                          <div className="mt-3">
+                            <input
+                              type="text"
+                              value={customColor || (formData.color && !['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Azul', 'Verde', 'Amarelo', 'Bege', 'Marrom', 'Laranja'].includes(formData.color) ? formData.color : '')}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setCustomColor(value);
+                                handleInputChange("color", value);
+                              }}
+                              placeholder="Digite a cor do veículo"
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/30"
+                              required
+                            />
+                            <p className="text-xs text-slate-500 mt-1">💡 Ex: Vermelho metálico, Azul marinho, Verde musgo</p>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Número de Portas */}
@@ -679,20 +925,23 @@ export default function CreateListingPage() {
           {/* Step 3: Fotos */}
           {step === 3 && (
             <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-6">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">
                 Adicionar fotos
               </h2>
+              <p className="text-sm text-slate-600 mb-6">
+                📸 Adicione fotos do seu anúncio. Você pode fazer upload de arquivos ou adicionar URLs de imagens.
+              </p>
 
-              {/* Upload de imagens */}
-              <div className="mb-6">
+              {/* Upload de arquivos */}
+              <div className="mb-4">
                 <label className="block w-full">
-                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-600 hover:bg-blue-50 transition cursor-pointer">
-                    <ImageIcon size={48} className="mx-auto text-slate-400 mb-4" />
-                    <p className="text-slate-600 font-semibold mb-2">
-                      Clique para adicionar fotos
+                  <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:border-blue-600 hover:bg-blue-50 transition cursor-pointer">
+                    <Upload size={48} className="mx-auto text-blue-500 mb-4" />
+                    <p className="text-slate-900 font-semibold mb-2">
+                      {uploadingImages ? "Processando imagens..." : "Clique para fazer upload de fotos"}
                     </p>
-                    <p className="text-sm text-slate-500">
-                      Adicione até 10 fotos (PNG, JPG até 5MB cada)
+                    <p className="text-sm text-slate-600">
+                      Até 10 fotos • PNG, JPG • Máximo 5MB cada
                     </p>
                   </div>
                   <input
@@ -701,8 +950,25 @@ export default function CreateListingPage() {
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
+                    disabled={uploadingImages}
                   />
                 </label>
+              </div>
+
+              {/* Ou adicionar URL */}
+              <div className="mb-6">
+                <div className="text-center text-sm text-slate-500 mb-3">ou</div>
+                <button
+                  type="button"
+                  onClick={handleImageUrlAdd}
+                  className="w-full py-3 px-4 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition flex items-center justify-center gap-2"
+                >
+                  <ImageIcon size={20} />
+                  Adicionar imagem por URL
+                </button>
+                <p className="text-xs text-slate-500 mt-2 text-center">
+                  💡 Você também pode usar links de imagens do Imgur, Google Fotos, etc.
+                </p>
               </div>
 
               {/* Preview das imagens */}
@@ -788,9 +1054,10 @@ export default function CreateListingPage() {
                   </ul>
                   <button
                     onClick={handleSubmit}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                    disabled={loading}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                   >
-                    Publicar grátis
+                    {loading ? "Publicando..." : "Publicar grátis"}
                   </button>
                 </div>
 
@@ -829,9 +1096,10 @@ export default function CreateListingPage() {
                   </ul>
                   <button
                     onClick={handleSubmit}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg"
+                    disabled={loading}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Escolher Destaque
+                    {loading ? "Publicando..." : "Escolher Destaque"}
                   </button>
                 </div>
 
@@ -871,9 +1139,10 @@ export default function CreateListingPage() {
                   </ul>
                   <button
                     onClick={handleSubmit}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition shadow-lg"
+                    disabled={loading}
+                    className="w-full py-3 px-6 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Escolher Super Destaque
+                    {loading ? "Publicando..." : "Escolher Super Destaque"}
                   </button>
                 </div>
               </div>

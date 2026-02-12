@@ -262,7 +262,7 @@ export default function ListingCard({ item, onViewMore }) {
     : "";
 
   // Venda/Aluguel
-  const tag = item?.tag || "—";
+  const tag = item?.dealType || item?.tag || "—";
   const isVenda = String(tag).toLowerCase().includes("venda");
   const tagClass = isVenda ? "bg-emerald-500" : "bg-blue-500";
 
@@ -428,7 +428,7 @@ export default function ListingCard({ item, onViewMore }) {
 
         {/* Features */}
         <div className="grid grid-cols-3 gap-2 py-4 border-t border-slate-100 mb-4">
-          {item.category === "vehicle" ? (
+          {item.type === "vehicle" ? (
             <>
               <div className="text-center">
                 <Calendar size={18} className="mx-auto mb-1 text-blue-500" />

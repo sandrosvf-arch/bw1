@@ -555,7 +555,7 @@ export default function ListingDetailPage() {
                   </h2>
 
                   <div className="grid grid-cols-3 gap-4">
-                    {item.category === "vehicle" ? (
+                    {item.type === "vehicle" ? (
                       <>
                         <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                           <Calendar size={24} className="text-blue-500 mb-2" />
@@ -621,6 +621,18 @@ export default function ListingDetailPage() {
                 <div className="lg:sticky lg:top-24 space-y-6">
                   {/* Preço e título */}
                   <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
+                    {/* Tag de Venda/Aluguel */}
+                    {item.dealType && (
+                      <div className="mb-3">
+                        <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase ${
+                          item.dealType === 'Venda' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-green-100 text-green-700'
+                        }`}>
+                          {item.dealType}
+                        </span>
+                      </div>
+                    )}
                     <p className="text-2xl lg:text-3xl font-extrabold text-slate-900 mb-2">
                       {formatPrice(item.price)}
                     </p>
@@ -707,14 +719,14 @@ export default function ListingDetailPage() {
                       <User size={20} className="text-white" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded uppercase">
-                          Profissional
-                        </span>
-                      </div>
                       <p className="text-sm font-bold text-slate-900">
-                        BW1 Imóveis
+                        {item?.users?.name || 'Usuário BW1'}
                       </p>
+                      {item?.users?.email && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {item.users.email}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -782,7 +794,7 @@ export default function ListingDetailPage() {
                 </h2>
 
                 <div className="grid grid-cols-3 gap-4">
-                  {item.category === "vehicle" ? (
+                  {item.type === "vehicle" ? (
                     <>
                       <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
                         <Calendar size={24} className="text-blue-500 mb-2" />
@@ -890,18 +902,14 @@ export default function ListingDetailPage() {
                     <User size={28} className="text-white" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded uppercase">
-                        Profissional
-                      </span>
-                    </div>
                     <p className="text-lg font-bold text-slate-900 mb-1">
-                      Anunciante BW1
+                      {item?.users?.name || 'Usuário BW1'}
                     </p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mb-1">
-                      <Clock size={12} />
-                      Último acesso há 1 hora
-                    </p>
+                    {item?.users?.email && (
+                      <p className="text-xs text-slate-500">
+                        {item.users.email}
+                      </p>
+                    )}
                   </div>
                 </div>
 

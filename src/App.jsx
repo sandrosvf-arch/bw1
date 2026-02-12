@@ -20,6 +20,7 @@ import ChatConversationPage from "./pages/bw1/ChatConversationPage.jsx";
 import LoginPage from "./pages/auth/LoginPage.jsx";
 import RegisterPage from "./pages/auth/RegisterPage.jsx";
 import OAuthCallbackPage from "./pages/auth/OAuthCallbackPage.jsx";
+import DebugListingsPage from "./pages/bw1/DebugListingsPage.jsx";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/veiculos" element={<VehiclesPage />} />
         <Route path="/imoveis" element={<PropertiesPage />} />
         <Route path="/buscar" element={<SearchPage />} />
+        <Route path="/debug" element={<DebugListingsPage />} />
         
         {/* Rotas protegidas - requerem login */}
         <Route path="/notificacoes" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />

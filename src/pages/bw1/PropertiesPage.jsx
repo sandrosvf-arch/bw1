@@ -80,7 +80,7 @@ export default function PropertiesPage() {
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await api.getListings({ category: 'property' });
+      const response = await api.getListings({ type: 'property' });
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar imóveis:', error);
@@ -91,7 +91,7 @@ export default function PropertiesPage() {
   };
 
   const filteredListings = useMemo(() => {
-    let result = listings.filter((item) => item.category === "property");
+    let result = listings.filter((item) => item.type === "property");
 
     // Busca
     if (searchTerm) {
@@ -105,7 +105,7 @@ export default function PropertiesPage() {
 
     // Tipo de negócio
     if (filters.dealType !== "all") {
-      result = result.filter((item) => item.tag === filters.dealType);
+      result = result.filter((item) => item.dealType === filters.dealType);
     }
 
     // Preço

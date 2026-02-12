@@ -83,7 +83,8 @@ export default function VehiclesPage() {
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await api.getListings({ category: 'vehicle' });
+      const response = await api.getListings({ type: 'vehicle' });
+      console.log('Veículos carregados do banco:', response.listings);
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar veículos:', error);
@@ -149,7 +150,7 @@ export default function VehiclesPage() {
 
       // Tipo de negócio
       const matchesDealType =
-        filters.dealType === "all" || item.tag === filters.dealType;
+        filters.dealType === "all" || item.dealType === filters.dealType;
 
       // Preço
       const priceValue = parsePrice(item.price);
