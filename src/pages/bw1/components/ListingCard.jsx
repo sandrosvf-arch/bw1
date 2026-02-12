@@ -146,9 +146,10 @@ function FlagChip({ text }) {
 
 function TagChip({ tag }) {
   const t = tag || "—";
-  const isVenda = String(t).toLowerCase().includes("venda");
+  const tagLower = String(t).toLowerCase().trim();
+  const isVenda = tagLower === "venda" || tagLower.includes("venda");
   const cls = isVenda
-    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    ? "bg-green-50 text-green-700 border-green-200"
     : "bg-blue-50 text-blue-700 border-blue-200";
 
   return (
@@ -263,8 +264,11 @@ export default function ListingCard({ item, onViewMore }) {
 
   // Venda/Aluguel
   const tag = item?.dealType || item?.tag || "—";
-  const isVenda = String(tag).toLowerCase().includes("venda");
-  const tagClass = isVenda ? "bg-emerald-500" : "bg-blue-500";
+  const tagLower = String(tag).toLowerCase().trim();
+  const isVenda = tagLower === "venda" || tagLower.includes("venda");
+  const tagClass = isVenda ? "bg-green-600" : "bg-blue-600";
+  
+  console.log('🏷️ ListingCard tag:', tag, 'isVenda:', isVenda, 'class:', tagClass);
 
   // WhatsApp
   const rawWhatsFromItem = extractWhats(item);
