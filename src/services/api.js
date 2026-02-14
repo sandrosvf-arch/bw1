@@ -287,6 +287,10 @@ class ApiService {
     return this.request('/api/chat/conversations');
   }
 
+  async getConversation(conversationId) {
+    return this.request(`/api/chat/conversations/${conversationId}`);
+  }
+
   async getMessages(conversationId) {
     return this.request(`/api/chat/conversations/${conversationId}/messages`);
   }

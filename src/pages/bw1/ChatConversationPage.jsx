@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, Send, Phone, MapPin } from "lucide-react";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -11,85 +13,113 @@ import * as NavMod from "./content/navigation.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
+const CHAT_IMG_FALLBACK = "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=300&q=80";
 
 export default function ChatConversationPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams();
+  const { isAuthenticated, user } = useAuth();
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
+  const normalizeMessages = (items = []) => {
+    return items.map((msg) => ({
+      id: String(msg.id),
+      text: msg.content || msg.text || "",
+      sender: msg.sender_id === user?.id ? "me" : "other",
+      timestamp: msg.created_at || msg.timestamp || new Date().toISOString(),
+    }));
+  };
+
   useEffect(() => {
-    // Carrega conversa do localStorage
-    const stored = localStorage.getItem("bw1_conversations");
-    if (stored) {
-      const conversations = JSON.parse(stored);
-      const conv = conversations.find((c) => c.id === conversationId);
-      if (conv) {
-        setConversation(conv);
-        setMessages(conv.messages || []);
-      }
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
     }
-  }, [conversationId]);
+
+    loadConversation();
+  }, [conversationId, isAuthenticated]);
+
+  const loadConversation = async () => {
+    try {
+      const [conversationRes, messagesRes] = await Promise.allSettled([
+        api.getConversation(conversationId),
+        api.getMessages(conversationId),
+      ]);
+
+      const conv = conversationRes.status === "fulfilled"
+        ? conversationRes.value?.conversation
+        : null;
+
+      if (conv) {
+        setConversation({
+          id: conv.id,
+          title: conv?.listings?.title || "Anúncio de interesse",
+          listingImage: Array.isArray(conv?.listings?.images)
+            ? (conv.listings.images[0] || conv?.other_user?.avatar || CHAT_IMG_FALLBACK)
+            : (conv?.listings?.images || conv?.other_user?.avatar || CHAT_IMG_FALLBACK),
+          price: conv?.listings?.price || "",
+          listingId: conv?.listings?.id || conv?.listing_id || null,
+          advertiserName: conv?.other_user?.name || "Anunciante",
+        });
+      } else {
+        setConversation({
+          id: conversationId,
+          title: "Anúncio de interesse",
+          listingImage: CHAT_IMG_FALLBACK,
+          price: "",
+          listingId: null,
+          advertiserName: "Anunciante",
+        });
+      }
+
+      const messages = messagesRes.status === "fulfilled"
+        ? (messagesRes.value?.messages || [])
+        : [];
+
+      setMessages(normalizeMessages(messages));
+    } catch (error) {
+      console.error("Erro ao carregar conversa:", error);
+      setConversation({
+        id: conversationId,
+        title: "Anúncio de interesse",
+        listingImage: CHAT_IMG_FALLBACK,
+        price: "",
+        listingId: null,
+        advertiserName: "Anunciante",
+      });
+      setMessages([]);
+    }
+  };
 
   useEffect(() => {
     // Auto-scroll para última mensagem
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || sending) return;
 
-    const message = {
-      id: Date.now().toString(),
-      text: newMessage,
-      sender: "me",
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      setSending(true);
+      const content = newMessage.trim();
+      setNewMessage("");
 
-    const updatedMessages = [...messages, message];
-    setMessages(updatedMessages);
+      await api.sendMessage({
+        conversationId,
+        content,
+      });
 
-    // Atualiza localStorage
-    const stored = localStorage.getItem("bw1_conversations");
-    if (stored) {
-      const conversations = JSON.parse(stored);
-      const index = conversations.findIndex((c) => c.id === conversationId);
-      if (index !== -1) {
-        conversations[index].messages = updatedMessages;
-        conversations[index].lastMessage = newMessage;
-        conversations[index].lastMessageTime = new Date().toISOString();
-        localStorage.setItem("bw1_conversations", JSON.stringify(conversations));
-      }
+      const messagesRes = await api.getMessages(conversationId);
+      setMessages(normalizeMessages(messagesRes?.messages || []));
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+    } finally {
+      setSending(false);
     }
-
-    setNewMessage("");
-
-    // Simula resposta automática (apenas para demo)
-    setTimeout(() => {
-      const autoReply = {
-        id: (Date.now() + 1).toString(),
-        text: "Obrigado pela mensagem! Responderei em breve.",
-        sender: "other",
-        timestamp: new Date().toISOString(),
-      };
-      const withReply = [...updatedMessages, autoReply];
-      setMessages(withReply);
-
-      // Atualiza localStorage com resposta
-      const stored2 = localStorage.getItem("bw1_conversations");
-      if (stored2) {
-        const conversations = JSON.parse(stored2);
-        const index = conversations.findIndex((c) => c.id === conversationId);
-        if (index !== -1) {
-          conversations[index].messages = withReply;
-          conversations[index].lastMessage = autoReply.text;
-          conversations[index].lastMessageTime = autoReply.timestamp;
-          localStorage.setItem("bw1_conversations", JSON.stringify(conversations));
-        }
-      }
-    }, 2000);
   };
 
   const formatTime = (timestamp) => {
@@ -134,26 +164,38 @@ export default function ChatConversationPage() {
                     src={conversation.listingImage}
                     alt={conversation.title}
                     className="w-10 h-10 rounded-lg object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = CHAT_IMG_FALLBACK;
+                    }}
                   />
                   <div>
                     <h2 className="font-bold text-slate-900 text-sm">
                       {conversation.title}
                     </h2>
-                    <p className="text-xs text-slate-600">{conversation.price}</p>
+                    <p className="text-xs text-slate-600">
+                      {conversation.advertiserName}
+                      {conversation.price ? ` • ${conversation.price}` : ""}
+                    </p>
                   </div>
                 </div>
-                <Link
-                  to={`/anuncio/${conversation.listingId}`}
-                  className="px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                >
-                  Ver Anúncio
-                </Link>
+                {conversation.listingId ? (
+                  <Link
+                    to={`/anuncio/${conversation.listingId}`}
+                    className="px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  >
+                    Ver Anúncio
+                  </Link>
+                ) : (
+                  <span className="px-4 py-2 text-sm font-semibold text-slate-500">
+                    Anúncio de interesse
+                  </span>
+                )}
               </div>
             </div>
           </nav>
         }
       >
-        <main className="flex-1 flex flex-col pt-16 pb-24 lg:pb-8">
+        <main className="flex-1 flex flex-col pt-16 pb-40 lg:pb-24">
           {/* Área de mensagens */}
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
             {messages.map((msg) => (
@@ -185,19 +227,19 @@ export default function ChatConversationPage() {
           </div>
 
           {/* Input de mensagem */}
-          <div className="fixed bottom-20 lg:bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4">
+          <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+92px)] lg:bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-8px_24px_rgba(2,6,23,0.06)]">
             <div className="max-w-4xl mx-auto flex items-center gap-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                 placeholder="Digite sua mensagem..."
                 className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || sending}
                 className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send size={20} />

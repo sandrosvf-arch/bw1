@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('listings')
-      .select('id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 

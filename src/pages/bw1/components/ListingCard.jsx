@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Heart,
   MapPin,
@@ -9,9 +9,11 @@ import {
   Bath,
   ChevronRight,
   ChevronLeft,
+  MessageCircle,
 } from "lucide-react";
+import api from "../../../services/api";
+import { useAuth } from "../../../contexts/AuthContext";
 
-const DEMO_WHATSAPP = "5541999999999";
 const CAROUSEL_INTERVAL_MS = 2500;
 
 const PLACEHOLDER_IMG =
@@ -163,6 +165,8 @@ function TagChip({ tag }) {
 }
 
 function ListingCard({ item, onViewMore }) {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const images = useMemo(() => normalizeImages(item), [item]);
   const imagesKey = images.join("||");
 
@@ -187,14 +191,16 @@ function ListingCard({ item, onViewMore }) {
     }
   }, [item.id]);
 
-  const toggleFavorite = (e) => {
+  const toggleFavorite = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     const saved = localStorage.getItem("bw1-favorites");
     let favorites = saved ? JSON.parse(saved) : [];
     
-    if (favorites.includes(item.id)) {
+    const wasFavorite = favorites.includes(item.id);
+
+    if (wasFavorite) {
       favorites = favorites.filter((id) => id !== item.id);
       setIsFavorite(false);
     } else {
@@ -203,6 +209,50 @@ function ListingCard({ item, onViewMore }) {
     }
     
     localStorage.setItem("bw1-favorites", JSON.stringify(favorites));
+
+    if (isAuthenticated) {
+      try {
+        if (wasFavorite) {
+          await api.removeFavorite(item.id);
+        } else {
+          await api.addFavorite(item.id);
+        }
+      } catch (error) {
+        console.error("Erro ao sincronizar favorito:", error);
+      }
+    }
+  };
+
+  const startChat = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    const receiverId = item?.user_id;
+    if (!receiverId || receiverId === user?.id) {
+      navigate(`/anuncio/${item.id}`);
+      return;
+    }
+
+    try {
+      const response = await api.createConversation({
+        listingId: item.id,
+        receiverId,
+      });
+
+      if (response?.conversation?.id) {
+        navigate(`/chat/${response.conversation.id}`);
+      } else {
+        navigate("/chat");
+      }
+    } catch (error) {
+      console.error("Erro ao iniciar conversa:", error);
+      navigate(`/anuncio/${item.id}`);
+    }
   };
 
   const handleTouchStart = (e) => {
@@ -270,7 +320,7 @@ function ListingCard({ item, onViewMore }) {
 
   // WhatsApp
   const rawWhatsFromItem = extractWhats(item);
-  const rawWhats = rawWhatsFromItem || DEMO_WHATSAPP;
+  const rawWhats = rawWhatsFromItem;
   const waDigits = normalizeWhatsapp(rawWhats);
   const hasWhats = Boolean(waDigits);
 
@@ -481,31 +531,35 @@ function ListingCard({ item, onViewMore }) {
 
         {/* Actions */}
         <div className="mt-auto flex gap-2">
-          {/* CONTATAR */}
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => {
-              if (!hasWhats) e.preventDefault();
-            }}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-              hasWhats
-                ? "bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
-                : "bg-slate-200 text-slate-500 cursor-not-allowed"
-            }`}
-            title={hasWhats ? "Chamar no WhatsApp" : "Sem WhatsApp configurado"}
-          >
-            {showWhatsLogo && (
-              <img
-                src={WHATS_LOGO_SRC}
-                alt="WhatsApp"
-                className="w-[18px] h-[18px] object-contain"
-                onError={() => setShowWhatsLogo(false)}
-              />
-            )}
-            Contatar
-          </a>
+          {/* CONTATAR / CHAT */}
+          {hasWhats ? (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
+              title="Chamar no WhatsApp"
+            >
+              {showWhatsLogo && (
+                <img
+                  src={WHATS_LOGO_SRC}
+                  alt="WhatsApp"
+                  className="w-[18px] h-[18px] object-contain"
+                  onError={() => setShowWhatsLogo(false)}
+                />
+              )}
+              Contatar
+            </a>
+          ) : (
+            <button
+              onClick={startChat}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+              title="Iniciar conversa no chat"
+            >
+              <MessageCircle size={18} />
+              Chat
+            </button>
+          )}
 
           {/* VER MAIS */}
           <Link

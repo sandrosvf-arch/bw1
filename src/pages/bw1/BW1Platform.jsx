@@ -14,19 +14,18 @@ import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
-import * as ListingsMod from "./data/listings.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
-const LOCAL_LISTINGS = ListingsMod.default ?? ListingsMod.listings ?? [];
 
 export default function BW1Platform() {
   const initialCached = api.getListingsFromCache();
+  const initialListings = initialCached?.listings?.length ? initialCached.listings : [];
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
-  const [listings, setListings] = useState(initialCached?.listings || []);
+  const [listings, setListings] = useState(initialListings || []);
   const [loading, setLoading] = useState(!(initialCached?.listings?.length > 0));
 
   useEffect(() => {

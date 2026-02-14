@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as FooterMod from "./content/footer.js";
@@ -36,8 +37,6 @@ const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 const PLACEHOLDER_IMG =
   "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=1400&q=80";
-
-const DEMO_WHATSAPP = "5541999999999";
 
 function extractWhats(item) {
   return (
@@ -151,6 +150,7 @@ function formatPrice(price) {
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -318,7 +318,7 @@ export default function ListingDetailPage() {
   }
 
   const rawWhatsFromItem = extractWhats(item);
-  const rawWhats = rawWhatsFromItem || DEMO_WHATSAPP;
+  const rawWhats = rawWhatsFromItem;
   const waDigits = normalizeWhatsapp(rawWhats);
   const hasWhats = Boolean(waDigits);
 
@@ -657,40 +657,33 @@ export default function ListingDetailPage() {
                     <div className="space-y-2">
                       <button
                         ref={contactButtonRef}
-                        onClick={() => {
-                          // Criar ou recuperar conversa
-                          const conversations = JSON.parse(localStorage.getItem('bw1_conversations') || '[]');
-                          
-                          // Verificar se já existe conversa com este anúncio
-                          let conversation = conversations.find(c => c.listingId === item.id);
-                          
-                          if (!conversation) {
-                            // Criar nova conversa
-                            conversation = {
-                              id: Date.now(),
-                              listingId: item.id,
-                              listingTitle: item.title,
-                              listingImage: images[0],
-                              listingPrice: item.price,
-                              userName: 'BW1 Imóveis',
-                              userAvatar: null,
-                              lastMessage: 'Olá! Tenho interesse neste anúncio.',
-                              timestamp: new Date().toISOString(),
-                              unread: 0,
-                              messages: [
-                                {
-                                  id: 1,
-                                  text: 'Olá! Tenho interesse neste anúncio.',
-                                  sender: 'me',
-                                  timestamp: new Date().toISOString()
-                                }
-                              ]
-                            };
-                            conversations.unshift(conversation);
-                            localStorage.setItem('bw1_conversations', JSON.stringify(conversations));
+                        onClick={async () => {
+                          if (!isAuthenticated) {
+                            navigate('/login');
+                            return;
                           }
-                          
-                          navigate(`/chat/${conversation.id}`);
+
+                          const receiverId = item?.user_id;
+                          if (!receiverId || receiverId === user?.id) {
+                            navigate('/chat');
+                            return;
+                          }
+
+                          try {
+                            const response = await api.createConversation({
+                              listingId: item.id,
+                              receiverId,
+                            });
+
+                            if (response?.conversation?.id) {
+                              navigate(`/chat/${response.conversation.id}`);
+                            } else {
+                              navigate('/chat');
+                            }
+                          } catch (error) {
+                            console.error('Erro ao abrir chat:', error);
+                            navigate('/chat');
+                          }
                         }}
                         className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
                       >

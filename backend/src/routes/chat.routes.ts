@@ -4,27 +4,143 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 
+function parseJsonField(value: any) {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 // Listar conversas do usuário
 router.get('/conversations', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { data, error } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        listings:listing_id (id, title, images, price),
-        participants:conversation_participants (
-          users:user_id (id, name, avatar, email)
-        )
-      `)
+      .select('*')
       .or(`user1_id.eq.${req.userId},user2_id.eq.${req.userId}`)
       .order('updated_at', { ascending: false });
 
     if (error) throw error;
 
-    res.json({ conversations: data || [] });
+    const conversations = data || [];
+    const listingIds = [...new Set(conversations.map((c) => c.listing_id).filter(Boolean))];
+    const otherUserIds = [
+      ...new Set(
+        conversations
+          .map((c) => (String(c.user1_id) === String(req.userId) ? c.user2_id : c.user1_id))
+          .filter(Boolean)
+      ),
+    ];
+
+    const [listingsResult, usersResult] = await Promise.all([
+      listingIds.length
+        ? supabase
+            .from('listings')
+            .select('id, title, images, price, user_id')
+            .in('id', listingIds)
+        : Promise.resolve({ data: [], error: null } as any),
+      otherUserIds.length
+        ? supabase
+            .from('users')
+            .select('id, name, avatar, email')
+            .in('id', otherUserIds)
+        : Promise.resolve({ data: [], error: null } as any),
+    ]);
+
+    if (listingsResult.error) throw listingsResult.error;
+    if (usersResult.error) throw usersResult.error;
+
+    const listingsMap = new Map(
+      (listingsResult.data || []).map((listing: any) => [
+        String(listing.id),
+        {
+          ...listing,
+          images: parseJsonField(listing.images),
+        },
+      ])
+    );
+
+    const usersMap = new Map(
+      (usersResult.data || []).map((user: any) => [String(user.id), user])
+    );
+
+    const enriched = conversations.map((conversation: any) => {
+      const otherUserId = String(conversation.user1_id) === String(req.userId)
+        ? conversation.user2_id
+        : conversation.user1_id;
+
+      return {
+        ...conversation,
+        listings: listingsMap.get(String(conversation.listing_id)) || null,
+        other_user: usersMap.get(String(otherUserId)) || null,
+      };
+    });
+
+    res.json({ conversations: enriched });
   } catch (error) {
     console.error('Get conversations error:', error);
     res.status(500).json({ error: 'Failed to get conversations' });
+  }
+});
+
+// Obter uma conversa específica
+router.get('/conversations/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Conversation not found' });
+    }
+
+    if (data.user1_id !== req.userId && data.user2_id !== req.userId) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    const otherUserId = String(data.user1_id) === String(req.userId)
+      ? data.user2_id
+      : data.user1_id;
+
+    const [listingResult, userResult] = await Promise.all([
+      supabase
+        .from('listings')
+        .select('id, title, images, price, user_id')
+        .eq('id', data.listing_id)
+        .maybeSingle(),
+      supabase
+        .from('users')
+        .select('id, name, avatar, email')
+        .eq('id', otherUserId)
+        .maybeSingle(),
+    ]);
+
+    if (listingResult.error) throw listingResult.error;
+    if (userResult.error) throw userResult.error;
+
+    const listing = listingResult.data
+      ? {
+          ...listingResult.data,
+          images: parseJsonField(listingResult.data.images),
+        }
+      : null;
+
+    res.json({
+      conversation: {
+        ...data,
+        listings: listing,
+        other_user: userResult.data || null,
+      },
+    });
+  } catch (error) {
+    console.error('Get conversation error:', error);
+    res.status(500).json({ error: 'Failed to get conversation' });
   }
 });
 
@@ -73,12 +189,14 @@ router.post('/conversations', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Verificar se já existe conversa
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('conversations')
       .select('*')
       .eq('listing_id', listingId)
       .or(`and(user1_id.eq.${req.userId},user2_id.eq.${receiverId}),and(user1_id.eq.${receiverId},user2_id.eq.${req.userId})`)
-      .single();
+      .maybeSingle();
+
+    if (existingError) throw existingError;
 
     if (existing) {
       return res.json({ conversation: existing });

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MessageSquare, Search, ArrowLeft, Clock } from "lucide-react";
+import { MessageSquare, Search, ArrowLeft, Plus } from "lucide-react";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -14,27 +16,52 @@ import * as FooterMod from "./content/footer.js";
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+const CHAT_IMG_FALLBACK = "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=300&q=80";
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carrega conversas do localStorage
-    const stored = localStorage.getItem("bw1_conversations");
-    if (stored) {
-      const data = JSON.parse(stored);
-      setConversations(data);
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
     }
-  }, []);
+
+    loadConversations();
+  }, [isAuthenticated]);
+
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getConversations();
+      const mapped = (response?.conversations || []).map((conv) => ({
+        id: String(conv.id),
+        title: conv?.listings?.title || "Anúncio de interesse",
+        listingImage: Array.isArray(conv?.listings?.images)
+          ? (conv.listings.images[0] || conv?.other_user?.avatar || CHAT_IMG_FALLBACK)
+          : (conv?.listings?.images || conv?.other_user?.avatar || CHAT_IMG_FALLBACK),
+        listingId: conv?.listings?.id || conv?.listing_id || null,
+        advertiserName: conv?.other_user?.name || "Anunciante",
+        lastMessage: "Toque para abrir a conversa",
+        lastMessageTime: conv?.updated_at || conv?.created_at,
+        unreadCount: 0,
+      }));
+      setConversations(mapped);
+    } catch (error) {
+      console.error("Erro ao carregar conversas:", error);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredConversations = conversations.filter((conv) => {
     const s = searchTerm.toLowerCase();
-    return (
-      conv.title.toLowerCase().includes(s) ||
-      conv.lastMessage.toLowerCase().includes(s)
-    );
+    return conv.title.toLowerCase().includes(s);
   });
 
   const getTimeAgo = (timestamp) => {
@@ -72,16 +99,26 @@ export default function ChatPage() {
               <ArrowLeft size={20} />
               Voltar
             </button>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <MessageSquare size={28} className="text-blue-600" />
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <MessageSquare size={28} className="text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-slate-900">Mensagens</h1>
+                  <p className="text-slate-600">
+                    {conversations.length} conversa(s)
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">Mensagens</h1>
-                <p className="text-slate-600">
-                  {conversations.length} conversa(s)
-                </p>
-              </div>
+
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition whitespace-nowrap"
+              >
+                <Plus size={18} />
+                Novo chat
+              </Link>
             </div>
           </div>
 
@@ -103,22 +140,34 @@ export default function ChatPage() {
           </div>
 
           {/* Lista de conversas */}
-          {filteredConversations.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Carregando conversas...</h3>
+            </div>
+          ) : filteredConversations.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
               <MessageSquare size={64} className="mx-auto text-slate-300 mb-4" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
                 Nenhuma conversa ainda
               </h3>
               <p className="text-slate-600 mb-6">
-                Quando você entrar em contato com anunciantes, as conversas
-                aparecerão aqui.
+                Para enviar mensagem, abra um anúncio e toque em <strong>Chat Interno</strong>.
+                Suas conversas aparecerão aqui automaticamente.
               </p>
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-              >
-                Ver Anúncios
-              </Link>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+                >
+                  Ver anúncios
+                </Link>
+                <Link
+                  to="/veiculos"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-300 text-slate-800 rounded-xl font-semibold hover:bg-slate-50 transition"
+                >
+                  Explorar veículos
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -133,6 +182,9 @@ export default function ChatPage() {
                     src={conv.listingImage}
                     alt={conv.title}
                     className="w-16 h-16 rounded-lg object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = CHAT_IMG_FALLBACK;
+                    }}
                   />
 
                   {/* Conteúdo */}
@@ -146,7 +198,7 @@ export default function ChatPage() {
                       </span>
                     </div>
                     <p className="text-sm text-slate-600 truncate">
-                      {conv.lastMessage}
+                      {conv.advertiserName}
                     </p>
                   </div>
 

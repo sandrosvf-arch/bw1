@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Heart } from "lucide-react";
+import api from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 import BottomNav from "./components/BottomNav";
 import AppShell from "./components/AppShell";
@@ -9,26 +11,59 @@ import Footer from "./components/Footer";
 
 import * as BrandMod from "./content/brand.js";
 import * as FooterMod from "./content/footer.js";
-import listings from "./data/listings.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 export default function FavoritesPage() {
+  const { isAuthenticated } = useAuth();
   const [logoOk, setLogoOk] = useState(true);
   const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar favoritos do localStorage
-    const saved = localStorage.getItem("bw1-favorites");
-    if (saved) {
-      setFavorites(JSON.parse(saved));
-    }
-  }, []);
+    loadFavorites();
+  }, [isAuthenticated]);
 
-  const favoriteListings = listings.filter((item) =>
-    favorites.includes(item.id)
-  );
+  const loadFavorites = async () => {
+    try {
+      setLoading(true);
+
+      if (isAuthenticated) {
+        const response = await api.getFavorites();
+        const apiListings = (response.favorites || [])
+          .map((fav) => fav.listings)
+          .filter(Boolean);
+
+        setFavorites(apiListings);
+
+        const favoriteIds = apiListings.map((item) => item.id);
+        localStorage.setItem("bw1-favorites", JSON.stringify(favoriteIds));
+        return;
+      }
+
+      const saved = localStorage.getItem("bw1-favorites");
+      const favoriteIds = saved ? JSON.parse(saved) : [];
+
+      if (!favoriteIds.length) {
+        setFavorites([]);
+        return;
+      }
+
+      const cached = api.getListingsFromCache();
+      if (cached?.listings?.length) {
+        setFavorites(cached.listings.filter((item) => favoriteIds.includes(item.id)));
+      } else {
+        const response = await api.getListings({ limit: 100 });
+        setFavorites((response.listings || []).filter((item) => favoriteIds.includes(item.id)));
+      }
+    } catch (error) {
+      console.error("Erro ao carregar favoritos:", error);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
@@ -83,15 +118,19 @@ export default function FavoritesPage() {
               Meus Favoritos
             </h1>
             <p className="text-slate-600">
-              {favoriteListings.length === 0
+              {favorites.length === 0
                 ? "Você ainda não tem anúncios favoritos"
-                : `${favoriteListings.length} ${
-                    favoriteListings.length === 1 ? "anúncio favoritado" : "anúncios favoritados"
+                : `${favorites.length} ${
+                    favorites.length === 1 ? "anúncio favoritado" : "anúncios favoritados"
                   }`}
             </p>
           </div>
 
-          {favoriteListings.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Carregando favoritos...</h3>
+            </div>
+          ) : favorites.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
               <Heart size={64} className="mx-auto text-slate-300 mb-4" />
               <h3 className="text-xl font-bold text-slate-900 mb-2">
@@ -108,7 +147,7 @@ export default function FavoritesPage() {
               </Link>
             </div>
           ) : (
-            <ListingsGrid listings={favoriteListings} />
+            <ListingsGrid listings={favorites} />
           )}
         </main>
 

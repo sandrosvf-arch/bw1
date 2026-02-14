@@ -15,6 +15,7 @@ import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
+import localListings from "./data/listings.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
@@ -51,14 +52,15 @@ function parsePrice(price) {
 
 export default function VehiclesPage() {
   const initialCached = api.getListingsFromCache({ category: 'vehicle' });
+  const localVehicles = localListings.filter((item) => item.type === "vehicle" || item.category === "carro" || item.category === "vehicle");
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState(initialCached?.listings || []);
-  const [loading, setLoading] = useState(!(initialCached?.listings?.length > 0));
+  const [listings, setListings] = useState(initialCached?.listings?.length ? initialCached.listings : localVehicles);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({
@@ -97,8 +99,6 @@ export default function VehiclesPage() {
     if (hasCached) {
       setListings(cached.listings);
       setLoading(false);
-    } else {
-      setLoading(true);
     }
 
     try {
