@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
+import { useDebounce } from "../../hooks/useDebounce";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -52,6 +53,7 @@ export default function PropertiesPage() {
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [listings, setListings] = useState([]);
@@ -82,9 +84,9 @@ export default function PropertiesPage() {
   // Reset pagination when search changes
   useEffect(() => {
     setDisplayCount(12);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -97,7 +99,7 @@ export default function PropertiesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
@@ -109,8 +111,8 @@ export default function PropertiesPage() {
     });
 
     // Busca
-    if (searchTerm) {
-      const s = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const s = debouncedSearchTerm.toLowerCase();
       result = result.filter(
         (item) =>
           (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
@@ -281,7 +283,7 @@ export default function PropertiesPage() {
     }
 
     return result;
-  }, [searchTerm, filters, sortBy, listings]);
+  }, [debouncedSearchTerm, filters, sortBy, listings]);
 
   // Lista paginada para exibição
   const displayedListings = useMemo(() => {
@@ -290,16 +292,16 @@ export default function PropertiesPage() {
 
   const hasMore = displayCount < filteredListings.length;
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     setDisplayCount(prev => prev + 12);
-  };
+  }, []);
 
-  const handleFilterChange = (key, value) => {
-    setFilters({ ...filters, [key]: value });
+  const handleFilterChange = useCallback((key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
     setDisplayCount(12); // Reset pagination when filters change
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       dealType: "all",
       minPrice: "",

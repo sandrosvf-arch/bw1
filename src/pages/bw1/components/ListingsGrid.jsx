@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import ListingCard from "./ListingCard";
 import SkeletonCard from "./SkeletonCard";
 
-export default function ListingsGrid({ listings, onViewMore, loading = false }) {
+function ListingsGrid({ listings, onViewMore, loading = false }) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -38,3 +38,5 @@ export default function ListingsGrid({ listings, onViewMore, loading = false }) 
     </div>
   );
 }
+
+export default React.memo(ListingsGrid);

@@ -523,3 +523,7 @@ export default function ListingCard({ item, onViewMore }) {
     </div>
   );
 }
+
+export default React.memo(ListingCard);
+
+export default React.memo(ListingCard);

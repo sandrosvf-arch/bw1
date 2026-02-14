@@ -1,7 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Car, Calendar, DollarSign, MapPin, Gauge, Filter, ArrowUpDown, Home as HomeIcon, Search, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
+import { useDebounce } from "../../hooks/useDebounce";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -52,6 +53,7 @@ export default function VehiclesPage() {
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [listings, setListings] = useState([]);
@@ -85,9 +87,9 @@ export default function VehiclesPage() {
   // Reset pagination when search changes
   useEffect(() => {
     setDisplayCount(12);
-  }, [searchTerm]);
+  }, [debouncedSearchTerm]);
 
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -100,7 +102,7 @@ export default function VehiclesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
@@ -109,7 +111,7 @@ export default function VehiclesPage() {
       if (!isVehicle) return false;
 
       // Busca
-      const s = searchTerm.toLowerCase();
+      const s = debouncedSearchTerm.toLowerCase();
       const matchesSearch =
         !s ||
         (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
@@ -276,7 +278,7 @@ export default function VehiclesPage() {
     }
 
     return result;
-  }, [searchTerm, filters, sortBy, listings]);
+  }, [debouncedSearchTerm, filters, sortBy, listings]);
 
   // Lista paginada para exibição
   const displayedListings = useMemo(() => {
@@ -285,16 +287,16 @@ export default function VehiclesPage() {
 
   const hasMore = displayCount < filteredListings.length;
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     setDisplayCount(prev => prev + 12);
-  };
+  }, []);
 
-  const handleFilterChange = (key, value) => {
-    setFilters({ ...filters, [key]: value });
+  const handleFilterChange = useCallback(useCallback((key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
     setDisplayCount(12); // Reset pagination when filters change
-  };
+  }, []);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       country: "Brasil",
       state: "",
