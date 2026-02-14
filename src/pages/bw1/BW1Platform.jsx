@@ -21,6 +21,9 @@ const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 const HOME_SNAPSHOT_KEY = "bw1_home_snapshot_v1";
 const HOME_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
+const INITIAL_RENDER_COUNT = 8;
+const RENDER_BATCH_SIZE = 12;
+const RENDER_BATCH_DELAY = 40;
 
 function getHomeSnapshot() {
   try {
@@ -56,6 +59,7 @@ export default function BW1Platform() {
   const [ordering, setOrdering] = useState("recent");
   const [listings, setListings] = useState(initialListings || []);
   const [loading, setLoading] = useState(!(initialListings?.length > 0));
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
 
   useEffect(() => {
     loadListings();
@@ -77,10 +81,24 @@ export default function BW1Platform() {
     }
 
     try {
-      const response = await api.getListings({}, { forceRefresh: hasCached });
-      const nextListings = response.listings || [];
-      setListings(nextListings);
-      saveHomeSnapshot(nextListings);
+      if (!hasCached && !hasLocalSnapshot) {
+        const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
+        const fastListings = fastResponse.listings || [];
+        if (fastListings.length > 0) {
+          setListings(fastListings);
+          saveHomeSnapshot(fastListings);
+        }
+
+        const fullResponse = await api.getListings({}, { forceRefresh: true });
+        const fullListings = fullResponse.listings || [];
+        setListings(fullListings);
+        saveHomeSnapshot(fullListings);
+      } else {
+        const response = await api.getListings({}, { forceRefresh: hasCached });
+        const nextListings = response.listings || [];
+        setListings(nextListings);
+        saveHomeSnapshot(nextListings);
+      }
     } catch (error) {
       console.error('Erro ao carregar anúncios da API:', error);
       if (!hasCached && !hasLocalSnapshot) {
@@ -119,6 +137,30 @@ export default function BW1Platform() {
 
     return filtered;
   }, [searchTerm, ordering, listings]);
+
+  useEffect(() => {
+    const total = filteredListings.length;
+    const initial = Math.min(INITIAL_RENDER_COUNT, total || INITIAL_RENDER_COUNT);
+    setVisibleCount(initial);
+
+    if (total <= initial) return;
+
+    const timer = setInterval(() => {
+      setVisibleCount((prev) => {
+        const next = Math.min(prev + RENDER_BATCH_SIZE, total);
+        if (next >= total) {
+          clearInterval(timer);
+        }
+        return next;
+      });
+    }, RENDER_BATCH_DELAY);
+
+    return () => clearInterval(timer);
+  }, [filteredListings]);
+
+  const visibleListings = useMemo(() => {
+    return filteredListings.slice(0, visibleCount);
+  }, [filteredListings, visibleCount]);
 
   if (loading) {
     return (
@@ -173,7 +215,10 @@ export default function BW1Platform() {
               <option value="price-desc">Maior preço</option>
             </select>
           </div>
-          <ListingsGrid listings={filteredListings} loading={loading} />
+          <ListingsGrid listings={visibleListings} loading={loading} />
+          {visibleCount < filteredListings.length && (
+            <div className="text-center text-sm text-slate-500 mt-4">Carregando mais anúncios...</div>
+          )}
           <CTA />
         </main>
 
