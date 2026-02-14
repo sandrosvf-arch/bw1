@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, X, MapPin, DollarSign, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Upload, X, MapPin, DollarSign, Image as ImageIcon, GripVertical, Star } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -53,6 +53,54 @@ export default function CreateListingPage() {
   const [images, setImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [customColor, setCustomColor] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // Scroll para o topo quando mudar de step
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [step]);
+
+  // Drag and drop handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', '');
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      handleDragEnd();
+      return;
+    }
+    const newImages = [...images];
+    const [draggedItem] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedItem);
+    setImages(newImages);
+    handleDragEnd();
+  };
+
+  const setAsCover = (index) => {
+    if (index === 0) return;
+    const newImages = [...images];
+    const [selected] = newImages.splice(index, 1);
+    newImages.unshift(selected);
+    setImages(newImages);
+  };
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -166,10 +214,6 @@ export default function CreateListingPage() {
       }
       
       setImages([...images, ...newImages]);
-      
-      if (newImages.length > 0) {
-        alert(`✅ ${newImages.length} foto(s) adicionada(s) com sucesso!`);
-      }
     } catch (error) {
       console.error('Erro ao processar imagens:', error);
       alert('Erro ao processar as imagens. Tente novamente.');
@@ -281,14 +325,22 @@ export default function CreateListingPage() {
 
       console.log("Anúncio criado com sucesso:", response);
 
-      alert(`✅ Anúncio criado com sucesso!\n\nLocalização: ${formData.city}, ${formData.state}`);
-      
-      // Navegar para a página do tipo correto para ver o anúncio aparecer
-      if (formData.type === "vehicle") {
-        navigate("/veiculos");
-      } else {
-        navigate("/imoveis");
-      }
+      // Navegar para a página de sucesso com dados do anúncio
+      navigate("/anuncio-publicado", {
+        state: {
+          listingData: {
+            title: formData.title,
+            price: priceNumber,
+            category: formData.category,
+            type: formData.type,
+            dealType: formData.dealType,
+            location,
+            images: validImages,
+            description: formData.description,
+          },
+          listingId: response?.listing?.id || response?.id || response?.data?.id || null,
+        },
+      });
     } catch (error) {
       console.error("Erro ao criar anúncio:", error);
       alert(`❌ Erro ao criar anúncio: ${error.message}\n\nVerifique se você está logado e tente novamente.`);
@@ -971,29 +1023,74 @@ export default function CreateListingPage() {
                 </p>
               </div>
 
-              {/* Preview das imagens */}
+              {/* Preview das imagens com drag & drop */}
               {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                  {images.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-40 object-cover rounded-xl"
-                      />
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold text-slate-700">
+                      {images.length} foto{images.length > 1 ? 's' : ''} adicionada{images.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Arraste para reordenar • A primeira é a foto de capa
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    {images.map((img, index) => (
+                      <div
+                        key={index}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        onDrop={(e) => handleDrop(e, index)}
+                        className={`relative group cursor-grab active:cursor-grabbing rounded-xl transition-all duration-200 ${
+                          draggedIndex === index ? 'opacity-40 scale-95' : ''
+                        } ${
+                          dragOverIndex === index && draggedIndex !== index
+                            ? 'ring-2 ring-blue-500 ring-offset-2 scale-105'
+                            : ''
+                        }`}
                       >
-                        <X size={16} />
-                      </button>
-                      {index === 0 && (
-                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">
-                          Capa
+                        <img
+                          src={img}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-40 object-cover rounded-xl pointer-events-none"
+                        />
+                        {/* Drag handle */}
+                        <div className="absolute top-2 left-2 p-1 bg-black/50 text-white rounded-lg opacity-0 group-hover:opacity-100 transition">
+                          <GripVertical size={16} />
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {/* Remove button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition hover:bg-red-600"
+                        >
+                          <X size={16} />
+                        </button>
+                        {/* Cover badge */}
+                        {index === 0 && (
+                          <div className="absolute bottom-2 left-2 px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded flex items-center gap-1">
+                            <Star size={12} fill="white" />
+                            Capa
+                          </div>
+                        )}
+                        {/* Set as cover button */}
+                        {index !== 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAsCover(index); }}
+                            className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-xs font-medium rounded opacity-0 group-hover:opacity-100 transition hover:bg-black/80 flex items-center gap-1"
+                          >
+                            <Star size={12} />
+                            Definir como capa
+                          </button>
+                        )}
+                        {/* Image number */}
+                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/50 text-white text-xs font-bold rounded">
+                          {index + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

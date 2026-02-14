@@ -16,6 +16,7 @@ const NotificationsPage = lazy(() => import("./pages/bw1/NotificationsPage.jsx")
 const SearchPage = lazy(() => import("./pages/bw1/SearchPage.jsx"));
 const MyListingsPage = lazy(() => import("./pages/bw1/MyListingsPage.jsx"));
 const CreateListingPage = lazy(() => import("./pages/bw1/CreateListingPage.jsx"));
+const ListingSuccessPage = lazy(() => import("./pages/bw1/ListingSuccessPage.jsx"));
 const MenuPage = lazy(() => import("./pages/bw1/MenuPage.jsx"));
 const AccountPage = lazy(() => import("./pages/bw1/AccountPage.jsx"));
 const FavoritesPage = lazy(() => import("./pages/bw1/FavoritesPage.jsx"));
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatConversationPage /></ProtectedRoute>} />
           
+          <Route path="/anuncio-publicado" element={<ProtectedRoute><ListingSuccessPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

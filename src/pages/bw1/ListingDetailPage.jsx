@@ -757,30 +757,49 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                {/* Dicas de segurança - Desktop */}
+                {/* Diretrizes de segurança - Desktop */}
                 <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
-                    <ShieldAlert size={20} className="text-blue-600" />
+                    <ShieldAlert size={20} className="text-amber-600" />
                     <h2 className="text-base font-bold text-slate-900">
-                      Dicas de segurança
+                      Diretrizes de segurança
                     </h2>
                   </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-amber-900 leading-relaxed">
+                      <strong>⚠️ Atenção:</strong> A BW1 é uma plataforma de anúncios e não se responsabiliza por transações realizadas entre usuários.
+                    </p>
+                  </div>
                   
-                  <div className="space-y-3">
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                      <p className="text-sm text-slate-700 leading-relaxed">
-                        Não faça pagamentos antes de verificar o que está sendo anunciado.
+                  <div className="space-y-2 mb-3">
+                    <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-2">
+                      <span className="text-red-500 mt-0.5 font-bold text-xs">✕</span>
+                      <p className="text-xs text-slate-700">
+                        <strong>Nunca</strong> faça pagamentos antes de verificar o produto pessoalmente.
                       </p>
                     </div>
-                    
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                      <p className="text-sm text-slate-700 leading-relaxed">
-                        Fique atento com excessos de facilidades e preços abaixo do mercado.
+                    <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-2">
+                      <span className="text-red-500 mt-0.5 font-bold text-xs">✕</span>
+                      <p className="text-xs text-slate-700">
+                        <strong>Desconfie</strong> de preços muito abaixo do mercado e urgência para fechar.
+                      </p>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5 font-bold text-xs">✓</span>
+                      <p className="text-xs text-slate-700">
+                        <strong>Encontre</strong> o vendedor em local público e verifique a documentação.
                       </p>
                     </div>
                   </div>
 
-                  <button className="w-full mt-4 py-2.5 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
+                  <div className="bg-slate-100 rounded-xl p-2.5 mb-3">
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      <strong>Termo:</strong> A BW1 atua apenas como plataforma de conexão. Não participamos ou garantimos nenhuma transação. Prejuízos por não seguir as diretrizes são responsabilidade do usuário.
+                    </p>
+                  </div>
+
+                  <button className="w-full py-2.5 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
                     <Flag size={16} />
                     Denunciar anúncio
                   </button>
@@ -940,30 +959,64 @@ export default function ListingDetailPage() {
                 </div>
               </div>
 
-              {/* Dicas de segurança - Mobile */}
+              {/* Diretrizes de Segurança - Comprador */}
               <div className="bg-white rounded-3xl p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
-                  <ShieldAlert size={22} className="text-blue-600" />
+                  <ShieldAlert size={22} className="text-amber-600" />
                   <h2 className="text-lg font-bold text-slate-900">
-                    Dicas de segurança
+                    Diretrizes de segurança
                   </h2>
                 </div>
-                
-                <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-sm text-slate-700 leading-relaxed">
-                      Não faça pagamentos antes de verificar o que está sendo anunciado.
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <p className="text-sm font-semibold text-amber-900 mb-2">
+                    ⚠️ Atenção: leia antes de negociar
+                  </p>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    A BW1 é uma plataforma de anúncios e não se responsabiliza por transações realizadas entre usuários. Ao utilizar a plataforma, você concorda em seguir as diretrizes de segurança abaixo. O descumprimento dessas práticas é de total responsabilidade do usuário.
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3">
+                    <span className="text-red-500 mt-0.5 font-bold">✕</span>
+                    <p className="text-sm text-slate-700">
+                      <strong>Nunca</strong> faça pagamentos antecipados, depósitos ou transferências antes de ver o produto pessoalmente.
                     </p>
                   </div>
-                  
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-sm text-slate-700 leading-relaxed">
-                      Fique atento com excessos de facilidades e preços abaixo do mercado.
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3">
+                    <span className="text-red-500 mt-0.5 font-bold">✕</span>
+                    <p className="text-sm text-slate-700">
+                      <strong>Desconfie</strong> de preços muito abaixo do mercado, facilidades excessivas ou urgência para fechar negócio.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3">
+                    <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                    <p className="text-sm text-slate-700">
+                      <strong>Sempre</strong> encontre o vendedor em local público e seguro para verificar o produto.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3">
+                    <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                    <p className="text-sm text-slate-700">
+                      <strong>Verifique</strong> a documentação original do veículo ou imóvel antes de fechar qualquer negócio.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-start gap-3">
+                    <span className="text-green-500 mt-0.5 font-bold">✓</span>
+                    <p className="text-sm text-slate-700">
+                      <strong>Prefira</strong> pagamentos seguros e formalize a transação com recibo ou contrato.
                     </p>
                   </div>
                 </div>
 
-                <button className="w-full mt-4 py-3 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
+                <div className="bg-slate-100 rounded-xl p-3 mb-4">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    <strong>Termo de responsabilidade:</strong> A BW1 atua exclusivamente como plataforma de conexão entre anunciantes e interessados. Não participamos, intermediamos ou garantimos nenhuma transação. Golpes, fraudes ou prejuízos decorrentes de negociações que não seguiram as diretrizes de segurança são de responsabilidade exclusiva dos envolvidos.
+                  </p>
+                </div>
+
+                <button className="w-full py-3 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
                   <Flag size={18} />
                   Denunciar anúncio
                 </button>

@@ -9,10 +9,15 @@ export default defineConfig({
     // Code splitting otimizado
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separar vendor chunks para melhor caching
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['lucide-react'],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
+              return "react-vendor";
+            }
+            if (id.includes("lucide-react")) {
+              return "ui-vendor";
+            }
+          }
         },
       },
     },
@@ -20,7 +25,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs em produção
+        drop_console: true,
         drop_debugger: true,
       },
     },
