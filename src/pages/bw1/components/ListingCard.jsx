@@ -267,8 +267,6 @@ export default function ListingCard({ item, onViewMore }) {
   const tagLower = String(tag).toLowerCase().trim();
   const isVenda = tagLower === "venda" || tagLower.includes("venda");
   const tagClass = isVenda ? "bg-green-600" : "bg-blue-600";
-  
-  console.log('🏷️ ListingCard tag:', tag, 'isVenda:', isVenda, 'class:', tagClass);
 
   // WhatsApp
   const rawWhatsFromItem = extractWhats(item);
@@ -326,7 +324,7 @@ export default function ListingCard({ item, onViewMore }) {
           </button>
         </div>
 
-        {/* Botões de navegação - Desktop apenas */}
+        {/* Botões de navegação */}
         {images.length > 1 && (
           <>
             <button
@@ -335,7 +333,7 @@ export default function ListingCard({ item, onViewMore }) {
                 e.stopPropagation();
                 setImgIndex((prev) => (prev - 1 + images.length) % images.length);
               }}
-              className="hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+              className="flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
             >
               <ChevronLeft size={20} />
             </button>
@@ -346,7 +344,7 @@ export default function ListingCard({ item, onViewMore }) {
                 e.stopPropagation();
                 setImgIndex((prev) => (prev + 1) % images.length);
               }}
-              className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+              className="flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
             >
               <ChevronRight size={20} />
             </button>

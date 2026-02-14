@@ -1,8 +1,19 @@
 import React from "react";
 import { Search } from "lucide-react";
 import ListingCard from "./ListingCard";
+import SkeletonCard from "./SkeletonCard";
 
-export default function ListingsGrid({ listings, onViewMore }) {
+export default function ListingsGrid({ listings, onViewMore, loading = false }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {[...Array(8)].map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    );
+  }
+
   if (!listings || listings.length === 0) {
     return (
       <div className="text-center py-20 bg-white rounded-3xl shadow-sm">

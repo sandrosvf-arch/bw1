@@ -38,9 +38,8 @@ export default function BW1Platform() {
       const response = await api.getListings();
       setListings(response.listings || []);
     } catch (error) {
-      console.error('Erro ao carregar anúncios da API, usando dados locais:', error);
-      // Fallback para dados locais se a API falhar
-      setListings(LOCAL_LISTINGS);
+      console.error('Erro ao carregar anúncios da API:', error);
+      setListings([]);
     } finally {
       setLoading(false);
     }
@@ -128,7 +127,7 @@ export default function BW1Platform() {
               <option value="price-desc">Maior preço</option>
             </select>
           </div>
-          <ListingsGrid listings={filteredListings} />
+          <ListingsGrid listings={filteredListings} loading={loading} />
           <CTA />
         </main>
 

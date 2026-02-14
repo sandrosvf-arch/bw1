@@ -5,10 +5,13 @@ const API_URL = isDev
   ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
   : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
 
+const CACHE_DURATION = 3 * 60 * 1000; // 3 minutos em milissegundos
+
 class ApiService {
   constructor() {
     this.baseURL = API_URL;
     this.token = localStorage.getItem('bw1_token');
+    this.cache = new Map();
   }
 
   setToken(token) {
@@ -32,7 +35,45 @@ class ApiService {
     return headers;
   }
 
+  getCacheKey(endpoint) {
+    return `api_cache_${endpoint}`;
+  }
+
+  getFromCache(endpoint) {
+    const cacheKey = this.getCacheKey(endpoint);
+    const cached = this.cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('📦 Cache hit:', endpoint);
+      return cached.data;
+    }
+    
+    this.cache.delete(cacheKey);
+    return null;
+  }
+
+  setCache(endpoint, data) {
+    const cacheKey = this.getCacheKey(endpoint);
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  clearCache() {
+    this.cache.clear();
+    console.log('🗑️ Cache da API limpo');
+  }
+
   async request(endpoint, options = {}) {
+    // Tentar buscar do cache apenas para GET requests
+    if (!options.method || options.method === 'GET') {
+      const cachedData = this.getFromCache(endpoint);
+      if (cachedData) {
+        return cachedData;
+      }
+    }
+
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       ...options,
@@ -48,6 +89,11 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro na requisição');
+      }
+
+      // Salvar no cache apenas para GET requests
+      if (!options.method || options.method === 'GET') {
+        this.setCache(endpoint, data);
       }
 
       return data;

@@ -4,22 +4,62 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 
+// Cache simples para listagens
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
+
+function getCacheKey(params: any): string {
+  return JSON.stringify(params);
+}
+
+function getFromCache(key: string) {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log('✅ Cache hit:', key);
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() });
+  // Limpar cache antigo
+  if (cache.size > 50) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey) {
+      cache.delete(oldestKey);
+    }
+  }
+}
+
 // Listar todos os anúncios (público)
 router.get('/', async (req, res) => {
   try {
-    const { category, type, search, limit = 50, offset = 0 } = req.query;
+    const { category, type, search, limit = 20, offset = 0 } = req.query;
+    const cacheKey = getCacheKey({ category, type, search, limit, offset });
+
+    // Tentar buscar do cache
+    const cachedData = getFromCache(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
+    }
 
     let query = supabase
       .from('listings')
-      .select(`
-        *,
-        users:user_id (id, name, phone, email, avatar)
-      `)
+      .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (category) {
-      query = query.eq('category', category);
+      // Suportar filtro por categoria em PT e EN
+      if (category === 'vehicle') {
+        query = query.or('category.eq.vehicle,category.eq.carro');
+      } else if (category === 'property') {
+        query = query.or('category.eq.property,category.eq.apartamento,category.eq.casa');
+      } else {
+        query = query.eq('category', category);
+      }
     }
 
     if (type) {
@@ -44,7 +84,12 @@ router.get('/', async (req, res) => {
       contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
     }));
 
-    res.json({ listings: processedData, total: count });
+    const response = { listings: processedData, total: count };
+    
+    // Salvar no cache
+    setCache(cacheKey, response);
+
+    res.json(response);
   } catch (error) {
     console.error('Get listings error:', error);
     res.status(500).json({ error: 'Failed to get listings' });

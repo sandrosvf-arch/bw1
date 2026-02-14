@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import passport from './config/passport';
 import authRoutes from './routes/auth.routes';
@@ -15,6 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
+app.use(compression()); // Compressão GZIP para respostas HTTP
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));

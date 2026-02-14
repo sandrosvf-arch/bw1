@@ -25,9 +25,9 @@ async function createTestListing() {
     const user = users[0];
     console.log('✅ Usuário encontrado:', user.email);
 
-    // Deletar anúncios antigos
-    await supabase.from('listings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    console.log('🗑️  Anúncios antigos removidos');
+    // NÃO deletar anúncios existentes! Comentado para segurança
+    // await supabase.from('listings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    // console.log('🗑️  Anúncios antigos removidos');
 
     // Criar anúncio de teste - Veículo
     const vehicleListing = {

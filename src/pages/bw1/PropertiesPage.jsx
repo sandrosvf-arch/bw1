@@ -56,6 +56,8 @@ export default function PropertiesPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({
     dealType: "all",
     minPrice: "",
@@ -74,16 +76,25 @@ export default function PropertiesPage() {
   });
 
   useEffect(() => {
+    // Limpar cache ao montar o componente
+    api.clearCache();
     loadListings();
   }, []);
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setDisplayCount(12);
+  }, [searchTerm]);
 
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await api.getListings({ type: 'property' });
+      setError(null);
+      const response = await api.getListings({ category: 'property' });
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar imóveis:', error);
+      setError('Erro ao carregar imóveis. Tente novamente.');
       setListings([]);
     } finally {
       setLoading(false);
@@ -91,14 +102,20 @@ export default function PropertiesPage() {
   };
 
   const filteredListings = useMemo(() => {
-    let result = listings.filter((item) => item.type === "property");
+    let result = listings.filter((item) => {
+      // Apenas imóveis (suporta PT e EN)
+      const isProperty = item.category === "property" || 
+                         item.category === "apartamento" || 
+                         item.category === "casa";
+      return isProperty;
+    });
 
     // Busca
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
       result = result.filter(
         (item) =>
-          item.title.toLowerCase().includes(s) ||
+          (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
           searchInLocation(item.location, s)
       );
     }
@@ -161,7 +178,9 @@ export default function PropertiesPage() {
     if (filters.minArea) {
       result = result.filter((item) => {
         const areaValue = item.details?.area
-          ? parseInt(item.details.area.replace(/\D/g, ""))
+          ? (typeof item.details.area === 'string'
+              ? parseInt(item.details.area.replace(/\D/g, ""))
+              : parseInt(item.details.area))
           : 0;
         return areaValue >= parseInt(filters.minArea);
       });
@@ -204,6 +223,7 @@ export default function PropertiesPage() {
 
     // Função para calcular score de proximidade
     const getProximityScore = (item) => {
+      if (!item.location || typeof item.location !== 'string') return 0;
       const itemLocation = item.location.toLowerCase();
       
       // Se cidade está definida, prioriza matches de cidade
@@ -232,37 +252,53 @@ export default function PropertiesPage() {
       });
     } else if (sortBy === "price-asc") {
       result.sort((a, b) => {
-        const priceA = parseFloat(
-          a.price.replace(/[^\d,]/g, "").replace(",", ".")
+        const priceA = typeof a.price === 'number' ? a.price : parseFloat(
+          String(a.price).replace(/[^\d,]/g, "").replace(",", ".")
         );
-        const priceB = parseFloat(
-          b.price.replace(/[^\d,]/g, "").replace(",", ".")
+        const priceB = typeof b.price === 'number' ? b.price : parseFloat(
+          String(b.price).replace(/[^\d,]/g, "").replace(",", ".")
         );
         return priceA - priceB;
       });
     } else if (sortBy === "price-desc") {
       result.sort((a, b) => {
-        const priceA = parseFloat(
-          a.price.replace(/[^\d,]/g, "").replace(",", ".")
+        const priceA = typeof a.price === 'number' ? a.price : parseFloat(
+          String(a.price).replace(/[^\d,]/g, "").replace(",", ".")
         );
-        const priceB = parseFloat(
-          b.price.replace(/[^\d,]/g, "").replace(",", ".")
+        const priceB = typeof b.price === 'number' ? b.price : parseFloat(
+          String(b.price).replace(/[^\d,]/g, "").replace(",", ".")
         );
         return priceB - priceA;
       });
     } else if (sortBy === "area-desc") {
       result.sort((a, b) => {
-        const areaA = parseInt(a.details?.area || "0");
-        const areaB = parseInt(b.details?.area || "0");
+        const areaA = a.details?.area
+          ? (typeof a.details.area === 'string' ? parseInt(a.details.area) : a.details.area)
+          : 0;
+        const areaB = b.details?.area
+          ? (typeof b.details.area === 'string' ? parseInt(b.details.area) : b.details.area)
+          : 0;
         return areaB - areaA;
       });
     }
 
     return result;
-  }, [searchTerm, filters, sortBy]);
+  }, [searchTerm, filters, sortBy, listings]);
+
+  // Lista paginada para exibição
+  const displayedListings = useMemo(() => {
+    return filteredListings.slice(0, displayCount);
+  }, [filteredListings, displayCount]);
+
+  const hasMore = displayCount < filteredListings.length;
+
+  const loadMore = () => {
+    setDisplayCount(prev => prev + 12);
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
+    setDisplayCount(12); // Reset pagination when filters change
   };
 
   const clearFilters = () => {
@@ -298,6 +334,18 @@ export default function PropertiesPage() {
     filters.acceptsPets !== "all" ||
     filters.furnished !== "all" ||
     filters.floor !== "all";
+
+  // Mostrar loading enquanto carrega
+  if (loading && listings.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-slate-600 font-medium">Carregando imóveis...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
@@ -385,6 +433,19 @@ export default function PropertiesPage() {
               </button>
             </div>
           </div>
+
+          {/* Mensagem de erro */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <p className="font-medium">{error}</p>
+              <button
+                onClick={loadListings}
+                className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium underline"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           {/* Barra de Filtros e Ordenacao lado a lado */}
           <div className="flex items-center gap-3 mb-6">
@@ -687,7 +748,19 @@ export default function PropertiesPage() {
             </div>
           )}
 
-          <ListingsGrid listings={filteredListings} />
+          <ListingsGrid listings={displayedListings} loading={loading} />
+          
+          {hasMore && !loading && (
+            <div className="flex justify-center mt-12 mb-8">
+              <button
+                onClick={loadMore}
+                className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+              >
+                Carregar mais anúncios
+              </button>
+            </div>
+          )}
+          
           <CTA />
         </main>
 

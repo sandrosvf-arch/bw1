@@ -56,6 +56,8 @@ export default function VehiclesPage() {
   const [sortBy, setSortBy] = useState("relevance");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({
     country: "Brasil",
     state: "",
@@ -77,17 +79,25 @@ export default function VehiclesPage() {
   });
 
   useEffect(() => {
+    // Limpar cache ao montar o componente
+    api.clearCache();
     loadListings();
   }, []);
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setDisplayCount(12);
+  }, [searchTerm]);
 
   const loadListings = async () => {
     try {
       setLoading(true);
-      const response = await api.getListings({ type: 'vehicle' });
-      console.log('Veículos carregados do banco:', response.listings);
+      setError(null);
+      const response = await api.getListings({ category: 'vehicle' });
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar veículos:', error);
+      setError('Erro ao carregar veículos. Tente novamente.');
       setListings([]);
     } finally {
       setLoading(false);
@@ -96,14 +106,15 @@ export default function VehiclesPage() {
 
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
-      // Apenas veículos
-      if (item.type !== "vehicle") return false;
+      // Apenas veículos (suporta PT e EN)
+      const isVehicle = item.category === "vehicle" || item.category === "carro";
+      if (!isVehicle) return false;
 
       // Busca
       const s = searchTerm.toLowerCase();
       const matchesSearch =
         !s ||
-        item.title.toLowerCase().includes(s) ||
+        (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
         searchInLocation(item.location, s);
 
       // Localização hierárquica (País -> Estado -> Cidade)
@@ -121,27 +132,27 @@ export default function VehiclesPage() {
       const matchesCategory =
         filters.category === "all" ||
         (item.category && item.category.toLowerCase() === filters.category.toLowerCase()) ||
-        item.title.toLowerCase().includes(filters.category.toLowerCase());
+        (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(filters.category.toLowerCase()));
 
       // Combustível
       const matchesFuel =
         filters.fuel === "all" ||
-        (item.details?.fuel && item.details.fuel.toLowerCase() === filters.fuel.toLowerCase());
+        (item.details?.fuel && typeof item.details.fuel === 'string' && item.details.fuel.toLowerCase() === filters.fuel.toLowerCase());
 
       // Tipo de Carroceria
       const matchesBodyType =
         filters.bodyType === "all" ||
-        (item.details?.bodyType && item.details.bodyType.toLowerCase() === filters.bodyType.toLowerCase());
+        (item.details?.bodyType && typeof item.details.bodyType === 'string' && item.details.bodyType.toLowerCase() === filters.bodyType.toLowerCase());
 
       // Câmbio
       const matchesTransmission =
         filters.transmission === "all" ||
-        (item.details?.transmission && item.details.transmission.toLowerCase() === filters.transmission.toLowerCase());
+        (item.details?.transmission && typeof item.details.transmission === 'string' && item.details.transmission.toLowerCase() === filters.transmission.toLowerCase());
 
       // Cor
       const matchesColor =
         filters.color === "all" ||
-        (item.details?.color && item.details.color.toLowerCase() === filters.color.toLowerCase());
+        (item.details?.color && typeof item.details.color === 'string' && item.details.color.toLowerCase() === filters.color.toLowerCase());
 
       // Número de Portas
       const matchesDoors =
@@ -180,7 +191,9 @@ export default function VehiclesPage() {
 
       // KM
       const kmValue = item.details?.km
-        ? parseInt(item.details.km.replace(/\D/g, ""))
+        ? (typeof item.details.km === 'string' 
+            ? parseInt(item.details.km.replace(/\D/g, "")) 
+            : parseInt(item.details.km))
         : 999999;
       const matchesMinKm =
         !filters.minKm || kmValue >= parseInt(filters.minKm);
@@ -207,6 +220,7 @@ export default function VehiclesPage() {
 
     // Função para calcular score de proximidade
     const getProximityScore = (item) => {
+      if (!item.location || typeof item.location !== 'string') return 0;
       const itemLocation = item.location.toLowerCase();
       
       // Se cidade está definida, prioriza matches de cidade
@@ -235,14 +249,14 @@ export default function VehiclesPage() {
       });
     } else if (sortBy === "price-asc") {
       result.sort((a, b) => {
-        const priceA = parseFloat(a.price.replace(/[^\d,]/g, "").replace(",", "."));
-        const priceB = parseFloat(b.price.replace(/[^\d,]/g, "").replace(",", "."));
+        const priceA = typeof a.price === 'number' ? a.price : parseFloat(String(a.price).replace(/[^\d,]/g, "").replace(",", "."));
+        const priceB = typeof b.price === 'number' ? b.price : parseFloat(String(b.price).replace(/[^\d,]/g, "").replace(",", "."));
         return priceA - priceB;
       });
     } else if (sortBy === "price-desc") {
       result.sort((a, b) => {
-        const priceA = parseFloat(a.price.replace(/[^\d,]/g, "").replace(",", "."));
-        const priceB = parseFloat(b.price.replace(/[^\d,]/g, "").replace(",", "."));
+        const priceA = typeof a.price === 'number' ? a.price : parseFloat(String(a.price).replace(/[^\d,]/g, "").replace(",", "."));
+        const priceB = typeof b.price === 'number' ? b.price : parseFloat(String(b.price).replace(/[^\d,]/g, "").replace(",", "."));
         return priceB - priceA;
       });
     } else if (sortBy === "year-desc") {
@@ -253,17 +267,33 @@ export default function VehiclesPage() {
       });
     } else if (sortBy === "km-asc") {
       result.sort((a, b) => {
-        const kmA = parseInt(a.details?.km?.replace(/\D/g, "") || "999999");
-        const kmB = parseInt(b.details?.km?.replace(/\D/g, "") || "999999");
+        const kmA = a.details?.km 
+          ? (typeof a.details.km === 'string' ? parseInt(a.details.km.replace(/\D/g, "")) : parseInt(a.details.km))
+          : 999999;
+        const kmB = b.details?.km 
+          ? (typeof b.details.km === 'string' ? parseInt(b.details.km.replace(/\D/g, "")) : parseInt(b.details.km))
+          : 999999;
         return kmA - kmB;
       });
     }
 
     return result;
-  }, [searchTerm, filters, sortBy]);
+  }, [searchTerm, filters, sortBy, listings]);
+
+  // Lista paginada para exibição
+  const displayedListings = useMemo(() => {
+    return filteredListings.slice(0, displayCount);
+  }, [filteredListings, displayCount]);
+
+  const hasMore = displayCount < filteredListings.length;
+
+  const loadMore = () => {
+    setDisplayCount(prev => prev + 12);
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
+    setDisplayCount(12); // Reset pagination when filters change
   };
 
   const clearFilters = () => {
@@ -305,6 +335,18 @@ export default function VehiclesPage() {
     filters.transmission !== "all" ||
     filters.color !== "all" ||
     filters.doors !== "all";
+
+  // Mostrar loading enquanto carrega
+  if (loading && listings.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-slate-600 font-medium">Carregando veículos...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
@@ -392,6 +434,19 @@ export default function VehiclesPage() {
               </button>
             </div>
           </div>
+
+          {/* Mensagem de erro */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <p className="font-medium">{error}</p>
+              <button
+                onClick={loadListings}
+                className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium underline"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
 
           {/* Barra de Filtros e Ordenacao lado a lado */}
           <div className="flex items-center gap-3 mb-6">
@@ -746,7 +801,19 @@ export default function VehiclesPage() {
             </div>
           )}
 
-          <ListingsGrid listings={filteredListings} />
+          <ListingsGrid listings={displayedListings} loading={loading} />
+          
+          {hasMore && !loading && (
+            <div className="flex justify-center mt-12 mb-8">
+              <button
+                onClick={loadMore}
+                className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+              >
+                Carregar mais anúncios
+              </button>
+            </div>
+          )}
+          
           <CTA />
         </main>
 

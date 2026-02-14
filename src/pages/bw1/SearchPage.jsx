@@ -104,27 +104,29 @@ export default function SearchPage() {
 
           {/* Barra de busca principal */}
           <div className="mb-6">
-            <div className="relative">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                size={20}
-              />
+            <div className="relative flex items-center">
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute left-4 z-10 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={20} />
+                </button>
+              )}
               <input
                 type="text"
                 placeholder="O que você está procurando?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg"
+                className={`flex-1 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg ${
+                  searchTerm ? 'pl-12 pr-12' : 'pl-4 pr-12'
+                }`}
                 autoFocus
               />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={20} />
-                </button>
-              )}
+              <Search
+                className="absolute right-4 text-slate-400 pointer-events-none"
+                size={20}
+              />
             </div>
           </div>
 
@@ -176,7 +178,7 @@ export default function SearchPage() {
               <h3 className="text-lg font-bold text-slate-900 mb-4">
                 Filtros avançados
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Preço mínimo
@@ -221,6 +223,24 @@ export default function SearchPage() {
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              {/* Botão Aplicar Filtros */}
+              <div className="flex justify-end gap-3">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm text-white bg-blue-600 hover:bg-blue-700 transition"
+                >
+                  Aplicar filtros
+                </button>
               </div>
             </div>
           )}
