@@ -49,11 +49,7 @@ export default function App() {
       });
     };
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(preload, { timeout: 1500 });
-    } else {
-      setTimeout(preload, 300);
-    }
+    preload();
     
     return () => {
       keepAliveService.stop();

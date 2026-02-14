@@ -19,14 +19,43 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+const HOME_SNAPSHOT_KEY = "bw1_home_snapshot_v1";
+const HOME_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
+
+function getHomeSnapshot() {
+  try {
+    const raw = localStorage.getItem(HOME_SNAPSHOT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!parsed?.timestamp || !Array.isArray(parsed?.listings)) return [];
+    if (Date.now() - parsed.timestamp > HOME_SNAPSHOT_MAX_AGE) return [];
+    return parsed.listings;
+  } catch {
+    return [];
+  }
+}
+
+function saveHomeSnapshot(nextListings = []) {
+  try {
+    localStorage.setItem(
+      HOME_SNAPSHOT_KEY,
+      JSON.stringify({ timestamp: Date.now(), listings: nextListings.slice(0, 40) })
+    );
+  } catch {
+    // noop
+  }
+}
 
 export default function BW1Platform() {
   const initialCached = api.getListingsFromCache();
-  const initialListings = initialCached?.listings?.length ? initialCached.listings : [];
+  const snapshotListings = getHomeSnapshot();
+  const initialListings = initialCached?.listings?.length
+    ? initialCached.listings
+    : snapshotListings;
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
   const [listings, setListings] = useState(initialListings || []);
-  const [loading, setLoading] = useState(!(initialCached?.listings?.length > 0));
+  const [loading, setLoading] = useState(!(initialListings?.length > 0));
 
   useEffect(() => {
     loadListings();
@@ -35,9 +64,13 @@ export default function BW1Platform() {
   const loadListings = async () => {
     const cached = api.getListingsFromCache();
     const hasCached = cached?.listings?.length > 0;
+    const hasLocalSnapshot = snapshotListings.length > 0;
 
     if (hasCached) {
       setListings(cached.listings);
+      setLoading(false);
+    } else if (hasLocalSnapshot) {
+      setListings(snapshotListings);
       setLoading(false);
     } else {
       setLoading(true);
@@ -45,10 +78,12 @@ export default function BW1Platform() {
 
     try {
       const response = await api.getListings({}, { forceRefresh: hasCached });
-      setListings(response.listings || []);
+      const nextListings = response.listings || [];
+      setListings(nextListings);
+      saveHomeSnapshot(nextListings);
     } catch (error) {
       console.error('Erro ao carregar anúncios da API:', error);
-      if (!hasCached) {
+      if (!hasCached && !hasLocalSnapshot) {
         setListings([]);
       }
     } finally {
