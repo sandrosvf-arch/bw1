@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('listings')
-      .select('id,title,price,category,type,dealType,location,images,details,status,created_at,badge,flag')
+      .select('id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
@@ -90,6 +90,7 @@ router.get('/', async (req, res) => {
       ...listing,
       location: parseJsonField(listing.location),
       details: parseJsonField(listing.details),
+      contact: parseJsonField(listing.contact),
     }));
 
     const response = { listings: processedData, total: processedData.length };
