@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
  * Hook para debounce de valores
  * Útil para evitar execuções excessivas em inputs de busca
  */
-export function useDebounce(value, delay = 300) {
+export function useDebounce(value, delay = 200) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
@@ -19,3 +19,5 @@ export function useDebounce(value, delay = 300) {
 
   return debouncedValue;
 }
+
+export default useDebounce;

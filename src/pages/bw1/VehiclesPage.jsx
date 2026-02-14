@@ -86,7 +86,7 @@ export default function VehiclesPage() {
 
   // Reset pagination when search changes
   useEffect(() => {
-    setDisplayCount(12);
+    setDisplayCount(20);
   }, [debouncedSearchTerm]);
 
   const loadListings = useCallback(async () => {
@@ -288,12 +288,12 @@ export default function VehiclesPage() {
   const hasMore = displayCount < filteredListings.length;
 
   const loadMore = useCallback(() => {
-    setDisplayCount(prev => prev + 12);
+    setDisplayCount(prev => prev + 20);
   }, []);
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
-    setDisplayCount(12); // Reset pagination when filters change
+    setDisplayCount(20); // Reset pagination when filters change
   }, []);
 
   const clearFilters = useCallback(() => {

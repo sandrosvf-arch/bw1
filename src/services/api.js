@@ -5,7 +5,7 @@ const API_URL = isDev
   ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
   : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
 
-const CACHE_DURATION = 3 * 60 * 1000; // 3 minutos em milissegundos
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 
 class ApiService {
   constructor() {
