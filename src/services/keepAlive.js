@@ -1,9 +1,10 @@
 // Keep Alive Service - Mantém o backend do Render ativo
 
 const isDev = import.meta.env.DEV;
+const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
 const API_URL = isDev 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
-  : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
+  ? (import.meta.env.VITE_API_URL || PROD_API_URL)
+  : PROD_API_URL;
 
 const PING_INTERVAL = 10 * 60 * 1000; // 10 minutos em milissegundos
 

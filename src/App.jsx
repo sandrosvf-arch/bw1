@@ -9,10 +9,10 @@ import ScrollToTop from "./components/ScrollToTop.jsx";
 // Páginas críticas - carregamento imediato
 import BW1Platform from "./pages/bw1/BW1Platform.jsx";
 import ListingDetailPage from "./pages/bw1/ListingDetailPage.jsx";
-import VehiclesPage from "./pages/bw1/VehiclesPage.jsx";
-import PropertiesPage from "./pages/bw1/PropertiesPage.jsx";
 
 // Páginas secundárias - lazy loading
+const VehiclesPage = lazy(() => import("./pages/bw1/VehiclesPage.jsx"));
+const PropertiesPage = lazy(() => import("./pages/bw1/PropertiesPage.jsx"));
 const NotificationsPage = lazy(() => import("./pages/bw1/NotificationsPage.jsx"));
 const SearchPage = lazy(() => import("./pages/bw1/SearchPage.jsx"));
 const MyListingsPage = lazy(() => import("./pages/bw1/MyListingsPage.jsx"));
@@ -41,6 +41,14 @@ const PageLoader = () => (
 export default function App() {
   // Iniciar serviço de keep-alive para manter o backend ativo
   useEffect(() => {
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("bw1_cache_v2_"))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // noop
+    }
+
     keepAliveService.start();
 
     const preload = () => {

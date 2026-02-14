@@ -15,7 +15,6 @@ import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as HeroMod from "./content/hero.js";
 import * as FooterMod from "./content/footer.js";
-import localListings from "./data/listings.js";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
@@ -52,14 +51,13 @@ function parsePrice(price) {
 
 export default function PropertiesPage() {
   const initialCached = api.getListingsFromCache({ category: 'property' });
-  const localProperties = localListings.filter((item) => item.type === "property" || item.category === "property" || item.category === "apartamento" || item.category === "casa");
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState(initialCached?.listings?.length ? initialCached.listings : localProperties);
+  const [listings, setListings] = useState(initialCached?.listings?.length ? initialCached.listings : []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
