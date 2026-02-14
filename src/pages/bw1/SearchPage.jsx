@@ -104,29 +104,29 @@ export default function SearchPage() {
 
           {/* Barra de busca principal */}
           <div className="mb-6">
-            <div className="relative flex items-center">
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute left-4 z-10 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={20} />
-                </button>
-              )}
+            <div className="relative">
               <input
                 type="text"
                 placeholder="O que você está procurando?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`flex-1 py-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg ${
-                  searchTerm ? 'pl-12 pr-12' : 'pl-4 pr-12'
-                }`}
+                className="w-full py-4 pl-4 pr-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg"
                 autoFocus
               />
-              <Search
-                className="absolute right-4 text-slate-400 pointer-events-none"
-                size={20}
-              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X size={20} />
+                  </button>
+                )}
+                <Search
+                  className="text-slate-400"
+                  size={20}
+                />
+              </div>
             </div>
           </div>
 

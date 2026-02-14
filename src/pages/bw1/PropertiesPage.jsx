@@ -76,8 +76,6 @@ export default function PropertiesPage() {
   });
 
   useEffect(() => {
-    // Limpar cache ao montar o componente
-    api.clearCache();
     loadListings();
   }, []);
 

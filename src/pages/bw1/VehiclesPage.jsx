@@ -79,8 +79,6 @@ export default function VehiclesPage() {
   });
 
   useEffect(() => {
-    // Limpar cache ao montar o componente
-    api.clearCache();
     loadListings();
   }, []);
 
