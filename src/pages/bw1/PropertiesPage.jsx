@@ -490,19 +490,11 @@ export default function PropertiesPage() {
           {/* Filter Panel */}
           {isFiltersOpen && (
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <HomeIcon size={20} className="text-emerald-600" />
                   Filtros para Imóveis
                 </h2>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-800"
-                  >
-                    Limpar filtros
-                  </button>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -742,6 +734,24 @@ export default function PropertiesPage() {
                     <option value="cobertura">Cobertura</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-slate-200">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                  >
+                    Limpar filtros
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsFiltersOpen(false)}
+                  className="px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition"
+                >
+                  Aplicar filtros
+                </button>
               </div>
             </div>
           )}
