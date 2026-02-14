@@ -1,9 +1,10 @@
 // API Service - Cliente HTTP para comunicação com o backend
 
 const isDev = import.meta.env.DEV;
+const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
 const API_URL = isDev 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
-  : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
+  ? (import.meta.env.VITE_API_URL || PROD_API_URL)
+  : PROD_API_URL;
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 const STALE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutos para fallback rápido
@@ -15,6 +16,7 @@ class ApiService {
     this.token = localStorage.getItem('bw1_token');
     this.cache = new Map();
     this.pendingRequests = new Map();
+    this.cacheNamespace = `${CACHE_KEY_PREFIX}${encodeURIComponent(this.baseURL)}_`;
   }
 
   setToken(token) {
@@ -39,7 +41,7 @@ class ApiService {
   }
 
   getCacheKey(endpoint) {
-    return `${CACHE_KEY_PREFIX}${endpoint}`;
+    return `${this.cacheNamespace}${endpoint}`;
   }
 
   getMemoryCache(endpoint) {
@@ -131,7 +133,7 @@ class ApiService {
 
     try {
       Object.keys(localStorage)
-        .filter((key) => key.startsWith(CACHE_KEY_PREFIX))
+        .filter((key) => key.startsWith(this.cacheNamespace))
         .forEach((key) => localStorage.removeItem(key));
     } catch {
       // noop

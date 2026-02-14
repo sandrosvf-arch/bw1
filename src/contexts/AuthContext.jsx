@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
@@ -15,38 +15,54 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const authCheckIdRef = useRef(0);
 
   // Verificar se usuário está logado ao carregar
   useEffect(() => {
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
+    const currentCheckId = ++authCheckIdRef.current;
     const token = localStorage.getItem('bw1_token');
     
     if (!token) {
+      if (currentCheckId !== authCheckIdRef.current) return false;
+      api.setToken(null);
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
-      return;
+      return false;
     }
 
     try {
       api.setToken(token);
       const response = await api.getCurrentUser();
+
+      if (currentCheckId !== authCheckIdRef.current) return false;
+      if (localStorage.getItem('bw1_token') !== token) return false;
+
       setUser(response.user);
       setIsAuthenticated(true);
+      return true;
     } catch (error) {
+      if (currentCheckId !== authCheckIdRef.current) return false;
       console.error('Auth check failed:', error);
-      // Limpar estado sem chamar logout para evitar loop
-      api.setToken(null);
+
+      if (localStorage.getItem('bw1_token') === token) {
+        api.setToken(null);
+        localStorage.removeItem('bw1_token');
+      }
+
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem('bw1_token');
+      return false;
     } finally {
-      setLoading(false);
+      if (currentCheckId === authCheckIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -54,6 +70,7 @@ export const AuthProvider = ({ children }) => {
       api.setToken(response.token);
       setUser(response.user);
       setIsAuthenticated(true);
+      setLoading(false);
       return { success: true, user: response.user };
     } catch (error) {
       return { success: false, error: error.message };
@@ -66,6 +83,7 @@ export const AuthProvider = ({ children }) => {
       api.setToken(response.token);
       setUser(response.user);
       setIsAuthenticated(true);
+      setLoading(false);
       return { success: true, user: response.user };
     } catch (error) {
       return { success: false, error: error.message };
@@ -87,6 +105,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isAuthenticated,
+    checkAuth,
     login,
     register,
     logout,

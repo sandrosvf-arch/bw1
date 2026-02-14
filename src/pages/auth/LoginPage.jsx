@@ -47,9 +47,10 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     const isDev = import.meta.env.DEV;
+    const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
     const API_URL = isDev 
-      ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')
-      : (import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com');
+      ? (import.meta.env.VITE_API_URL || PROD_API_URL)
+      : PROD_API_URL;
     window.location.href = `${API_URL}/auth/google`;
   };
 
