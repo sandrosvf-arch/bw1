@@ -14,6 +14,7 @@ import * as NavMod from "./content/navigation.js";
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const CHAT_IMG_FALLBACK = "https://images.unsplash.com/photo-1520440229-6469a149ac59?auto=format&fit=crop&w=300&q=80";
+const READ_NOTIFICATIONS_KEY = "bw1-notifications-read";
 
 export default function ChatConversationPage() {
   const navigate = useNavigate();
@@ -42,6 +43,19 @@ export default function ChatConversationPage() {
 
     loadConversation();
   }, [conversationId, isAuthenticated]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    try {
+      const readMap = JSON.parse(localStorage.getItem(READ_NOTIFICATIONS_KEY) || "{}");
+      readMap[`chat-${conversationId}`] = true;
+      localStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify(readMap));
+      window.dispatchEvent(new Event("bw1-activity-updated"));
+    } catch {
+      // noop
+    }
+  }, [conversationId]);
 
   const loadConversation = async () => {
     try {
@@ -155,7 +169,13 @@ export default function ChatConversationPage() {
               <div className="flex items-center justify-between h-16">
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => navigate("/chat")}
+                    onClick={() => {
+                      if (window.history.length > 1) {
+                        navigate(-1);
+                        return;
+                      }
+                      navigate("/chat");
+                    }}
                     className="p-2 hover:bg-slate-100 rounded-lg transition"
                   >
                     <ArrowLeft size={24} />
@@ -170,10 +190,10 @@ export default function ChatConversationPage() {
                   />
                   <div>
                     <h2 className="font-bold text-slate-900 text-sm">
-                      {conversation.title}
+                      {conversation.advertiserName}
                     </h2>
                     <p className="text-xs text-slate-600">
-                      {conversation.advertiserName}
+                      {conversation.title}
                       {conversation.price ? ` • ${conversation.price}` : ""}
                     </p>
                   </div>
@@ -183,11 +203,11 @@ export default function ChatConversationPage() {
                     to={`/anuncio/${conversation.listingId}`}
                     className="px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition"
                   >
-                    Ver Anúncio
+                    Anúncio
                   </Link>
                 ) : (
-                  <span className="px-4 py-2 text-sm font-semibold text-slate-500">
-                    Anúncio de interesse
+                  <span className="px-4 py-2 text-sm font-semibold text-slate-400">
+                    Anúncio
                   </span>
                 )}
               </div>

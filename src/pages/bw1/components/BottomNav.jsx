@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { Home, Plus, MessageCircle, Menu, User } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
+import useActivityCounts from "../../../hooks/useActivityCounts";
 
 /**
  * BottomNav (estilo OLX):
@@ -40,9 +41,7 @@ function Item({ to, label, Icon }) {
 
 export default function BottomNav() {
   const { user, isAuthenticated } = useAuth();
-  
-  // TODO: Substituir por contador real de mensagens não lidas
-  const unreadMessages = 2;
+  const { unreadChats } = useActivityCounts(isAuthenticated);
 
   return (
     <div className="fixed left-0 right-0 bottom-0 z-[9998] pointer-events-none">
@@ -80,12 +79,12 @@ export default function BottomNav() {
               >
                 <MessageCircle size={22} />
                 <span className="text-[11px] font-semibold leading-none">Chat</span>
-                {unreadMessages > 0 && (
+                {unreadChats > 0 && (
                   <span
                     style={{ top: -2, right: 12 }}
                     className="absolute min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-slate-900 pointer-events-none"
                   >
-                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                    {unreadChats > 99 ? "99+" : unreadChats}
                   </span>
                 )}
               </NavLink>

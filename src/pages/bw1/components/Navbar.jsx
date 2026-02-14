@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, LogIn, User } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
-import NOTIFICATIONS from "../content/notifications";
+import useActivityCounts from "../../../hooks/useActivityCounts";
 
 const COLORS = {
   carros: "#ffffff",
@@ -14,25 +14,21 @@ const COLORS = {
 
 export default function Navbar({ brand, links, cta, hideNotifications = false }) {
   const [logoOk, setLogoOk] = useState(true);
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { unreadNotifications } = useActivityCounts(isAuthenticated);
 
   // show/hide on scroll
   const [hidden, setHidden] = useState(false);
   const lastYRef = useRef(0);
   const tickingRef = useRef(false);
 
-  const unreadCount = useMemo(() => {
-    if (!Array.isArray(NOTIFICATIONS)) return 0;
-    return NOTIFICATIONS.filter((n) => n.unread).length;
-  }, []);
-
   const Badge = () =>
-    unreadCount > 0 ? (
+    unreadNotifications > 0 ? (
       <span
         style={{ top: -6, right: -6 }}
         className="absolute min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-slate-900 pointer-events-none"
       >
-        {unreadCount > 99 ? "99+" : unreadCount}
+        {unreadNotifications > 99 ? "99+" : unreadNotifications}
       </span>
     ) : null;
 

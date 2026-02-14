@@ -129,6 +129,7 @@ export default function NotificationsPage() {
         readMap[item.id] = true;
       });
       saveReadMap(readMap);
+      window.dispatchEvent(new Event("bw1-activity-updated"));
       return next;
     });
   };
@@ -138,6 +139,7 @@ export default function NotificationsPage() {
     const readMap = getReadMap();
     readMap[id] = true;
     saveReadMap(readMap);
+    window.dispatchEvent(new Event("bw1-activity-updated"));
   };
 
   return (
