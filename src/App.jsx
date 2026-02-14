@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import keepAliveService from "./services/keepAlive.js";
+import api from "./services/api.js";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
 // Páginas críticas - carregamento imediato
@@ -41,6 +42,18 @@ export default function App() {
   // Iniciar serviço de keep-alive para manter o backend ativo
   useEffect(() => {
     keepAliveService.start();
+
+    const preload = () => {
+      api.preloadListings().catch(() => {
+        // noop
+      });
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(preload, { timeout: 1500 });
+    } else {
+      setTimeout(preload, 300);
+    }
     
     return () => {
       keepAliveService.stop();

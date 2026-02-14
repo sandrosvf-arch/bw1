@@ -8,6 +8,15 @@ const router = Router();
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
 
+function parseJsonField(value: any) {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 function getCacheKey(params: any): string {
   return JSON.stringify(params);
 }
@@ -47,7 +56,7 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('listings')
-      .select('*')
+      .select('id,title,price,category,type,dealType,location,images,details,status,created_at,badge,flag')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
 
@@ -72,19 +81,18 @@ router.get('/', async (req, res) => {
 
     query = query.range(Number(offset), Number(offset) + Number(limit) - 1);
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) throw error;
 
     // Processar dados para garantir que campos JSONB sejam objetos
     const processedData = (data || []).map(listing => ({
       ...listing,
-      location: typeof listing.location === 'string' ? JSON.parse(listing.location) : listing.location,
-      details: typeof listing.details === 'string' ? JSON.parse(listing.details) : listing.details,
-      contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
+      location: parseJsonField(listing.location),
+      details: parseJsonField(listing.details),
     }));
 
-    const response = { listings: processedData, total: count };
+    const response = { listings: processedData, total: processedData.length };
     
     // Salvar no cache
     setCache(cacheKey, response);

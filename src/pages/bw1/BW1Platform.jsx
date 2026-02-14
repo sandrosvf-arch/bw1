@@ -23,23 +23,35 @@ const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 const LOCAL_LISTINGS = ListingsMod.default ?? ListingsMod.listings ?? [];
 
 export default function BW1Platform() {
+  const initialCached = api.getListingsFromCache();
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState(initialCached?.listings || []);
+  const [loading, setLoading] = useState(!(initialCached?.listings?.length > 0));
 
   useEffect(() => {
     loadListings();
   }, []);
 
   const loadListings = async () => {
-    try {
+    const cached = api.getListingsFromCache();
+    const hasCached = cached?.listings?.length > 0;
+
+    if (hasCached) {
+      setListings(cached.listings);
+      setLoading(false);
+    } else {
       setLoading(true);
-      const response = await api.getListings();
+    }
+
+    try {
+      const response = await api.getListings({}, { forceRefresh: hasCached });
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar anúncios da API:', error);
-      setListings([]);
+      if (!hasCached) {
+        setListings([]);
+      }
     } finally {
       setLoading(false);
     }

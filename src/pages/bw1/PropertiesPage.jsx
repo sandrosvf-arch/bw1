@@ -50,14 +50,15 @@ function parsePrice(price) {
 }
 
 export default function PropertiesPage() {
+  const initialCached = api.getListingsFromCache({ category: 'property' });
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState(initialCached?.listings || []);
+  const [loading, setLoading] = useState(!(initialCached?.listings?.length > 0));
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({
@@ -87,15 +88,26 @@ export default function PropertiesPage() {
   }, [debouncedSearchTerm]);
 
   const loadListings = useCallback(async () => {
-    try {
+    const cached = api.getListingsFromCache({ category: 'property' });
+    const hasCached = cached?.listings?.length > 0;
+
+    if (hasCached) {
+      setListings(cached.listings);
+      setLoading(false);
+    } else {
       setLoading(true);
+    }
+
+    try {
       setError(null);
-      const response = await api.getListings({ category: 'property' });
+      const response = await api.getListings({ category: 'property' }, { forceRefresh: hasCached });
       setListings(response.listings || []);
     } catch (error) {
       console.error('Erro ao carregar imóveis:', error);
       setError('Erro ao carregar imóveis. Tente novamente.');
-      setListings([]);
+      if (!hasCached) {
+        setListings([]);
+      }
     } finally {
       setLoading(false);
     }
