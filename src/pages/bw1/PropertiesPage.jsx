@@ -737,21 +737,30 @@ export default function PropertiesPage() {
               </div>
 
               {/* Botões de ação */}
-              <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-slate-200">
-                {hasActiveFilters && (
+              <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-slate-200">
+                {hasActiveFilters ? (
+                  <>
+                    <button
+                      onClick={clearFilters}
+                      className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                    >
+                      Limpar filtros
+                    </button>
+                    <button
+                      onClick={() => setIsFiltersOpen(false)}
+                      className="w-full px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition"
+                    >
+                      Aplicar filtros
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={clearFilters}
-                    className="px-6 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                    onClick={() => setIsFiltersOpen(false)}
+                    className="col-span-2 w-full px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition"
                   >
-                    Limpar filtros
+                    Aplicar filtros
                   </button>
                 )}
-                <button
-                  onClick={() => setIsFiltersOpen(false)}
-                  className="px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-700 transition"
-                >
-                  Aplicar filtros
-                </button>
               </div>
             </div>
           )}
