@@ -291,7 +291,7 @@ export default function VehiclesPage() {
     setDisplayCount(prev => prev + 12);
   }, []);
 
-  const handleFilterChange = useCallback(useCallback((key, value) => {
+  const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setDisplayCount(12); // Reset pagination when filters change
   }, []);
@@ -316,7 +316,7 @@ export default function VehiclesPage() {
       color: "all",
       doors: "all",
     });
-  };
+  }, []);
 
   const hasActiveFilters =
     filters.state ||

@@ -318,7 +318,7 @@ export default function PropertiesPage() {
       furnished: "all",
       floor: "all",
     });
-  };
+  }, []);
 
   const hasActiveFilters =
     filters.dealType !== "all" ||

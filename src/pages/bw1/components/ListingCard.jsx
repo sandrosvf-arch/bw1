@@ -162,7 +162,7 @@ function TagChip({ tag }) {
   );
 }
 
-export default function ListingCard({ item, onViewMore }) {
+function ListingCard({ item, onViewMore }) {
   const images = useMemo(() => normalizeImages(item), [item]);
   const imagesKey = images.join("||");
 
@@ -523,7 +523,5 @@ export default function ListingCard({ item, onViewMore }) {
     </div>
   );
 }
-
-export default React.memo(ListingCard);
 
 export default React.memo(ListingCard);
