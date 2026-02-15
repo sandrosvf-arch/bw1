@@ -1,3 +1,8 @@
+  // Progressive rendering constants
+  const INITIAL_RENDER_COUNT = 8;
+  const RENDER_BATCH_SIZE = 12;
+  const RENDER_BATCH_DELAY = 40;
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Car, Calendar, DollarSign, MapPin, Gauge, Filter, ArrowUpDown, Home as HomeIcon, Search, ArrowLeft } from "lucide-react";
@@ -82,7 +87,32 @@ export default function VehiclesPage() {
   });
 
   useEffect(() => {
-    loadListings();
+    setLoading(true);
+    api.getListings({ category: 'vehicle', limit: INITIAL_RENDER_COUNT })
+      .then((data) => {
+        setListings(data.listings || []);
+        setLoading(false);
+        setError(null);
+        setVisibleCount(INITIAL_RENDER_COUNT);
+        // Carrega o restante em background
+        api.getListings({ category: 'vehicle' })
+          .then((fullData) => {
+            setListings(fullData.listings || []);
+            // Inicia progressive rendering
+            let current = INITIAL_RENDER_COUNT;
+            const interval = setInterval(() => {
+              current += RENDER_BATCH_SIZE;
+              setVisibleCount((prev) => Math.min(prev + RENDER_BATCH_SIZE, fullData.listings.length));
+              if (current >= fullData.listings.length) {
+                clearInterval(interval);
+              }
+            }, RENDER_BATCH_DELAY);
+          });
+      })
+      .catch((err) => {
+        setError('Erro ao carregar anúncios');
+        setLoading(false);
+      });
   }, []);
 
   // Reset pagination when search changes
@@ -292,14 +322,15 @@ export default function VehiclesPage() {
 
   // Lista paginada para exibição
   const displayedListings = useMemo(() => {
-    return filteredListings.slice(0, displayCount);
-  }, [filteredListings, displayCount]);
+    return filteredListings.slice(0, visibleCount);
+  }, [filteredListings, visibleCount]);
 
   const hasMore = displayCount < filteredListings.length;
 
+  const hasMore = visibleCount < filteredListings.length;
   const loadMore = useCallback(() => {
-    setDisplayCount(prev => prev + 20);
-  }, []);
+    setVisibleCount(prev => Math.min(prev + RENDER_BATCH_SIZE, filteredListings.length));
+  }, [filteredListings.length]);
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
