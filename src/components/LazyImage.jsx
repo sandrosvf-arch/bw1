@@ -12,6 +12,7 @@ const LazyImage = React.memo(({
   onLoad,
   onError,
   loading = "lazy",
+  objectFit = "cover",
   ...props 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -34,6 +35,14 @@ const LazyImage = React.memo(({
     onError?.(e);
   };
 
+  const objectFitClass = {
+    cover: 'object-cover',
+    contain: 'object-contain',
+    fill: 'object-fill',
+    none: 'object-none',
+    'scale-down': 'object-scale-down',
+  }[objectFit] || 'object-cover';
+
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {/* Placeholder blur enquanto carrega */}
@@ -51,7 +60,7 @@ const LazyImage = React.memo(({
         alt={alt}
         loading={loading}
         decoding="async"
-        className={`w-full h-full object-cover transition-opacity duration-300 ${
+        className={`w-full h-full ${objectFitClass} transition-opacity duration-300 ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         onLoad={handleLoad}

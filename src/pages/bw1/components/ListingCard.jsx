@@ -346,10 +346,10 @@ function ListingCard({ item, onViewMore }) {
             src={currentImg}
             alt={item.title}
             className="w-full h-full"
+            objectFit="cover"
             onError={(e) => {
               e.currentTarget.src = PLACEHOLDER_IMG;
             }}
-            style={{ objectFit: 'cover' }}
           />
 
         {/* ✅ Tag no topo esquerdo */}

@@ -122,8 +122,6 @@ export default defineConfig({
   // Otimizações de performance
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
-    // Exclude para evitar pré-bundling de coisas grandes
-    exclude: [],
   },
   
   server: {
