@@ -12,7 +12,7 @@ const COLORS = {
   logoBorder: "#e5e7eb",
 };
 
-export default function Navbar({ brand, links, cta, hideNotifications = false }) {
+function Navbar({ brand, links, cta, hideNotifications = false }) {
   const [logoOk, setLogoOk] = useState(true);
   const { isAuthenticated } = useAuth();
   const { unreadNotifications } = useActivityCounts(isAuthenticated);
@@ -149,3 +149,5 @@ export default function Navbar({ brand, links, cta, hideNotifications = false })
     </nav>
   );
 }
+
+export default React.memo(Navbar);

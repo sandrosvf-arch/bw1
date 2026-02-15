@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+  import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
@@ -265,7 +265,7 @@ export default function SearchPage() {
             </p>
           </div>
 
-          <ListingsGrid listings={filteredListings} />
+          <ListingsGrid listings={filteredListings.slice(0, visibleCount)} loading={filteredListings.length === 0} />
         </main>
 
         <Footer brand={BRAND} footer={FOOTER} />

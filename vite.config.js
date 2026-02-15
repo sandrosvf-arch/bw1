@@ -27,17 +27,32 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn'],
+        passes: 2,
+      },
+      format: {
+        comments: false,
       },
     },
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,
     // Source maps apenas para debug
     sourcemap: false,
+    // CSS code splitting
+    cssCodeSplit: true,
+    // Melhora a performance do build
+    target: 'esnext',
+    // Module preload para chunks críticos
+    modulePreload: {
+      polyfill: true,
+    },
   },
   
   // Otimizações de performance
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+    // Força otimização de dependências
+    force: false,
   },
   
   server: {

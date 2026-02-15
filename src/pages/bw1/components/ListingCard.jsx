@@ -346,6 +346,7 @@ function ListingCard({ item, onViewMore }) {
             alt={item.title}
             className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.src = PLACEHOLDER_IMG;
             }}

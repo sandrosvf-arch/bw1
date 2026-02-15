@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+  import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
@@ -20,6 +20,11 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+
+// Progressive rendering constants
+const INITIAL_RENDER_COUNT = 8;
+const RENDER_BATCH_SIZE = 12;
+const RENDER_BATCH_DELAY = 40;
 
 // Helper para buscar em location (suporta string ou objeto)
 function searchInLocation(location, searchTerm) {
@@ -61,6 +66,8 @@ export default function PropertiesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
+  const intervalRef = useRef(null);
   const [filters, setFilters] = useState({
     dealType: "all",
     minPrice: "",
@@ -79,7 +86,43 @@ export default function PropertiesPage() {
   });
 
   useEffect(() => {
-    loadListings();
+    setLoading(true);
+    api.getListings({ category: 'property', limit: INITIAL_RENDER_COUNT })
+      .then((data) => {
+        setListings(data.listings || []);
+        setLoading(false);
+        setError(null);
+        setVisibleCount(INITIAL_RENDER_COUNT);
+        // Carrega o restante em background
+        api.getListings({ category: 'property' })
+          .then((fullData) => {
+            setListings(fullData.listings || []);
+            // Inicia progressive rendering
+            let current = INITIAL_RENDER_COUNT;
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+            }
+            intervalRef.current = setInterval(() => {
+              current += RENDER_BATCH_SIZE;
+              setVisibleCount((prev) => Math.min(prev + RENDER_BATCH_SIZE, fullData.listings.length));
+              if (current >= fullData.listings.length) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
+            }, RENDER_BATCH_DELAY);
+          });
+      })
+      .catch((err) => {
+        setError('Erro ao carregar anúncios');
+        setLoading(false);
+      });
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, []);
 
   // Reset pagination when search changes
@@ -297,14 +340,13 @@ export default function PropertiesPage() {
 
   // Lista paginada para exibição
   const displayedListings = useMemo(() => {
-    return filteredListings.slice(0, displayCount);
-  }, [filteredListings, displayCount]);
+    return filteredListings.slice(0, visibleCount);
+  }, [filteredListings, visibleCount]);
 
-  const hasMore = displayCount < filteredListings.length;
-
+  const hasMore = visibleCount < filteredListings.length;
   const loadMore = useCallback(() => {
-    setDisplayCount(prev => prev + 20);
-  }, []);
+    setVisibleCount(prev => Math.min(prev + RENDER_BATCH_SIZE, filteredListings.length));
+  }, [filteredListings.length]);
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
