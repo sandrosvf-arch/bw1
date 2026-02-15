@@ -46,6 +46,9 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    // Salvar rota anterior para redirecionar após OAuth
+    const from = location.state?.from?.pathname || window.location.pathname;
+    localStorage.setItem('bw1_oauth_redirect', from);
     const isDev = import.meta.env.DEV;
     const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
     const API_URL = isDev 

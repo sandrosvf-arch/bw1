@@ -36,8 +36,10 @@ export default function OAuthCallbackPage() {
             // Mesmo com erro, redirecionar (o token está salvo)
           }
           
-          // Redirecionar para home
-          navigate('/', { replace: true });
+          // Redirecionar para rota salva (ou home)
+          const redirectTo = localStorage.getItem('bw1_oauth_redirect') || '/';
+          localStorage.removeItem('bw1_oauth_redirect');
+          navigate(redirectTo, { replace: true });
         } else {
           console.error('Token não encontrado na URL');
           navigate('/login?error=no_token');
