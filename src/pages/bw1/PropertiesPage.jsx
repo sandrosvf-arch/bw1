@@ -1,9 +1,4 @@
-  // Progressive rendering constants
-  const INITIAL_RENDER_COUNT = 8;
-  const RENDER_BATCH_SIZE = 12;
-  const RENDER_BATCH_DELAY = 40;
-  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+  import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
@@ -25,6 +20,11 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+
+// Progressive rendering constants
+const INITIAL_RENDER_COUNT = 8;
+const RENDER_BATCH_SIZE = 12;
+const RENDER_BATCH_DELAY = 40;
 
 // Helper para buscar em location (suporta string ou objeto)
 function searchInLocation(location, searchTerm) {
@@ -66,6 +66,8 @@ export default function PropertiesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
+  const intervalRef = useRef(null);
   const [filters, setFilters] = useState({
     dealType: "all",
     minPrice: "",
@@ -97,11 +99,15 @@ export default function PropertiesPage() {
             setListings(fullData.listings || []);
             // Inicia progressive rendering
             let current = INITIAL_RENDER_COUNT;
-            const interval = setInterval(() => {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+            }
+            intervalRef.current = setInterval(() => {
               current += RENDER_BATCH_SIZE;
               setVisibleCount((prev) => Math.min(prev + RENDER_BATCH_SIZE, fullData.listings.length));
               if (current >= fullData.listings.length) {
-                clearInterval(interval);
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
               }
             }, RENDER_BATCH_DELAY);
           });
@@ -110,6 +116,13 @@ export default function PropertiesPage() {
         setError('Erro ao carregar anúncios');
         setLoading(false);
       });
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, []);
 
   // Reset pagination when search changes

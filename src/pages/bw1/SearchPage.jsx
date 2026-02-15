@@ -1,22 +1,4 @@
-  // Progressive rendering constants
-  const INITIAL_RENDER_COUNT = 8;
-  const RENDER_BATCH_SIZE = 12;
-  const RENDER_BATCH_DELAY = 40;
-  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
-  React.useEffect(() => {
-    setVisibleCount(INITIAL_RENDER_COUNT);
-    if (filteredListings.length > INITIAL_RENDER_COUNT) {
-      let current = INITIAL_RENDER_COUNT;
-      const interval = setInterval(() => {
-        current += RENDER_BATCH_SIZE;
-        setVisibleCount((prev) => Math.min(prev + RENDER_BATCH_SIZE, filteredListings.length));
-        if (current >= filteredListings.length) {
-          clearInterval(interval);
-        }
-      }, RENDER_BATCH_DELAY);
-    }
-  }, [filteredListings]);
-import React, { useState, useMemo } from "react";
+  import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
