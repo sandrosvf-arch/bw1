@@ -1,9 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { compression } from 'vite-plugin-compression2';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(), 
+    tailwindcss(),
+    // Compressão Gzip para assets
+    compression({
+      algorithm: 'gzip',
+      exclude: [/\.(br)$/, /\.(gz)$/],
+    }),
+    // Compressão Brotli para melhor compressão
+    compression({
+      algorithm: 'brotliCompress',
+      exclude: [/\.(br)$/, /\.(gz)$/],
+    }),
+  ],
   
   build: {
     // Code splitting otimizado
@@ -19,6 +33,10 @@ export default defineConfig({
             }
           }
         },
+        // Otimizar nomes de arquivos para melhor cache
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     // Otimizações de build
@@ -27,17 +45,24 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
+        passes: 2, // Múltiplos passes para melhor minificação
       },
     },
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,
     // Source maps apenas para debug
     sourcemap: false,
+    // Target para browsers modernos
+    target: 'es2020',
+    // CSS code splitting
+    cssCodeSplit: true,
   },
   
   // Otimizações de performance
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+    // Exclude para evitar pré-bundling de coisas grandes
+    exclude: [],
   },
   
   server: {
