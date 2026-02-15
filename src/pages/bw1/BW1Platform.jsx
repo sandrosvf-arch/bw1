@@ -21,7 +21,7 @@ const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 const HOME_SNAPSHOT_KEY = "bw1_home_snapshot_v1";
 const HOME_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
-const INITIAL_RENDER_COUNT = 8;
+const INITIAL_RENDER_COUNT = 4;
 const RENDER_BATCH_SIZE = 12;
 const RENDER_BATCH_DELAY = 40;
 
