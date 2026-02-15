@@ -50,18 +50,33 @@ function saveHomeSnapshot(nextListings = []) {
 }
 
 export default function BW1Platform() {
-  const initialCached = api.getListingsFromCache();
+  // Otimização: priorizar snapshot local, depois cache, depois vazio
   const snapshotListings = getHomeSnapshot();
-  const initialListings = initialCached?.listings?.length
-    ? initialCached.listings
-    : snapshotListings;
+  const initialCached = api.getListingsFromCache();
+  const initialListings = snapshotListings?.length > 0
+    ? snapshotListings
+    : (initialCached?.listings?.length ? initialCached.listings : []);
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
-  const [listings, setListings] = useState(initialListings || []);
+  const [listings, setListings] = useState(initialListings);
   const [loading, setLoading] = useState(!(initialListings?.length > 0));
   const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
 
   useEffect(() => {
+    // Se não há snapshot, tenta criar um snapshot rápido para o próximo acesso
+    if (!snapshotListings?.length) {
+      (async () => {
+        try {
+          const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
+          const fastListings = fastResponse.listings || [];
+          if (fastListings.length > 0) {
+            saveHomeSnapshot(fastListings);
+            setListings(fastListings);
+            setLoading(false);
+          }
+        } catch {}
+      })();
+    }
     loadListings();
   }, []);
 
@@ -70,35 +85,31 @@ export default function BW1Platform() {
     const hasCached = cached?.listings?.length > 0;
     const hasLocalSnapshot = snapshotListings.length > 0;
 
-    if (hasCached) {
-      setListings(cached.listings);
-      setLoading(false);
-    } else if (hasLocalSnapshot) {
+    // Se já tem snapshot, não precisa mostrar loading
+    if (hasLocalSnapshot) {
       setListings(snapshotListings);
+      setLoading(false);
+    } else if (hasCached) {
+      setListings(cached.listings);
       setLoading(false);
     } else {
       setLoading(true);
     }
 
     try {
-      if (!hasCached && !hasLocalSnapshot) {
-        const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
-        const fastListings = fastResponse.listings || [];
-        if (fastListings.length > 0) {
-          setListings(fastListings);
-          saveHomeSnapshot(fastListings);
-        }
-
-        const fullResponse = await api.getListings({}, { forceRefresh: true });
-        const fullListings = fullResponse.listings || [];
-        setListings(fullListings);
-        saveHomeSnapshot(fullListings);
-      } else {
-        const response = await api.getListings({}, { forceRefresh: hasCached });
-        const nextListings = response.listings || [];
-        setListings(nextListings);
-        saveHomeSnapshot(nextListings);
+      // Sempre buscar uma versão rápida para atualizar snapshot/local
+      const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
+      const fastListings = fastResponse.listings || [];
+      if (fastListings.length > 0) {
+        setListings(fastListings);
+        saveHomeSnapshot(fastListings);
       }
+
+      // Depois busca o full (em background)
+      const fullResponse = await api.getListings({}, { forceRefresh: true });
+      const fullListings = fullResponse.listings || [];
+      setListings(fullListings);
+      saveHomeSnapshot(fullListings);
     } catch (error) {
       console.error('Erro ao carregar anúncios da API:', error);
       if (!hasCached && !hasLocalSnapshot) {
