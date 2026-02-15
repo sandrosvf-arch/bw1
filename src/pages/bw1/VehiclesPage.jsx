@@ -325,8 +325,6 @@ export default function VehiclesPage() {
     return filteredListings.slice(0, visibleCount);
   }, [filteredListings, visibleCount]);
 
-  const hasMore = displayCount < filteredListings.length;
-
   const hasMore = visibleCount < filteredListings.length;
   const loadMore = useCallback(() => {
     setVisibleCount(prev => Math.min(prev + RENDER_BATCH_SIZE, filteredListings.length));
