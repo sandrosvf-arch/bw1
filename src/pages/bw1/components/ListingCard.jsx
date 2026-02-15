@@ -564,6 +564,7 @@ function ListingCard({ item, onViewMore }) {
           {/* VER MAIS */}
           <Link
             to={`/anuncio/${item.id}`}
+            state={{ item }}
             className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white
                        bg-gradient-to-r from-blue-600 to-indigo-700
                        hover:from-blue-700 hover:to-indigo-800

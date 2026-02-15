@@ -147,27 +147,34 @@ function formatPrice(price) {
   }).format(num);
 }
 
+import { useLocation } from "react-router-dom";
+
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Se vier via state, já exibe instantâneo
+  const [item, setItem] = useState(location.state?.item || null);
+  const [loading, setLoading] = useState(!location.state?.item);
 
   useEffect(() => {
-    loadListing();
+    // Se já veio via state, faz fetch em background
+    if (location.state?.item) {
+      api.getListing(id).then((response) => {
+        setItem(response.listing);
+      }).catch(() => {}).finally(() => setLoading(false));
+    } else {
+      loadListing();
+    }
   }, [id]);
 
   const loadListing = async () => {
     try {
       setLoading(true);
       const response = await api.getListing(id);
-      console.log('📋 Listing loaded:', response.listing);
-      console.log('🏷️ dealType:', response.listing?.dealType);
-      console.log('🏷️ tag:', response.listing?.tag);
       setItem(response.listing);
     } catch (error) {
-      console.error('Erro ao carregar anúncio:', error);
       setItem(null);
     } finally {
       setLoading(false);
