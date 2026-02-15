@@ -39,7 +39,7 @@ function Item({ to, label, Icon }) {
   );
 }
 
-export default function BottomNav() {
+function BottomNav() {
   const { user, isAuthenticated } = useAuth();
   const { unreadChats } = useActivityCounts(isAuthenticated);
 
@@ -144,3 +144,5 @@ export default function BottomNav() {
     </div>
   );
 }
+
+export default React.memo(BottomNav);
