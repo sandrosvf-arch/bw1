@@ -44,27 +44,16 @@ export default function BottomNav() {
   const { unreadChats } = useActivityCounts(isAuthenticated);
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 z-[9998] pointer-events-none">
+    <div className="fixed left-0 right-0 bottom-0 z-50 pointer-events-none w-full">
       {/* Safe area + padding */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-[calc(env(safe-area-inset-bottom,0px)+14px)]">
         <div className="pointer-events-auto">
           <div
-            className="
-              mx-auto
-              w-full
-              md:max-w-[520px]
-              bg-slate-900/95
-              supports-[backdrop-filter]:backdrop-blur-md backdrop-blur-md
-              border border-white/10
-              shadow-2xl
-              rounded-[28px]
-              px-2
-              py-2
-            "
+            className="mx-auto w-full md:max-w-[520px] bg-slate-900/95 supports-[backdrop-filter]:backdrop-blur-md backdrop-blur-md border border-white/10 shadow-2xl rounded-[28px] px-2 py-2"
+            style={{ position: 'relative', bottom: 0 }}
           >
             <div className="grid grid-cols-5 items-center">
               <Item to="/" label="Início" Icon={Home} />
-              
               {/* Chat com contador */}
               <NavLink
                 to="/chat"
@@ -88,7 +77,6 @@ export default function BottomNav() {
                   </span>
                 )}
               </NavLink>
-
               {/* Botão central destacado */}
               <NavLink
                 to="/criar-anuncio"
@@ -106,7 +94,6 @@ export default function BottomNav() {
                 </div>
                 <span className="text-[11px] font-semibold leading-none">Anunciar</span>
               </NavLink>
-
               <NavLink
                 to="/conta"
                 className={({ isActive }) =>
