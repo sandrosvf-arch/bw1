@@ -20,14 +20,25 @@ passport.use(
           .single();
 
         if (existingUser) {
-          // Usuário já existe, atualizar avatar se necessário
+          // Usuário já existe, atualizar avatar e auth_provider se necessário
+          const updates: any = {};
+          
           if (profile.photos?.[0]?.value && !existingUser.avatar) {
+            updates.avatar = profile.photos[0].value;
+          }
+          
+          // Garantir que auth_provider está definido
+          if (!existingUser.auth_provider || existingUser.auth_provider === 'email') {
+            updates.auth_provider = 'google';
+          }
+          
+          if (Object.keys(updates).length > 0) {
             await supabase
               .from('users')
-              .update({ avatar: profile.photos[0].value })
+              .update(updates)
               .eq('id', existingUser.id);
             
-            existingUser.avatar = profile.photos[0].value;
+            Object.assign(existingUser, updates);
           }
           
           return done(null, existingUser);
@@ -41,6 +52,7 @@ passport.use(
             name: profile.displayName,
             avatar: profile.photos?.[0]?.value,
             password: '', // Senha vazia para usuários OAuth
+            auth_provider: 'google',
             created_at: new Date().toISOString(),
           })
           .select()

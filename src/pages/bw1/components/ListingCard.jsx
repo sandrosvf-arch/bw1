@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Heart,
   MapPin,
@@ -166,6 +166,7 @@ function TagChip({ tag }) {
 
 function ListingCard({ item, onViewMore }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const images = useMemo(() => normalizeImages(item), [item]);
   const imagesKey = images.join("||");
@@ -228,7 +229,9 @@ function ListingCard({ item, onViewMore }) {
     e.stopPropagation();
 
     if (!isAuthenticated) {
-      navigate("/login");
+      // Salvar URL atual para retornar aqui após login
+      localStorage.setItem('bw1_redirect_after_login', location.pathname);
+      navigate("/login", { replace: true });
       return;
     }
 

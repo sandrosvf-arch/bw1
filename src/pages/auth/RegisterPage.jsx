@@ -48,8 +48,9 @@ export default function RegisterPage() {
     });
 
     if (result.success) {
-      // Redirecionar para a página que o usuário tentou acessar ou para home
-      const from = location.state?.from?.pathname || '/';
+      // Pegar do localStorage onde foi salvo antes de vir para register
+      const from = localStorage.getItem('bw1_redirect_after_login') || '/';
+      localStorage.removeItem('bw1_redirect_after_login');
       navigate(from, { replace: true });
     } else {
       setError(result.error || 'Erro ao criar conta');
@@ -66,6 +67,10 @@ export default function RegisterPage() {
   };
 
   const handleGoogleRegister = () => {
+    // O localStorage já foi salvo antes de navegar para /register
+    const from = localStorage.getItem('bw1_redirect_after_login') || '/';
+    localStorage.setItem('bw1_oauth_redirect', from);
+    
     const isDev = import.meta.env.DEV;
     const API_URL = isDev 
       ? (import.meta.env.VITE_API_URL || 'http://localhost:3001')

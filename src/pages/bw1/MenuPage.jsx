@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   Settings,
@@ -59,6 +59,7 @@ const CategoryCard = ({ icon, label, onClick }) => (
 
 export default function MenuPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [logoOk, setLogoOk] = React.useState(true);
 
@@ -151,7 +152,10 @@ export default function MenuPage() {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => {
+                    localStorage.setItem('bw1_redirect_after_login', location.pathname);
+                    navigate('/login', { replace: true });
+                  }}
                   className="px-4 py-2 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition flex items-center gap-2 whitespace-nowrap text-sm"
                 >
                   <LogIn size={18} />

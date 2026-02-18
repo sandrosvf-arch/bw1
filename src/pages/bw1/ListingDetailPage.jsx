@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   MapPin,
@@ -146,8 +146,6 @@ function formatPrice(price) {
     maximumFractionDigits: 0,
   }).format(num);
 }
-
-import { useLocation } from "react-router-dom";
 
 export default function ListingDetailPage() {
   const { id } = useParams();
@@ -666,7 +664,11 @@ export default function ListingDetailPage() {
                         ref={contactButtonRef}
                         onClick={async () => {
                           if (!isAuthenticated) {
-                            navigate('/login');
+                            // Salvar URL atual com parâmetro para abrir chat após login
+                            const urlWithAction = `${location.pathname}?openChat=true`;
+                            console.log('Salvando redirect:', urlWithAction);
+                            localStorage.setItem('bw1_redirect_after_login', urlWithAction);
+                            navigate('/login', { replace: true });
                             return;
                           }
 
@@ -1010,13 +1012,7 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-100 rounded-xl p-3 mb-4">
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    <strong>Termo de responsabilidade:</strong> A BW1 atua exclusivamente como plataforma de conexão entre anunciantes e interessados. Não participamos, intermediamos ou garantimos nenhuma transação. Golpes, fraudes ou prejuízos decorrentes de negociações que não seguiram as diretrizes de segurança são de responsabilidade exclusiva dos envolvidos.
-                  </p>
-                </div>
-
-                <button className="w-full py-3 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200">
+                <button className="w-full py-3 px-4 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-red-200 mt-4">
                   <Flag size={18} />
                   Denunciar anúncio
                 </button>

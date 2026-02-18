@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../config/supabase';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
+import CacheService from '../services/cache.service';
 
 const router = Router();
 
@@ -16,6 +17,12 @@ function parseJsonField(value: any) {
 // Listar conversas do usuário
 router.get('/conversations', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    // Tentar buscar do cache
+    const cachedConversations = CacheService.getConversations(req.userId!);
+    if (cachedConversations) {
+      return res.json(cachedConversations);
+    }
+
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -78,7 +85,12 @@ router.get('/conversations', authMiddleware, async (req: AuthRequest, res) => {
       };
     });
 
-    res.json({ conversations: enriched });
+    const response = { conversations: enriched };
+
+    // Salvar no cache
+    CacheService.setConversations(req.userId!, response);
+
+    res.json(response);
   } catch (error) {
     console.error('Get conversations error:', error);
     res.status(500).json({ error: 'Failed to get conversations' });
@@ -149,6 +161,12 @@ router.get('/conversations/:id/messages', authMiddleware, async (req: AuthReques
   try {
     const { id } = req.params;
 
+    // Tentar buscar do cache
+    const cachedMessages = CacheService.getMessages(id);
+    if (cachedMessages) {
+      return res.json(cachedMessages);
+    }
+
     // Verificar se o usuário faz parte da conversa
     const { data: conversation } = await supabase
       .from('conversations')
@@ -172,7 +190,12 @@ router.get('/conversations/:id/messages', authMiddleware, async (req: AuthReques
 
     if (error) throw error;
 
-    res.json({ messages: data || [] });
+    const response = { messages: data || [] };
+
+    // Salvar no cache
+    CacheService.setMessages(id, response);
+
+    res.json(response);
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({ error: 'Failed to get messages' });
@@ -188,7 +211,7 @@ router.post('/conversations', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Verificar se já existe conversa
+    // Verificar se já existe conversa entre esses usuários para esse anúncio
     const { data: existing, error: existingError } = await supabase
       .from('conversations')
       .select('*')
@@ -196,10 +219,13 @@ router.post('/conversations', authMiddleware, async (req: AuthRequest, res) => {
       .or(`and(user1_id.eq.${req.userId},user2_id.eq.${receiverId}),and(user1_id.eq.${receiverId},user2_id.eq.${req.userId})`)
       .maybeSingle();
 
-    if (existingError) throw existingError;
+    if (existingError && existingError.code !== 'PGRST116') {
+      throw existingError;
+    }
 
     if (existing) {
-      return res.json({ conversation: existing });
+      console.log(`Conversa já existe: ${existing.id}`);
+      return res.json({ conversation: existing, existingConversation: true });
     }
 
     // Criar nova conversa
@@ -217,7 +243,13 @@ router.post('/conversations', authMiddleware, async (req: AuthRequest, res) => {
 
     if (error) throw error;
 
-    res.status(201).json({ conversation: data });
+    console.log(`Nova conversa criada: ${data.id}`);
+
+    // Invalidar cache de conversas dos dois usuários
+    CacheService.invalidateConversations(req.userId!);
+    CacheService.invalidateConversations(String(receiverId));
+
+    res.status(201).json({ conversation: data, existingConversation: false });
   } catch (error) {
     console.error('Create conversation error:', error);
     res.status(500).json({ error: 'Failed to create conversation' });
@@ -259,12 +291,26 @@ router.post('/messages', authMiddleware, async (req: AuthRequest, res) => {
 
     if (error) throw error;
 
-    // Atualizar timestamp da conversa
-    await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
+    // Atualizar timestamp da conversa e invalidar caches em background (não bloqueia resposta)
+    Promise.all([
+      supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId),
+    ]).then(() => {
+      // Invalidar caches após atualizar
+      CacheService.invalidateMessages(conversationId);
+      if (conversation.user1_id) {
+        CacheService.invalidateConversations(String(conversation.user1_id));
+      }
+      if (conversation.user2_id) {
+        CacheService.invalidateConversations(String(conversation.user2_id));
+      }
+    }).catch(err => {
+      console.error('Background update error:', err);
+    });
 
+    // Retorna imediatamente
     res.status(201).json({ message: data });
   } catch (error) {
     console.error('Send message error:', error);

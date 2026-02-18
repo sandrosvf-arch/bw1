@@ -9,6 +9,9 @@ import Tabs from "./components/Tabs";
 import ListingsGrid from "./components/ListingsGrid";
 import CTA from "./components/CTA";
 import Footer from "./components/Footer";
+import TermsModal from "../../components/TermsModal";
+import SkeletonCard from "./components/SkeletonCard";
+import { useTermsModal } from "../../hooks/useTermsModal";
 
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
@@ -21,9 +24,9 @@ const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 const HOME_SNAPSHOT_KEY = "bw1_home_snapshot_v1";
 const HOME_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
-const INITIAL_RENDER_COUNT = 4;
-const RENDER_BATCH_SIZE = 12;
-const RENDER_BATCH_DELAY = 40;
+const INITIAL_RENDER_COUNT = 8;
+const RENDER_BATCH_SIZE = 20;
+const RENDER_BATCH_DELAY = 10;
 
 function getHomeSnapshot() {
   try {
@@ -50,6 +53,8 @@ function saveHomeSnapshot(nextListings = []) {
 }
 
 export default function BW1Platform() {
+  const { showTermsModal, handleAcceptTerms } = useTermsModal();
+  
   // Otimização: priorizar snapshot local, depois cache, depois vazio
   const snapshotListings = getHomeSnapshot();
   const initialCached = api.getListingsFromCache();
@@ -199,6 +204,8 @@ export default function BW1Platform() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
+      <TermsModal isOpen={showTermsModal} onAccept={handleAcceptTerms} />
+      
       <AppShell
         header={
           <Navbar
@@ -228,7 +235,13 @@ export default function BW1Platform() {
           </div>
           <ListingsGrid listings={visibleListings} loading={loading} />
           {visibleCount < filteredListings.length && (
-            <div className="text-center text-sm text-slate-500 mt-4">Carregando mais anúncios...</div>
+            <div className="mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(Math.min(8, filteredListings.length - visibleCount))].map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            </div>
           )}
           <CTA />
         </main>

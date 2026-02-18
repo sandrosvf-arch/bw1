@@ -1,12 +1,9 @@
 import { Router } from 'express';
 import { supabase } from '../config/supabase';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
+import CacheService from '../services/cache.service';
 
 const router = Router();
-
-// Cache simples para listagens
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos
 
 function parseJsonField(value: any) {
   if (typeof value !== 'string') return value;
@@ -17,39 +14,14 @@ function parseJsonField(value: any) {
   }
 }
 
-function getCacheKey(params: any): string {
-  return JSON.stringify(params);
-}
-
-function getFromCache(key: string) {
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log('✅ Cache hit:', key);
-    return cached.data;
-  }
-  cache.delete(key);
-  return null;
-}
-
-function setCache(key: string, data: any) {
-  cache.set(key, { data, timestamp: Date.now() });
-  // Limpar cache antigo
-  if (cache.size > 50) {
-    const oldestKey = cache.keys().next().value;
-    if (oldestKey) {
-      cache.delete(oldestKey);
-    }
-  }
-}
-
 // Listar todos os anúncios (público)
 router.get('/', async (req, res) => {
   try {
     const { category, type, search, limit = 20, offset = 0 } = req.query;
-    const cacheKey = getCacheKey({ category, type, search, limit, offset });
+    const cacheParams = { category, type, search, limit, offset };
 
     // Tentar buscar do cache
-    const cachedData = getFromCache(cacheKey);
+    const cachedData = CacheService.getListings(cacheParams);
     if (cachedData) {
       return res.json(cachedData);
     }
@@ -96,7 +68,7 @@ router.get('/', async (req, res) => {
     const response = { listings: processedData, total: processedData.length };
     
     // Salvar no cache
-    setCache(cacheKey, response);
+    CacheService.setListings(cacheParams, response);
 
     res.json(response);
   } catch (error) {
@@ -109,6 +81,12 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Tentar buscar do cache
+    const cachedListing = CacheService.getListing(id);
+    if (cachedListing) {
+      return res.json({ listing: cachedListing });
+    }
 
     const { data, error } = await supabase
       .from('listings')
@@ -130,6 +108,9 @@ router.get('/:id', async (req, res) => {
       details: typeof data.details === 'string' ? JSON.parse(data.details) : data.details,
       contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
     };
+
+    // Salvar no cache
+    CacheService.setListing(id, processedListing);
 
     res.json({ listing: processedListing });
   } catch (error) {
@@ -188,6 +169,10 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
     };
 
+    // Salvar no cache e invalidar cache de listagens
+    CacheService.setListing(data.id, processedListing);
+    CacheService.invalidateListingsCache();
+
     res.status(201).json({ listing: processedListing });
   } catch (error) {
     console.error('Create listing error:', error);
@@ -231,6 +216,10 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
       contact: typeof data.contact === 'string' ? JSON.parse(data.contact) : data.contact,
     };
 
+    // Atualizar cache e invalidar cache de listagens
+    CacheService.setListing(id, processedListing);
+    CacheService.invalidateListingsCache();
+
     res.json({ listing: processedListing });
   } catch (error) {
     console.error('Update listing error:', error);
@@ -260,6 +249,10 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Remover do cache e invalidar cache de listagens
+    CacheService.deleteListing(id);
+    CacheService.invalidateListingsCache();
 
     res.json({ message: 'Listing deleted successfully' });
   } catch (error) {

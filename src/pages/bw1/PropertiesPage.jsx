@@ -10,6 +10,8 @@ import AppShell from "./components/AppShell";
 import ListingsGrid from "./components/ListingsGrid";
 import CTA from "./components/CTA";
 import Footer from "./components/Footer";
+import TermsModal from "../../components/TermsModal";
+import { useTermsModal } from "../../hooks/useTermsModal";
 
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
@@ -50,6 +52,7 @@ function parsePrice(price) {
 }
 
 export default function PropertiesPage() {
+  const { showTermsModal, handleAcceptTerms } = useTermsModal();
   const initialCached = api.getListingsFromCache({ category: 'property' });
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
@@ -359,6 +362,7 @@ export default function PropertiesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
+      <TermsModal isOpen={showTermsModal} onAccept={handleAcceptTerms} />
       <AppShell
         header={
           <nav className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10">

@@ -145,6 +145,7 @@ class ApiService {
   async request(endpoint, options = {}) {
     const method = options.method || 'GET';
     const isGet = method === 'GET';
+    const timeout = options.timeout || 30000; // 30 segundos padrão
 
     // Tentar buscar do cache apenas para GET requests
     if (isGet && !options.forceRefresh) {
@@ -168,19 +169,36 @@ class ApiService {
     };
 
     const requestPromise = (async () => {
-      const response = await fetch(url, config);
-      const data = await response.json();
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro na requisição');
+      try {
+        const response = await fetch(url, {
+          ...config,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro na requisição');
+        }
+
+        // Salvar no cache apenas para GET requests
+        if (isGet) {
+          this.setCache(endpoint, data);
+        }
+
+        return data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Tempo limite excedido. Tente novamente.');
+        }
+        throw error;
       }
-
-      // Salvar no cache apenas para GET requests
-      if (isGet) {
-        this.setCache(endpoint, data);
-      }
-
-      return data;
     })();
 
     if (isGet) {
@@ -308,12 +326,17 @@ class ApiService {
     return this.request('/api/chat/messages', {
       method: 'POST',
       body: JSON.stringify(data),
+      timeout: 15000, // 15 segundos para envio de mensagem
     });
   }
 
   // Users
   async getUser(id) {
     return this.request(`/api/users/${id}`);
+  }
+
+  async getProfile(userId) {
+    return this.request(`/api/profile/${userId}`);
   }
 
   async updateProfile(data) {

@@ -142,7 +142,9 @@ export default function ChatPage() {
           {/* Lista de conversas */}
           {loading ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+              <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent mb-4"></div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Carregando conversas...</h3>
+              <p className="text-slate-600">Aguarde um momento</p>
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">

@@ -6,11 +6,11 @@ import keepAliveService from "./services/keepAlive.js";
 import api from "./services/api.js";
 import ScrollToTop from "./components/ScrollToTop.jsx";
 
-// Páginas críticas - carregamento imediato
+// Páginas críticas - carregamento imediato (apenas a home)
 import BW1Platform from "./pages/bw1/BW1Platform.jsx";
-import ListingDetailPage from "./pages/bw1/ListingDetailPage.jsx";
 
 // Páginas secundárias - lazy loading
+const ListingDetailPage = lazy(() => import("./pages/bw1/ListingDetailPage.jsx"));
 const VehiclesPage = lazy(() => import("./pages/bw1/VehiclesPage.jsx"));
 const PropertiesPage = lazy(() => import("./pages/bw1/PropertiesPage.jsx"));
 const NotificationsPage = lazy(() => import("./pages/bw1/NotificationsPage.jsx"));
@@ -23,6 +23,7 @@ const AccountPage = lazy(() => import("./pages/bw1/AccountPage.jsx"));
 const FavoritesPage = lazy(() => import("./pages/bw1/FavoritesPage.jsx"));
 const ChatPage = lazy(() => import("./pages/bw1/ChatPage.jsx"));
 const ChatConversationPage = lazy(() => import("./pages/bw1/ChatConversationPage.jsx"));
+const UserProfilePage = lazy(() => import("./pages/bw1/UserProfilePage.jsx"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage.jsx"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage.jsx"));
 const OAuthCallbackPage = lazy(() => import("./pages/auth/OAuthCallbackPage.jsx"));
@@ -88,6 +89,7 @@ export default function App() {
           <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatConversationPage /></ProtectedRoute>} />
+          <Route path="/perfil/:userId" element={<UserProfilePage />} />
           
           <Route path="/anuncio-publicado" element={<ProtectedRoute><ListingSuccessPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />

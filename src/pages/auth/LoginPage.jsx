@@ -28,8 +28,10 @@ export default function LoginPage() {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      // Redirecionar para a página que o usuário tentou acessar ou para home
-      const from = location.state?.from?.pathname || '/';
+      // Pegar do localStorage onde foi salvo antes de vir para login
+      const from = localStorage.getItem('bw1_redirect_after_login') || '/';
+      console.log('Redirecionando após login email para:', from);
+      localStorage.removeItem('bw1_redirect_after_login');
       navigate(from, { replace: true });
     } else {
       setError(result.error || 'Erro ao fazer login');
@@ -46,9 +48,12 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    // Salvar rota anterior para redirecionar após OAuth
-    const from = location.state?.from?.pathname || window.location.pathname;
+    // O localStorage já foi salvo antes de navegar para /login
+    // Copiar para a chave usada no OAuth callback
+    const from = localStorage.getItem('bw1_redirect_after_login') || '/';
+    console.log('Iniciando Google OAuth, vai redirecionar para:', from);
     localStorage.setItem('bw1_oauth_redirect', from);
+    
     const isDev = import.meta.env.DEV;
     const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
     const API_URL = isDev 
