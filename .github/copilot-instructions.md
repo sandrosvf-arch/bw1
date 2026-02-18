@@ -1,44 +1,44 @@
-# Copilot Instructions for BW1 Codebase
+# Instruções do Copilot para a Base de Código BW1
 
-## Overview
-BW1 is a full-stack platform for real estate and vehicle listings. It consists of a React + Vite frontend and a Node.js/Express/TypeScript backend, integrated with Supabase for database, authentication, and storage.
+## Visão Geral
+BW1 é uma plataforma full-stack para anúncios de imóveis e veículos. Consiste em um frontend React + Vite e um backend Node.js/Express/TypeScript, integrado com Supabase para banco de dados, autenticação e armazenamento.
 
-## Architecture
-- **Frontend**: Located in `src/`, uses React components, hooks, and context. Pages are organized by domain (e.g., `pages/bw1/`). Tailwind CSS is used for styling.
-- **Backend**: Located in `backend/`, uses Express routes, middleware, and services. TypeScript is used for type safety. Supabase handles database and auth.
-- **Integration**: API calls from frontend are made via `services/api.js` to backend endpoints. Auth flows use JWT and Supabase.
+## Arquitetura
+- **Frontend**: Localizado em `src/`, utiliza componentes React, hooks e context. As páginas são organizadas por domínio (ex: `pages/bw1/`). Tailwind CSS é usado para estilização.
+- **Backend**: Localizado em `backend/`, utiliza rotas Express, middlewares e serviços. TypeScript é usado para segurança de tipos. Supabase gerencia banco de dados e autenticação.
+- **Integração**: Chamadas de API do frontend são feitas via `services/api.js` para endpoints do backend. Fluxos de autenticação usam JWT e Supabase.
 
-## Developer Workflows
+## Fluxos de Trabalho do Desenvolvedor
 - **Frontend**:
-  - Start dev server: `npm run dev` (root)
-  - Build: `npm run build` (root)
-  - Main entry: `src/main.jsx`, App shell: `src/pages/bw1/components/AppShell.jsx`
+  - Iniciar servidor dev: `npm run dev` (raiz)
+  - Build: `npm run build` (raiz)
+  - Entrada principal: `src/main.jsx`, Shell da aplicação: `src/pages/bw1/components/AppShell.jsx`
 - **Backend**:
-  - Install deps: `cd backend && npm install`
-  - Start server: `npm run dev` or `npm start` (backend)
-  - Configure env: Copy `.env.example` to `.env` and set Supabase keys
-  - Test scripts: See `backend/test.js`, `backend/test-create-listing.js`
+  - Instalar dependências: `cd backend && npm install`
+  - Iniciar servidor: `npm run dev` ou `npm start` (backend)
+  - Configurar env: Copiar `.env.example` para `.env` e definir chaves do Supabase
+  - Scripts de teste: Veja `backend/test.js`, `backend/test-create-listing.js`
 
-## Patterns & Conventions
-- **Routes**: Backend routes in `backend/src/routes/`. Frontend pages in `src/pages/bw1/`.
-- **Auth**: Uses JWT, Supabase, and Google OAuth (`backend/src/config/passport.ts`, `backend/src/routes/google-auth.routes.ts`).
-- **Data**: Listings and users are main entities. See `backend/src/routes/listings.routes.ts` and `backend/src/routes/users.routes.ts`.
-- **Styling**: Tailwind config in `tailwind.config.js`. Use utility classes in JSX.
-- **API**: Frontend calls backend via `services/api.js`. Use async/await and handle errors with try/catch.
+## Padrões e Convenções
+- **Rotas**: Rotas do backend em `backend/src/routes/`. Páginas do frontend em `src/pages/bw1/`.
+- **Autenticação**: Usa JWT, Supabase e Google OAuth (`backend/src/config/passport.ts`, `backend/src/routes/google-auth.routes.ts`).
+- **Dados**: Anúncios (listings) e usuários são as entidades principais. Veja `backend/src/routes/listings.routes.ts` e `backend/src/routes/users.routes.ts`.
+- **Estilização**: Configuração do Tailwind em `tailwind.config.js`. Use classes utilitárias no JSX.
+- **API**: Frontend chama backend via `services/api.js`. Use async/await e trate erros com try/catch.
 
-## External Dependencies
-- **Supabase**: Setup required, see `backend/SUPABASE_SETUP.md`.
-- **Google OAuth**: See `backend/GOOGLE_OAUTH_SETUP.md`.
-- **Vite**: For frontend build and dev server.
+## Dependências Externas
+- **Supabase**: Configuração necessária, veja `backend/SUPABASE_SETUP.md`.
+- **Google OAuth**: Veja `backend/GOOGLE_OAUTH_SETUP.md`.
+- **Vite**: Para build do frontend e servidor de desenvolvimento.
 
-## Examples
-- To add a new listing: Implement in `backend/src/routes/listings.routes.ts` and call from `src/pages/bw1/CreateListingPage.jsx`.
-- To add a new page: Create in `src/pages/bw1/`, add route in `AppShell.jsx`.
+## Exemplos
+- Para adicionar um novo anúncio: Implementar em `backend/src/routes/listings.routes.ts` e chamar de `src/pages/bw1/CreateListingPage.jsx`.
+- Para adicionar uma nova página: Criar em `src/pages/bw1/`, adicionar rota em `AppShell.jsx`.
 
-## References
-- Main backend config: `backend/src/config/supabase.ts`, `backend/src/config/passport.ts`
-- Main frontend entry: `src/main.jsx`, `src/pages/bw1/components/AppShell.jsx`
-- API service: `src/services/api.js`
+## Referências
+- Configuração principal do backend: `backend/src/config/supabase.ts`, `backend/src/config/passport.ts`
+- Entrada principal do frontend: `src/main.jsx`, `src/pages/bw1/components/AppShell.jsx`
+- Serviço de API: `src/services/api.js`
 
 ---
-For more details, see `README.md` files in root and backend. Update this file if major architecture or workflow changes occur.
+Para mais detalhes, veja os arquivos `README.md` na raiz e no backend. Atualize este arquivo se ocorrerem mudanças importantes na arquitetura ou nos fluxos de trabalho.
