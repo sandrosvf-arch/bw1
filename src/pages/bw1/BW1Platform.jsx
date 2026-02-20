@@ -10,7 +10,6 @@ import ListingsGrid from "./components/ListingsGrid";
 import CTA from "./components/CTA";
 import Footer from "./components/Footer";
 import TermsModal from "../../components/TermsModal";
-import SkeletonCard from "./components/SkeletonCard";
 import { useTermsModal } from "../../hooks/useTermsModal";
 
 import * as BrandMod from "./content/brand.js";
@@ -215,11 +214,26 @@ export default function BW1Platform() {
           
           {/* Indicador de carregamento de mais anúncios */}
           {loadingMore && (
-            <div className="mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(BATCH_SIZE)].map((_, i) => (
-                  <SkeletonCard key={i} />
-                ))}
+            <div className="flex items-center justify-center py-12">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Carregando anúncios
+                </h3>
+                <p className="text-slate-600 text-base">
+                  Estamos buscando os melhores anúncios para você
+                </p>
+                <div className="mt-6 flex justify-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
               </div>
             </div>
           )}
