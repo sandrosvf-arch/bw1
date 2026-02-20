@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Car, Calendar, DollarSign, MapPin, Gauge, Filter, ArrowUpDown, Home as HomeIcon, Search, ArrowLeft } from "lucide-react";
 import api from "../../services/api";
@@ -74,10 +74,15 @@ export default function VehiclesPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState(initialListings);
+  const [allListings, setAllListings] = useState([]);
+  const [listings, setListings] = useState(initialListings.slice(0, 4));
   const [loading, setLoading] = useState(initialListings.length === 0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
-  const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
+  const [offset, setOffset] = useState(4);
+  const [hasMore, setHasMore] = useState(initialListings.length > 4);
+  const observerRef = useRef(null);
+  const BATCH_SIZE = 4;
   const [filters, setFilters] = useState({
     country: "Brasil",
     state: "",
@@ -99,37 +104,72 @@ export default function VehiclesPage() {
   });
 
   useEffect(() => {
-    loadListings();
+    loadInitialListings();
   }, []);
 
-  // Reset pagination when search changes
+  // Intersection Observer para scroll infinito
   useEffect(() => {
-    setDisplayCount(20);
-  }, [debouncedSearchTerm]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMoreListings();
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-  const loadListings = useCallback(async () => {
-    const cached = api.getListingsFromCache({ category: 'vehicle' });
-    const hasCached = cached?.listings?.length > 0;
-
-    if (hasCached) {
-      setListings(cached.listings);
-      setLoading(false);
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
     }
 
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [hasMore, loadingMore, loading, offset]);
+
+  const loadInitialListings = async () => {
+    setLoading(true);
     try {
       setError(null);
-      const response = await api.getListings({ category: 'vehicle' }, { forceRefresh: hasCached });
-      setListings(response.listings || []);
+      const response = await api.getListings({ category: 'vehicle' });
+      const fetchedListings = response.listings || [];
+      setAllListings(fetchedListings);
+      setListings(fetchedListings.slice(0, BATCH_SIZE));
+      setOffset(BATCH_SIZE);
+      setHasMore(fetchedListings.length > BATCH_SIZE);
     } catch (error) {
       console.error('Erro ao carregar veículos:', error);
       setError('Erro ao carregar veículos. Tente novamente.');
-      if (!hasCached) {
-        setListings([]);
-      }
+      setListings([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
+
+  const loadMoreListings = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const newListings = allListings.slice(offset, offset + BATCH_SIZE);
+      
+      if (newListings.length > 0) {
+        setListings(prev => [...prev, ...newListings]);
+        setOffset(prev => prev + BATCH_SIZE);
+        setHasMore(offset + BATCH_SIZE < allListings.length);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mais veículos:', error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
@@ -307,16 +347,10 @@ export default function VehiclesPage() {
     return result;
   }, [debouncedSearchTerm, filters, sortBy, listings]);
 
-  // Lista paginada para exibição
+  // Filtrar os listings carregados
   const displayedListings = useMemo(() => {
-    return filteredListings.slice(0, displayCount);
-  }, [filteredListings, displayCount]);
-
-  const hasMore = displayCount < filteredListings.length;
-
-  const loadMore = useCallback(() => {
-    setDisplayCount(prev => prev + 20);
-  }, []);
+    return filteredListings;
+  }, [filteredListings]);
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -864,16 +898,41 @@ export default function VehiclesPage() {
             </div>
           )}
 
-          <ListingsGrid listings={displayedListings} loading={loading} />
+          <ListingsGrid listings={displayedListings} loading={false} />
           
-          {hasMore && !loading && (
-            <div className="flex justify-center mt-12 mb-8">
-              <button
-                onClick={loadMore}
-                className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
-              >
-                Carregar mais anúncios
-              </button>
+          {/* Observer target para scroll infinito */}
+          {hasMore && <div ref={observerRef} className="h-4" />}
+          
+          {/* Card de loading para mais anúncios */}
+          {loadingMore && (
+            <div className="flex items-center justify-center py-12">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Carregando veículos
+                </h3>
+                <p className="text-slate-600 text-base">
+                  Estamos buscando os melhores veículos para você
+                </p>
+                <div className="mt-6 flex justify-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Mensagem quando não há mais anúncios */}
+          {!hasMore && listings.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-slate-500">Não há mais veículos para exibir</p>
             </div>
           )}
           
