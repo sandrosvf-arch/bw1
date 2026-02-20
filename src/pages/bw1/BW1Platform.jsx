@@ -147,8 +147,27 @@ export default function BW1Platform() {
         >
           <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
-            <div className="text-center py-12">
-              <p className="text-slate-600">Carregando anúncios...</p>
+            <div className="flex items-center justify-center py-16">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Carregando anúncios
+                </h3>
+                <p className="text-slate-600 text-base">
+                  Estamos buscando os melhores anúncios para você
+                </p>
+                <div className="mt-6 flex justify-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
             </div>
           </main>
         </AppShell>
