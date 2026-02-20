@@ -53,15 +53,29 @@ function parsePrice(price) {
 
 export default function PropertiesPage() {
   const { showTermsModal, handleAcceptTerms } = useTermsModal();
-  const initialCached = api.getListingsFromCache({ category: 'property' });
+  
+  // Tentar buscar do cache geral primeiro (da homepage), depois cache específico
+  const generalCache = api.getListingsFromCache();
+  const specificCache = api.getListingsFromCache({ category: 'property' });
+  
+  // Filtrar imóveis do cache geral
+  const generalProperties = generalCache?.listings?.filter(item => 
+    item.category === 'property' || item.category === 'apartamento' || item.category === 'casa'
+  ) || [];
+  
+  // Usar cache específico se houver, senão usar imóveis do cache geral
+  const initialListings = specificCache?.listings?.length > 0 
+    ? specificCache.listings 
+    : generalProperties;
+  
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState(initialCached?.listings?.length ? initialCached.listings : []);
-  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState(initialListings);
+  const [loading, setLoading] = useState(initialListings.length === 0);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({

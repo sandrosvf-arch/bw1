@@ -53,15 +53,29 @@ function parsePrice(price) {
 
 export default function VehiclesPage() {
   const { showTermsModal, handleAcceptTerms } = useTermsModal();
-  const initialCached = api.getListingsFromCache({ category: 'vehicle' });
+  
+  // Tentar buscar do cache geral primeiro (da homepage), depois cache específico
+  const generalCache = api.getListingsFromCache();
+  const specificCache = api.getListingsFromCache({ category: 'vehicle' });
+  
+  // Filtrar veículos do cache geral
+  const generalVehicles = generalCache?.listings?.filter(item => 
+    item.category === 'vehicle' || item.category === 'carro'
+  ) || [];
+  
+  // Usar cache específico se houver, senão usar veículos do cache geral
+  const initialListings = specificCache?.listings?.length > 0 
+    ? specificCache.listings 
+    : generalVehicles;
+  
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [listings, setListings] = useState(initialCached?.listings?.length ? initialCached.listings : []);
-  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState(initialListings);
+  const [loading, setLoading] = useState(initialListings.length === 0);
   const [error, setError] = useState(null);
   const [displayCount, setDisplayCount] = useState(12); // Quantidade inicial de anúncios a mostrar
   const [filters, setFilters] = useState({
