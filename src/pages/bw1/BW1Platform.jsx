@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import api from "../../services/api";
 
 import Navbar from "./components/Navbar";
@@ -22,108 +22,87 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const HERO = HeroMod.default ?? HeroMod.HERO;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
-const HOME_SNAPSHOT_KEY = "bw1_home_snapshot_v1";
-const HOME_SNAPSHOT_MAX_AGE = 24 * 60 * 60 * 1000;
-const INITIAL_RENDER_COUNT = 8;
-const RENDER_BATCH_SIZE = 20;
-const RENDER_BATCH_DELAY = 10;
-
-function getHomeSnapshot() {
-  try {
-    const raw = localStorage.getItem(HOME_SNAPSHOT_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!parsed?.timestamp || !Array.isArray(parsed?.listings)) return [];
-    if (Date.now() - parsed.timestamp > HOME_SNAPSHOT_MAX_AGE) return [];
-    return parsed.listings;
-  } catch {
-    return [];
-  }
-}
-
-function saveHomeSnapshot(nextListings = []) {
-  try {
-    localStorage.setItem(
-      HOME_SNAPSHOT_KEY,
-      JSON.stringify({ timestamp: Date.now(), listings: nextListings.slice(0, 40) })
-    );
-  } catch {
-    // noop
-  }
-}
+const BATCH_SIZE = 4;
 
 export default function BW1Platform() {
   const { showTermsModal, handleAcceptTerms } = useTermsModal();
   
-  // Otimização: priorizar snapshot local, depois cache, depois vazio
-  const snapshotListings = getHomeSnapshot();
-  const initialCached = api.getListingsFromCache();
-  const initialListings = snapshotListings?.length > 0
-    ? snapshotListings
-    : (initialCached?.listings?.length ? initialCached.listings : []);
   const [searchTerm, setSearchTerm] = useState("");
   const [ordering, setOrdering] = useState("recent");
-  const [listings, setListings] = useState(initialListings);
-  const [loading, setLoading] = useState(!(initialListings?.length > 0));
-  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const observerRef = useRef(null);
 
+  // Carregar os primeiros 4 anúncios
   useEffect(() => {
-    // Se não há snapshot, tenta criar um snapshot rápido para o próximo acesso
-    if (!snapshotListings?.length) {
-      (async () => {
-        try {
-          const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
-          const fastListings = fastResponse.listings || [];
-          if (fastListings.length > 0) {
-            saveHomeSnapshot(fastListings);
-            setListings(fastListings);
-            setLoading(false);
-          }
-        } catch {}
-      })();
-    }
-    loadListings();
+    loadInitialListings();
   }, []);
 
-  const loadListings = async () => {
-    const cached = api.getListingsFromCache();
-    const hasCached = cached?.listings?.length > 0;
-    const hasLocalSnapshot = snapshotListings.length > 0;
-
-    // Se já tem snapshot, não precisa mostrar loading
-    if (hasLocalSnapshot) {
-      setListings(snapshotListings);
-      setLoading(false);
-    } else if (hasCached) {
-      setListings(cached.listings);
-      setLoading(false);
-    } else {
-      setLoading(true);
-    }
-
+  const loadInitialListings = async () => {
+    setLoading(true);
     try {
-      // Sempre buscar uma versão rápida para atualizar snapshot/local
-      const fastResponse = await api.getListings({ limit: INITIAL_RENDER_COUNT }, { forceRefresh: true });
-      const fastListings = fastResponse.listings || [];
-      if (fastListings.length > 0) {
-        setListings(fastListings);
-        saveHomeSnapshot(fastListings);
-      }
-
-      // Depois busca o full (em background)
-      const fullResponse = await api.getListings({}, { forceRefresh: true });
-      const fullListings = fullResponse.listings || [];
-      setListings(fullListings);
-      saveHomeSnapshot(fullListings);
+      const response = await api.getListings({ limit: BATCH_SIZE, offset: 0 });
+      const newListings = response.listings || [];
+      setListings(newListings);
+      setOffset(BATCH_SIZE);
+      setHasMore(newListings.length === BATCH_SIZE);
     } catch (error) {
-      console.error('Erro ao carregar anúncios da API:', error);
-      if (!hasCached && !hasLocalSnapshot) {
-        setListings([]);
-      }
+      console.error('Erro ao carregar anúncios:', error);
+      setListings([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
   };
+
+  // Função para carregar mais 4 anúncios
+  const loadMoreListings = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const response = await api.getListings({ limit: BATCH_SIZE, offset });
+      const newListings = response.listings || [];
+      
+      if (newListings.length > 0) {
+        setListings(prev => [...prev, ...newListings]);
+        setOffset(prev => prev + BATCH_SIZE);
+        setHasMore(newListings.length === BATCH_SIZE);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar mais anúncios:', error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Intersection Observer para detectar quando o usuário chega ao fim da página
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          loadMoreListings();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [hasMore, loadingMore, loading, offset]);
 
   const filteredListings = useMemo(() => {
     let filtered = listings.filter((item) => {
@@ -153,30 +132,6 @@ export default function BW1Platform() {
 
     return filtered;
   }, [searchTerm, ordering, listings]);
-
-  useEffect(() => {
-    const total = filteredListings.length;
-    const initial = Math.min(INITIAL_RENDER_COUNT, total || INITIAL_RENDER_COUNT);
-    setVisibleCount(initial);
-
-    if (total <= initial) return;
-
-    const timer = setInterval(() => {
-      setVisibleCount((prev) => {
-        const next = Math.min(prev + RENDER_BATCH_SIZE, total);
-        if (next >= total) {
-          clearInterval(timer);
-        }
-        return next;
-      });
-    }, RENDER_BATCH_DELAY);
-
-    return () => clearInterval(timer);
-  }, [filteredListings]);
-
-  const visibleListings = useMemo(() => {
-    return filteredListings.slice(0, visibleCount);
-  }, [filteredListings, visibleCount]);
 
   if (loading) {
     return (
@@ -233,16 +188,30 @@ export default function BW1Platform() {
               <option value="price-desc">Maior preço</option>
             </select>
           </div>
-          <ListingsGrid listings={visibleListings} loading={loading} />
-          {visibleCount < filteredListings.length && (
+          
+          <ListingsGrid listings={filteredListings} loading={false} />
+          
+          {/* Observer target para scroll infinito */}
+          {hasMore && <div ref={observerRef} className="h-4" />}
+          
+          {/* Indicador de carregamento de mais anúncios */}
+          {loadingMore && (
             <div className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(Math.min(8, filteredListings.length - visibleCount))].map((_, i) => (
+                {[...Array(BATCH_SIZE)].map((_, i) => (
                   <SkeletonCard key={i} />
                 ))}
               </div>
             </div>
           )}
+          
+          {/* Mensagem quando não há mais anúncios */}
+          {!hasMore && listings.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-slate-500">Não há mais anúncios para exibir</p>
+            </div>
+          )}
+          
           <CTA />
         </main>
 
