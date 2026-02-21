@@ -212,6 +212,7 @@ export default function CreateListingPage() {
       // Verificar autenticação
       if (!isAuthenticated) {
         alert("❌ Você precisa estar logado para criar um anúncio.\n\nFaça login ou crie uma conta para continuar.");
+        localStorage.setItem('bw1_redirect_after_login', '/criar-anuncio');
         navigate("/login");
         return;
       }

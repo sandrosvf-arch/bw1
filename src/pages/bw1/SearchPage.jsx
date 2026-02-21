@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 
@@ -7,20 +7,43 @@ import BottomNav from "./components/BottomNav";
 import AppShell from "./components/AppShell";
 import ListingsGrid from "./components/ListingsGrid";
 import Footer from "./components/Footer";
+import api from "../../services/api";
 
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as FooterMod from "./content/footer.js";
 
-import listings from "./data/listings.js";
-
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
+function parsePrice(price) {
+  if (typeof price === 'number') return price;
+  if (typeof price === 'string') {
+    return parseFloat(price.replace(/[^\d,]/g, "").replace(",", "."));
+  }
+  return 0;
+}
+
+function searchInLocation(location, term) {
+  if (!location || !term) return false;
+  const t = term.toLowerCase();
+  if (typeof location === 'string') return location.toLowerCase().includes(t);
+  if (typeof location === 'object') {
+    return (location.city || '').toLowerCase().includes(t) ||
+           (location.state || '').toLowerCase().includes(t) ||
+           (location.neighborhood || '').toLowerCase().includes(t);
+  }
+  return false;
+}
+
 export default function SearchPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [committedSearchTerm, setCommittedSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [apiListings, setApiListings] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     type: "all", // all, vehicle, property
@@ -29,22 +52,39 @@ export default function SearchPage() {
     location: "",
   });
 
-  const filteredListings = useMemo(() => {
-    let result = [...listings];
-
-    // Busca
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.title.toLowerCase().includes(term) ||
-          searchInLocation(item.location, term)
-      );
+  const handleSearchSubmit = useCallback(async () => {
+    const term = searchTerm.trim();
+    setCommittedSearchTerm(term);
+    setIsSearching(true);
+    setHasSearched(true);
+    try {
+      const categoryMap = { vehicle: 'vehicle', property: 'property' };
+      const params = { limit: 50, ...(term ? { search: term } : {}) };
+      if (filters.type !== 'all' && categoryMap[filters.type]) {
+        params.category = categoryMap[filters.type];
+      }
+      const response = await api.getListings(params, { forceRefresh: true });
+      setApiListings(response.listings || []);
+    } catch (err) {
+      console.error('Erro na busca:', err);
+      setApiListings([]);
+    } finally {
+      setIsSearching(false);
     }
+  }, [searchTerm, filters.type]);
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearchSubmit();
+  };
+
+  const filteredListings = useMemo(() => {
+    let result = [...apiListings];
 
     // Tipo
     if (filters.type !== "all") {
-      result = result.filter((item) => item.type === filters.type);
+      result = result.filter(
+        (item) => item.category === filters.type || item.type === filters.type
+      );
     }
 
     // Preço
@@ -63,7 +103,7 @@ export default function SearchPage() {
     }
 
     return result;
-  }, [searchTerm, filters]);
+  }, [apiListings, filters]);
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
@@ -77,6 +117,9 @@ export default function SearchPage() {
       location: "",
     });
     setSearchTerm("");
+    setCommittedSearchTerm("");
+    setApiListings([]);
+    setHasSearched(false);
   };
 
   const hasActiveFilters =
@@ -84,7 +127,7 @@ export default function SearchPage() {
     filters.minPrice ||
     filters.maxPrice ||
     filters.location ||
-    searchTerm;
+    committedSearchTerm;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
@@ -110,24 +153,42 @@ export default function SearchPage() {
                 placeholder="O que você está procurando?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-4 pl-4 pr-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg"
+                onKeyDown={handleSearchKeyDown}
+                className="w-full py-4 pl-4 pr-28 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400 text-lg"
                 autoFocus
               />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {searchTerm && (
                   <button
-                    onClick={() => setSearchTerm("")}
-                    className="text-slate-400 hover:text-slate-600"
+                    onClick={clearFilters}
+                    className="p-1 text-slate-400 hover:text-slate-600 transition"
+                    title="Limpar"
                   >
                     <X size={20} />
                   </button>
                 )}
-                <Search
-                  className="text-slate-400"
-                  size={20}
-                />
+                <button
+                  onClick={handleSearchSubmit}
+                  disabled={isSearching}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition"
+                >
+                  {isSearching ? (
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <Search size={16} />
+                  )}
+                  Buscar
+                </button>
               </div>
             </div>
+            {committedSearchTerm && (
+              <p className="mt-2 text-sm text-slate-500">
+                Resultados para: <span className="font-semibold text-slate-700">"{committedSearchTerm}"</span>
+              </p>
+            )}
           </div>
 
           {/* Filtros rápidos */}
@@ -247,22 +308,16 @@ export default function SearchPage() {
 
           {/* Resultados */}
           <div className="mb-6">
-            <p className="text-slate-600">
-              {filteredListings.length === 0 ? (
-                <span className="font-semibold text-slate-900">
-                  Nenhum resultado encontrado
-                </span>
-              ) : (
-                <>
-                  <span className="font-semibold text-slate-900">
-                    {filteredListings.length}
-                  </span>{" "}
-                  {filteredListings.length === 1
-                    ? "anúncio encontrado"
-                    : "anúncios encontrados"}
-                </>
-              )}
-            </p>
+            {!hasSearched ? (
+              <p className="text-slate-500">Digite sua busca acima e clique em <span className="font-semibold">Buscar</span> para encontrar anúncios.</p>
+            ) : filteredListings.length === 0 ? (
+              <p className="font-semibold text-slate-900">Nenhum resultado encontrado para "{committedSearchTerm}".</p>
+            ) : (
+              <p className="text-slate-600">
+                <span className="font-semibold text-slate-900">{filteredListings.length}</span>{" "}
+                {filteredListings.length === 1 ? "anúncio encontrado" : "anúncios encontrados"}
+              </p>
+            )}
           </div>
 
           <ListingsGrid listings={filteredListings} />

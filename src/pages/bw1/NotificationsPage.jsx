@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import * as BrandMod from "./content/brand.js";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const READ_NOTIFICATIONS_KEY = "bw1-notifications-read";
+const DELETED_NOTIFICATIONS_KEY = "bw1-notifications-deleted";
+const AUTO_EXPIRE_DAYS = 7; // notificações lidas somem após 7 dias
 
 function formatWhen(iso) {
   const d = new Date(iso);
@@ -45,6 +47,7 @@ export default function NotificationsPage() {
   const [tab, setTab] = useState("all"); // all | unread
   const [loading, setLoading] = useState(true);
   const [logoOk, setLogoOk] = React.useState(true);
+  const [dismissing, setDismissing] = useState(new Set());
 
   useEffect(() => {
     loadNotifications();
@@ -62,11 +65,33 @@ export default function NotificationsPage() {
     localStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify(map));
   };
 
+  const getDeletedSet = () => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(DELETED_NOTIFICATIONS_KEY) || "[]"));
+    } catch {
+      return new Set();
+    }
+  };
+
+  const saveDeletedSet = (set) => {
+    localStorage.setItem(DELETED_NOTIFICATIONS_KEY, JSON.stringify([...set]));
+  };
+
+  // Compatível com formato antigo (true) e novo ({ read, readAt })
+  const isRead = (readMap, key) => {
+    const entry = readMap[key];
+    if (!entry) return false;
+    if (typeof entry === 'boolean') return entry;
+    return !!entry.read;
+  };
+
   const loadNotifications = async () => {
     try {
       setLoading(true);
 
       const readMap = getReadMap();
+      const deletedSet = getDeletedSet();
+      const expireMs = AUTO_EXPIRE_DAYS * 24 * 60 * 60 * 1000;
       const notifications = [];
 
       if (isAuthenticated) {
@@ -83,7 +108,7 @@ export default function NotificationsPage() {
               title: "Nova atividade no chat",
               text: `Conversa sobre \"${conversation?.listings?.title || "anúncio"}\" teve atualização.`,
               date: conversation.updated_at || new Date().toISOString(),
-              unread: !readMap[key],
+              unread: !isRead(readMap, key),
               link: `/chat/${conversation.id}`,
             });
           });
@@ -97,7 +122,7 @@ export default function NotificationsPage() {
               title: "Anúncio ativo",
               text: `Seu anúncio \"${listing.title}\" está publicado e recebendo visualizações.`,
               date: listing.created_at || new Date().toISOString(),
-              unread: !readMap[key],
+              unread: !isRead(readMap, key),
               link: `/anuncio/${listing.id}`,
             });
           });
@@ -105,7 +130,19 @@ export default function NotificationsPage() {
       }
 
       notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setItems(notifications);
+
+      // Filtrar deletadas e expiradas (lidas há mais de AUTO_EXPIRE_DAYS dias)
+      const now = Date.now();
+      const filtered = notifications.filter((n) => {
+        if (deletedSet.has(n.id)) return false;
+        const entry = readMap[n.id];
+        if (entry && typeof entry === 'object' && entry.readAt) {
+          if (now - entry.readAt > expireMs) return false;
+        }
+        return true;
+      });
+
+      setItems(filtered);
     } catch (error) {
       console.error("Erro ao carregar notificações:", error);
       setItems([]);
@@ -125,8 +162,9 @@ export default function NotificationsPage() {
     setItems((prev) => {
       const next = prev.map((n) => ({ ...n, unread: false }));
       const readMap = getReadMap();
+      const now = Date.now();
       next.forEach((item) => {
-        readMap[item.id] = true;
+        readMap[item.id] = { read: true, readAt: now };
       });
       saveReadMap(readMap);
       window.dispatchEvent(new Event("bw1-activity-updated"));
@@ -137,9 +175,43 @@ export default function NotificationsPage() {
   const markOneRead = (id) => {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
     const readMap = getReadMap();
-    readMap[id] = true;
+    readMap[id] = { read: true, readAt: Date.now() };
     saveReadMap(readMap);
     window.dispatchEvent(new Event("bw1-activity-updated"));
+  };
+
+  const deleteAll = () => {
+    const ids = items.map((n) => n.id);
+    // Anima todos
+    setDismissing(new Set(ids));
+    setTimeout(() => {
+      setItems([]);
+      setDismissing(new Set());
+      const deletedSet = getDeletedSet();
+      ids.forEach((id) => deletedSet.add(id));
+      saveDeletedSet(deletedSet);
+      const readMap = getReadMap();
+      const now = Date.now();
+      ids.forEach((id) => { readMap[id] = { read: true, readAt: now }; });
+      saveReadMap(readMap);
+      window.dispatchEvent(new Event("bw1-activity-updated"));
+    }, 300);
+  };
+
+  const deleteNotification = (id) => {
+    // Anima antes de remover
+    setDismissing((prev) => new Set([...prev, id]));
+    setTimeout(() => {
+      setItems((prev) => prev.filter((n) => n.id !== id));
+      setDismissing((prev) => { const s = new Set(prev); s.delete(id); return s; });
+      const deletedSet = getDeletedSet();
+      deletedSet.add(id);
+      saveDeletedSet(deletedSet);
+      const readMap = getReadMap();
+      readMap[id] = { read: true, readAt: Date.now() };
+      saveReadMap(readMap);
+      window.dispatchEvent(new Event("bw1-activity-updated"));
+    }, 300);
   };
 
   return (
@@ -192,9 +264,9 @@ export default function NotificationsPage() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        {/* Tabs */}
+        {/* Tabs + ações */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 mb-4">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <button
               onClick={() => setTab("all")}
               className={`py-2 rounded-xl text-sm font-semibold transition ${
@@ -210,19 +282,32 @@ export default function NotificationsPage() {
               }`}
             >
               Não lidas
+              {unreadCount > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center bg-red-500 text-white rounded-full w-5 h-5 text-[10px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
-        </div>
-
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={markAllRead}
-            className="text-[12px] px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition flex items-center gap-2"
-            title="Marcar todas como lidas"
-          >
-            <Check size={16} />
-            Marcar todas como lidas
-          </button>
+          {items.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+              <button
+                onClick={markAllRead}
+                disabled={unreadCount === 0}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default"
+              >
+                <Check size={14} />
+                Marcar todas como lidas
+              </button>
+              <button
+                onClick={deleteAll}
+                className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition bg-red-50 text-red-600 hover:bg-red-100"
+              >
+                <X size={14} />
+                Excluir todas
+              </button>
+            </div>
+          )}
         </div>
 
         {/* List */}
@@ -240,31 +325,43 @@ export default function NotificationsPage() {
             </div>
           ) : (
             filteredItems.map((n) => (
-              <Link
+              <div
                 key={n.id}
-                to={n.link || "/"}
-                onClick={() => markOneRead(n.id)}
-                className="block w-full text-left px-5 py-4 hover:bg-slate-50 transition border-b border-slate-100"
+                className="flex items-stretch border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-all duration-300"
+                style={dismissing.has(n.id) ? { opacity: 0, transform: 'translateX(24px)', pointerEvents: 'none' } : { opacity: 1, transform: 'translateX(0)' }}
               >
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`mt-1.5 h-2.5 w-2.5 rounded-full ${
-                      n.unread ? "bg-red-500" : "bg-slate-300"
-                    }`}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className={`text-sm font-extrabold ${n.unread ? "text-slate-900" : "text-slate-700"}`}>
-                        {n.title}
+                <Link
+                  to={n.link || "/"}
+                  onClick={() => markOneRead(n.id)}
+                  className="flex-1 px-5 py-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`mt-1.5 h-2.5 w-2.5 rounded-full flex-shrink-0 ${
+                        n.unread ? "bg-red-500" : "bg-slate-300"
+                      }`}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={`text-sm font-extrabold ${n.unread ? "text-slate-900" : "text-slate-700"}`}>
+                          {n.title}
+                        </div>
+                        <div className="text-[11px] text-slate-500 whitespace-nowrap">
+                          {formatWhen(n.date)}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 whitespace-nowrap">
-                        {formatWhen(n.date)}
-                      </div>
+                      <div className="text-sm text-slate-600 mt-0.5">{n.text}</div>
                     </div>
-                    <div className="text-sm text-slate-600 mt-0.5">{n.text}</div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+                <button
+                  onClick={() => deleteNotification(n.id)}
+                  className="flex items-center justify-center px-3 text-slate-400 hover:text-red-500 hover:bg-red-50 transition"
+                  title="Excluir notificação"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             ))
           )}
         </div>

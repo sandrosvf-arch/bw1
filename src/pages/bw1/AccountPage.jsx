@@ -56,6 +56,7 @@ export default function AccountPage() {
   // Se não estiver logado, redireciona para login
   React.useEffect(() => {
     if (!isAuthenticated) {
+      localStorage.setItem('bw1_redirect_after_login', '/conta');
       navigate('/login', { state: { from: { pathname: '/conta' } } });
     }
   }, [isAuthenticated, navigate]);

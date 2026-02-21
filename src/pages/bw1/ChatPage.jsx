@@ -27,6 +27,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      localStorage.setItem('bw1_redirect_after_login', '/chat');
       navigate("/login");
       return;
     }

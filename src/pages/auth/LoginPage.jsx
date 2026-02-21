@@ -28,9 +28,11 @@ export default function LoginPage() {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      // Pegar do localStorage onde foi salvo antes de vir para login
-      const from = localStorage.getItem('bw1_redirect_after_login') || '/';
-      console.log('Redirecionando após login email para:', from);
+      // Ler de localStorage, ou do state passado pelo ProtectedRoute
+      const from =
+        localStorage.getItem('bw1_redirect_after_login') ||
+        location.state?.from?.pathname ||
+        '/';
       localStorage.removeItem('bw1_redirect_after_login');
       navigate(from, { replace: true });
     } else {
@@ -48,10 +50,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    // O localStorage já foi salvo antes de navegar para /login
-    // Copiar para a chave usada no OAuth callback
-    const from = localStorage.getItem('bw1_redirect_after_login') || '/';
-    console.log('Iniciando Google OAuth, vai redirecionar para:', from);
+    const from =
+      localStorage.getItem('bw1_redirect_after_login') ||
+      location.state?.from?.pathname ||
+      '/';
     localStorage.setItem('bw1_oauth_redirect', from);
     
     const isDev = import.meta.env.DEV;

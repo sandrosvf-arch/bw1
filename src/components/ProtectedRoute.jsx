@@ -17,8 +17,9 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    // Salvar a rota que tentou acessar para redirecionar depois do login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Salvar a rota no localStorage (para LoginPage ler) E no state (fallback)
+    localStorage.setItem('bw1_redirect_after_login', location.pathname + location.search);
+    return <Navigate to="/login" state={{ from: location }} replace />;;
   }
 
   return children;

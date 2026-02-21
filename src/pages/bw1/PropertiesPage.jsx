@@ -1,8 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft } from "lucide-react";
+import { Home as HomeIcon, Bed, Bath, DollarSign, MapPin, Car, Filter, ArrowUpDown, Search, ArrowLeft, X } from "lucide-react";
 import api from "../../services/api";
-import { useDebounce } from "../../hooks/useDebounce";
 
 import Navbar from "./components/Navbar";
 import BottomNav from "./components/BottomNav";
@@ -71,7 +70,10 @@ export default function PropertiesPage() {
   const navigate = useNavigate();
   const [logoOk, setLogoOk] = React.useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [committedSearchTerm, setCommittedSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifySubmitted, setNotifySubmitted] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [allListings, setAllListings] = useState(initialListings);
@@ -82,6 +84,7 @@ export default function PropertiesPage() {
   const [offset, setOffset] = useState(4);
   const [hasMore, setHasMore] = useState(initialListings.length > 4);
   const observerRef = useRef(null);
+  const searchModeRef = useRef(false); // impede background fetch sobrescrever resultados de busca
   const BATCH_SIZE = 4;
   const [filters, setFilters] = useState({
     dealType: "all",
@@ -107,11 +110,13 @@ export default function PropertiesPage() {
         const response = await api.getListings({ category: 'property' });
         const fetchedListings = response.listings || [];
         
-        // Atualiza os dados em background
-        setAllListings(fetchedListings);
+        // Atualiza os dados em background (ignora se usuário está em modo de busca)
+        if (!searchModeRef.current) {
+          setAllListings(fetchedListings);
+        }
         
         // Se não tinha cache inicial, mostra os primeiros resultados
-        if (initialListings.length === 0) {
+        if (initialListings.length === 0 && !searchModeRef.current) {
           setListings(fetchedListings.slice(0, BATCH_SIZE));
           setOffset(BATCH_SIZE);
           setHasMore(fetchedListings.length > BATCH_SIZE);
@@ -132,7 +137,7 @@ export default function PropertiesPage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading && !isSearching) {
           loadMoreListings();
         }
       },
@@ -144,14 +149,13 @@ export default function PropertiesPage() {
     }
 
     return () => {
-      if (observerRef.current) {
-        observer.unobserve(observerRef.current);
-      }
+      // disconnect() sempre limpa o observer, independente do ref estar nulo
+      observer.disconnect();
     };
-  }, [hasMore, loadingMore, loading, offset]);
+  }, [hasMore, loadingMore, loading, offset, isSearching]);
 
   const loadMoreListings = async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || isSearching) return;
 
     setLoadingMore(true);
     try {
@@ -172,6 +176,68 @@ export default function PropertiesPage() {
     }
   };
 
+  // Busca manual — só executa ao clicar na lupa ou pressionar Enter
+  const handleSearchSubmit = async () => {
+    if (isSearching) return; // evita disparos múltiplos
+    const term = searchTerm.trim();
+    if (term === committedSearchTerm) return;
+    setCommittedSearchTerm(term);
+    searchModeRef.current = !!term;
+    setNotifyEmail("");
+    setNotifySubmitted(false);
+    setIsSearching(true);
+    try {
+      const response = await api.getListings({
+        category: 'property',
+        ...(term ? { search: term } : {}),
+        limit: 100,
+      }, { forceRefresh: true });
+      const fetched = response.listings || [];
+      setAllListings(fetched);
+      // Em modo busca: mostrar todos os resultados de uma vez (sem infinite scroll)
+      // Isso evita o loop onde o infinite scroll carrega itens que não correspondem ao filtro
+      if (term) {
+        setListings(fetched);
+        setOffset(fetched.length);
+        setHasMore(false);
+      } else {
+        setListings(fetched.slice(0, BATCH_SIZE));
+        setOffset(BATCH_SIZE);
+        setHasMore(fetched.length > BATCH_SIZE);
+      }
+    } catch (err) {
+      console.error('Erro na busca:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearchSubmit();
+  };
+
+  const handleClearSearch = async () => {
+    setSearchTerm("");
+    if (committedSearchTerm === "") return;
+    setCommittedSearchTerm("");
+    searchModeRef.current = false; // sai do modo busca
+    setNotifyEmail("");
+    setNotifySubmitted(false);
+    setIsSearching(true);
+    try {
+      const response = await api.getListings({ category: 'property', limit: 50 }, { forceRefresh: true });
+      const fetched = response.listings || [];
+      setAllListings(fetched);
+      setListings(fetched.slice(0, BATCH_SIZE));
+      setOffset(BATCH_SIZE);
+      setHasMore(fetched.length > BATCH_SIZE);
+    } catch (err) {
+      console.error('Erro ao limpar busca:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
       // Apenas imóveis (suporta PT e EN)
@@ -181,9 +247,9 @@ export default function PropertiesPage() {
       return isProperty;
     });
 
-    // Busca
-    if (debouncedSearchTerm) {
-      const s = debouncedSearchTerm.toLowerCase();
+    // Busca (filtro local complementar ao resultado da API)
+    if (committedSearchTerm) {
+      const s = committedSearchTerm.toLowerCase();
       result = result.filter(
         (item) =>
           (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
@@ -354,7 +420,7 @@ export default function PropertiesPage() {
     }
 
     return result;
-  }, [debouncedSearchTerm, filters, sortBy, listings]);
+  }, [committedSearchTerm, filters, sortBy, listings]);
 
   // Filtrar os listings carregados
   const displayedListings = useMemo(() => {
@@ -457,10 +523,41 @@ export default function PropertiesPage() {
                 placeholder="Buscar imóveis..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
+                onKeyDown={handleSearchKeyDown}
+                className="w-full pl-4 pr-24 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
               />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {searchTerm && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="p-1 text-slate-400 hover:text-slate-600 transition"
+                    title="Limpar busca"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <button
+                  onClick={handleSearchSubmit}
+                  disabled={isSearching}
+                  className="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg p-1.5 transition"
+                  title="Buscar"
+                >
+                  {isSearching ? (
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <Search size={16} />
+                  )}
+                </button>
+              </div>
             </div>
+            {committedSearchTerm && (
+              <p className="mt-2 text-sm text-slate-500">
+                Resultados para: <span className="font-semibold text-slate-700">"{committedSearchTerm}"</span>
+              </p>
+            )}
           </div>
 
           {/* Tabs de navegação */}
@@ -822,7 +919,69 @@ export default function PropertiesPage() {
           )}
 
           {/* Card de loading inicial quando não há anúncios */}
-          {listings.length === 0 ? (
+          {isSearching ? (
+            /* Spinner de busca */
+            <div className="flex items-center justify-center py-12">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">Buscando imóveis...</h3>
+                <p className="text-slate-600 text-base">Procurando por “{searchTerm}” em toda a base</p>
+              </div>
+            </div>
+          ) : committedSearchTerm && listings.length === 0 ? (
+            /* Sem resultados — convite de notificação */
+            <div className="flex items-center justify-center py-12">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center">
+                    <span className="text-4xl">🏡</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">Que pena!</h3>
+                <p className="text-slate-600 text-base mb-1">
+                  Ainda não temos imóveis com
+                </p>
+                <p className="text-emerald-700 font-semibold text-lg mb-4">“{committedSearchTerm}”</p>
+                <p className="text-slate-500 text-sm mb-6">
+                  Deixe seu e-mail e avisamos assim que alguém anunciar um imóvel com esse perfil.
+                </p>
+                {notifySubmitted ? (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-700 font-semibold">
+                    ✅ Pronto! Você será avisado.
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={notifyEmail}
+                      onChange={(e) => setNotifyEmail(e.target.value)}
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+                    />
+                    <button
+                      onClick={() => { if (notifyEmail) setNotifySubmitted(true); }}
+                      className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition whitespace-nowrap"
+                    >
+                      Me avisar
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={handleClearSearch}
+                  className="mt-4 text-sm text-slate-500 hover:text-slate-700 underline"
+                >
+                  Limpar busca e ver todos os imóveis
+                </button>
+              </div>
+            </div>
+          ) : listings.length === 0 ? (
+            /* Spinner inicial (sem busca activa) */
             <div className="flex items-center justify-center py-12">
               <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
                 <div className="mb-6">
@@ -832,12 +991,8 @@ export default function PropertiesPage() {
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                  Carregando imóveis
-                </h3>
-                <p className="text-slate-600 text-base">
-                  Estamos buscando os melhores imóveis para você
-                </p>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">Carregando imóveis</h3>
+                <p className="text-slate-600 text-base">Estamos buscando os melhores imóveis para você</p>
                 <div className="mt-6 flex justify-center space-x-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>

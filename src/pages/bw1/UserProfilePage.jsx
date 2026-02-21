@@ -4,6 +4,11 @@ import { api } from '../../services/api';
 import ListingCard from './components/ListingCard';
 import SkeletonCard from './components/SkeletonCard';
 import { useAuth } from '../../contexts/AuthContext';
+import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
+import AppShell from './components/AppShell';
+import * as BrandMod from './content/brand.js';
+import * as NavMod from './content/navigation.js';
 import { 
   User, 
   Calendar, 
@@ -13,6 +18,9 @@ import {
   Package,
   ArrowLeft
 } from 'lucide-react';
+
+const BRAND = BrandMod.default ?? BrandMod.BRAND;
+const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 
 const UserProfilePage = () => {
   const { userId } = useParams();
@@ -78,8 +86,11 @@ const UserProfilePage = () => {
     return badges[authMethod] || badges['Email'];
   };
 
+  const navbar = <Navbar brand={BRAND} navigation={NAVIGATION} />;
+
   if (loading) {
     return (
+      <AppShell header={navbar}>
       <div className="min-h-screen bg-gray-50 pb-24 pt-4">
         <div className="max-w-4xl mx-auto px-4">
           {/* Header Skeleton */}
@@ -101,11 +112,14 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
+      <BottomNav navigation={NAVIGATION} />
+      </AppShell>
     );
   }
 
   if (error || !profile) {
     return (
+      <AppShell header={navbar}>
       <div className="min-h-screen bg-gray-50 pb-24 pt-4">
         <div className="max-w-4xl mx-auto px-4">
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
@@ -122,6 +136,8 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
+      <BottomNav navigation={NAVIGATION} />
+      </AppShell>
     );
   }
 
@@ -130,6 +146,7 @@ const UserProfilePage = () => {
   const isOwnProfile = currentUser?.id === profile.id;
 
   return (
+    <AppShell header={navbar}>
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white py-6 px-4">
@@ -254,6 +271,8 @@ const UserProfilePage = () => {
         </div>
       </div>
     </div>
+    <BottomNav navigation={NAVIGATION} />
+    </AppShell>
   );
 };
 

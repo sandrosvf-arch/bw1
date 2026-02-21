@@ -30,6 +30,7 @@ export default function ChatConversationPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      localStorage.setItem('bw1_redirect_after_login', `/chat/${conversationId}`);
       navigate("/login");
       return;
     }

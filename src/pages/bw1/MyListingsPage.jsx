@@ -28,6 +28,7 @@ export default function MyListingsPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      localStorage.setItem('bw1_redirect_after_login', '/meus-anuncios');
       navigate("/login");
       return;
     }

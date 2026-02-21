@@ -938,7 +938,13 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                <button className="w-full py-3 px-4 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-900 rounded-xl font-semibold text-sm transition-all mb-6">
+                <button
+                  onClick={() => {
+                    if (item?.user_id) {
+                      navigate(`/perfil/${item.user_id}`);
+                    }
+                  }}
+                  className="w-full py-3 px-4 border-2 border-slate-300 hover:border-blue-500 hover:bg-blue-50 text-slate-900 rounded-xl font-semibold text-sm transition-all mb-6">
                   Acessar perfil do anunciante
                 </button>
 

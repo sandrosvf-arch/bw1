@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { supabase } from '../config/supabase';
+import { supabaseAdmin } from '../config/supabase';
 
 const router = Router();
 
@@ -13,14 +13,14 @@ router.get('/:userId', async (req, res) => {
     
     // Fazer as duas queries em paralelo para ser mais rápido
     const [userResult, listingsResult] = await Promise.all([
-      supabase
+      supabaseAdmin
         .from('users')
         .select('id, name, email, avatar, created_at')
         .eq('id', userId)
         .single(),
-      supabase
+      supabaseAdmin
         .from('listings')
-        .select('id, title, price, images')
+        .select('id, title, price, images, location, category, type, dealType, description, details, contact, status, tag, created_at, user_id')
         .eq('user_id', userId)
         .eq('status', 'active')
         .limit(20)
@@ -39,10 +39,11 @@ router.get('/:userId', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Parse rápido de images
+    // Parse rápido de images e details
     const parsedListings = (listings || []).map(l => ({
       ...l,
-      images: typeof l.images === 'string' ? JSON.parse(l.images) : l.images
+      images: typeof l.images === 'string' ? (() => { try { return JSON.parse(l.images); } catch { return []; } })() : l.images,
+      details: typeof l.details === 'string' ? (() => { try { return JSON.parse(l.details); } catch { return {}; } })() : l.details,
     }));
 
     // Mascarar email
