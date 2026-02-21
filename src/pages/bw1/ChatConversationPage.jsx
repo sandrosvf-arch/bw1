@@ -208,9 +208,9 @@ export default function ChatConversationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col">
-      {/* Header fixo */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200">
+    <div className="h-screen overflow-hidden bg-slate-50 font-sans text-slate-800 flex flex-col">
+      {/* Header estático - não fixed, ocupa espaço real no flex */}
+      <nav className="flex-shrink-0 bg-white border-b border-slate-200 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -265,10 +265,10 @@ export default function ChatConversationPage() {
         </div>
       </nav>
 
-      {/* Main content com altura fixa */}
-      <main className="flex-1 flex flex-col pt-16" style={{ height: '100vh' }}>
+      {/* Main: ocupa o restante do h-screen */}
+      <main className="flex-1 flex flex-col min-h-0">
           {/* Área de mensagens */}
-          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4 space-y-1 bg-gradient-to-b from-slate-50 to-slate-100">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-4 space-y-1 bg-gradient-to-b from-slate-50 to-slate-100">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full min-h-[400px]">
                 <div className="text-center">
@@ -356,7 +356,7 @@ export default function ChatConversationPage() {
           </div>
 
           {/* Input de mensagem */}
-          <div className="sticky bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-3 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex-shrink-0 border-t border-slate-200 bg-white p-3 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
             <div className="max-w-4xl mx-auto flex items-end gap-3 pb-safe">
               <textarea
                 rows="1"
