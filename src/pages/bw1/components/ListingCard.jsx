@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import api from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import LazyImage from "../../../components/LazyImage";
 
 const CAROUSEL_INTERVAL_MS = 2500;
 
@@ -344,11 +345,11 @@ function ListingCard({ item, onViewMore }) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <img
+          <LazyImage
             src={currentImg}
             alt={item.title}
-            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-            loading="lazy"
+            className="w-full h-full"
+            objectFit="cover"
             onError={(e) => {
               e.currentTarget.src = PLACEHOLDER_IMG;
             }}
