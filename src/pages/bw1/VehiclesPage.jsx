@@ -74,9 +74,9 @@ export default function VehiclesPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
-  const [allListings, setAllListings] = useState([]);
+  const [allListings, setAllListings] = useState(initialListings);
   const [listings, setListings] = useState(initialListings.slice(0, 4));
-  const [loading, setLoading] = useState(initialListings.length === 0);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(4);
@@ -103,8 +103,32 @@ export default function VehiclesPage() {
     doors: "all",
   });
 
+  // Buscar anúncios atualizados em background (não bloqueante)
   useEffect(() => {
-    loadInitialListings();
+    const fetchUpdatedListings = async () => {
+      try {
+        const response = await api.getListings({ category: 'vehicle' });
+        const fetchedListings = response.listings || [];
+        
+        // Atualiza os dados em background
+        setAllListings(fetchedListings);
+        
+        // Se não tinha cache inicial, mostra os primeiros resultados
+        if (initialListings.length === 0) {
+          setListings(fetchedListings.slice(0, BATCH_SIZE));
+          setOffset(BATCH_SIZE);
+          setHasMore(fetchedListings.length > BATCH_SIZE);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar veículos:', error);
+        // Não mostra erro se já tem cache
+        if (initialListings.length === 0) {
+          setError('Erro ao carregar veículos. Tente novamente.');
+        }
+      }
+    };
+
+    fetchUpdatedListings();
   }, []);
 
   // Intersection Observer para scroll infinito
@@ -128,26 +152,6 @@ export default function VehiclesPage() {
       }
     };
   }, [hasMore, loadingMore, loading, offset]);
-
-  const loadInitialListings = async () => {
-    setLoading(true);
-    try {
-      setError(null);
-      const response = await api.getListings({ category: 'vehicle' });
-      const fetchedListings = response.listings || [];
-      setAllListings(fetchedListings);
-      setListings(fetchedListings.slice(0, BATCH_SIZE));
-      setOffset(BATCH_SIZE);
-      setHasMore(fetchedListings.length > BATCH_SIZE);
-    } catch (error) {
-      console.error('Erro ao carregar veículos:', error);
-      setError('Erro ao carregar veículos. Tente novamente.');
-      setListings([]);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadMoreListings = async () => {
     if (loadingMore || !hasMore) return;
