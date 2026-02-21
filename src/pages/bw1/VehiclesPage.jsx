@@ -401,50 +401,6 @@ export default function VehiclesPage() {
     filters.color !== "all" ||
     filters.doors !== "all";
 
-  // Mostrar loading enquanto carrega (quando não há cache inicial)
-  if (initialListings.length === 0 && listings.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
-        <TermsModal isOpen={showTermsModal} onAccept={handleAcceptTerms} />
-        <AppShell
-          navbar={
-            <Navbar
-              brand={BRAND}
-              links={NAVIGATION?.links || []}
-              cta={NAVIGATION?.cta}
-            />
-          }
-        >
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 py-8">
-            <div className="flex items-center justify-center py-16">
-              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-                <div className="mb-6">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                  Carregando veículos
-                </h3>
-                <p className="text-slate-600 text-base">
-                  Estamos buscando os melhores veículos para você
-                </p>
-                <div className="mt-6 flex justify-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-              </div>
-            </div>
-          </main>
-        </AppShell>
-        <BottomNav />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 relative">
       <TermsModal isOpen={showTermsModal} onAccept={handleAcceptTerms} />
@@ -918,13 +874,41 @@ export default function VehiclesPage() {
             </div>
           )}
 
-          <ListingsGrid listings={displayedListings} loading={false} />
+          {/* Card de loading inicial quando não há anúncios */}
+          {listings.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+                <div className="mb-6">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  Carregando veículos
+                </h3>
+                <p className="text-slate-600 text-base">
+                  Estamos buscando os melhores veículos para você
+                </p>
+                <div className="mt-6 flex justify-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <ListingsGrid listings={displayedListings} loading={false} />
+              
+              {/* Observer target para scroll infinito */}
+              {hasMore && <div ref={observerRef} className="h-4" />}
+            </>
+          )}
           
-          {/* Observer target para scroll infinito */}
-          {hasMore && <div ref={observerRef} className="h-4" />}
-          
-          {/* Card de loading para mais anúncios */}
-          {loadingMore && (
+          {/* Card de loading para scroll infinito */}
+          {loadingMore && listings.length > 0 && (
             <div className="flex items-center justify-center py-12">
               <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
                 <div className="mb-6">
