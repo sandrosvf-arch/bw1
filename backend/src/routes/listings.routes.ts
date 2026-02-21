@@ -1,7 +1,27 @@
 import { Router } from 'express';
-import { supabase } from '../config/supabase';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase, supabaseAdmin } from '../config/supabase';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import CacheService from '../services/cache.service';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+const STORAGE_BUCKET = 'listing-images';
+
+// Garante que o bucket existe ao iniciar
+(async () => {
+  const { error } = await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
+    public: true,
+    fileSizeLimit: 10 * 1024 * 1024,
+    allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  });
+  if (error && !error.message.includes('already exists')) {
+    console.warn('⚠️ Bucket creation warning:', error.message);
+  } else {
+    console.log(`✅ Storage bucket '${STORAGE_BUCKET}' pronto`);
+  }
+})();
 
 const router = Router();
 
@@ -13,6 +33,36 @@ function parseJsonField(value: any) {
     return value;
   }
 }
+
+// Upload de imagem para Supabase Storage (autenticado)
+router.post('/upload-image', authMiddleware, upload.single('image'), async (req: AuthRequest, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+    }
+
+    const ext = req.file.mimetype.split('/')[1].replace('jpeg', 'jpg');
+    const filePath = `${req.userId}/${uuidv4()}.${ext}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    res.json({ url: publicUrl, path: filePath });
+  } catch (error) {
+    console.error('Image upload error:', error);
+    res.status(500).json({ error: 'Falha ao fazer upload da imagem' });
+  }
+});
 
 // Listar todos os anúncios (público)
 router.get('/', async (req, res) => {
@@ -58,12 +108,18 @@ router.get('/', async (req, res) => {
     if (error) throw error;
 
     // Processar dados para garantir que campos JSONB sejam objetos
-    const processedData = (data || []).map(listing => ({
-      ...listing,
-      location: parseJsonField(listing.location),
-      details: parseJsonField(listing.details),
-      contact: parseJsonField(listing.contact),
-    }));
+    // Apenas a 1ª imagem é retornada na listagem para reduzir bandwidth
+    const processedData = (data || []).map(listing => {
+      const imgs = parseJsonField(listing.images);
+      const imgsArray = Array.isArray(imgs) ? imgs : (imgs ? [imgs] : []);
+      return {
+        ...listing,
+        images: imgsArray.slice(0, 1), // apenas thumbnail na listagem
+        location: parseJsonField(listing.location),
+        details: parseJsonField(listing.details),
+        contact: parseJsonField(listing.contact),
+      };
+    });
 
     const response = { listings: processedData, total: processedData.length };
     
@@ -266,19 +322,24 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select('*')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     // Processar dados para garantir que campos JSONB sejam objetos
-    const processedData = (data || []).map(listing => ({
-      ...listing,
-      location: typeof listing.location === 'string' ? JSON.parse(listing.location) : listing.location,
-      details: typeof listing.details === 'string' ? JSON.parse(listing.details) : listing.details,
-      contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
-    }));
+    const processedData = (data || []).map(listing => {
+      const imgs = parseJsonField(listing.images);
+      const imgsArray = Array.isArray(imgs) ? imgs : (imgs ? [imgs] : []);
+      return {
+        ...listing,
+        images: imgsArray, // Retorna todas as imagens pois o usuário edita suas listagens
+        location: typeof listing.location === 'string' ? JSON.parse(listing.location) : listing.location,
+        details: typeof listing.details === 'string' ? JSON.parse(listing.details) : listing.details,
+        contact: typeof listing.contact === 'string' ? JSON.parse(listing.contact) : listing.contact,
+      };
+    });
 
     res.json({ listings: processedData });
   } catch (error) {

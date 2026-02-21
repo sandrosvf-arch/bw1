@@ -126,18 +126,8 @@ export default function CreateListingPage() {
     setFormData({ ...formData, price: formatted });
   };
 
-  // Converter imagem para base64
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-  // Comprimir imagem para reduzir tamanho
-  const compressImage = (file, maxWidth = 1200, quality = 0.7) => {
+  // Comprimir imagem no canvas e retornar Blob
+  const compressImageToBlob = (file, maxWidth = 1200, quality = 0.75) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -148,31 +138,14 @@ export default function CreateListingPage() {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-
-          // Redimensionar mantendo proporção
           if (width > maxWidth) {
-            height = (height * maxWidth) / width;
+            height = Math.round((height * maxWidth) / width);
             width = maxWidth;
           }
-
           canvas.width = width;
           canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Converter para base64 com compressão
-          canvas.toBlob(
-            (blob) => {
-              const reader = new FileReader();
-              reader.readAsDataURL(blob);
-              reader.onloadend = () => {
-                resolve(reader.result);
-              };
-            },
-            'image/jpeg',
-            quality
-          );
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
         };
         img.onerror = reject;
       };
@@ -194,29 +167,28 @@ export default function CreateListingPage() {
     
     try {
       const newImages = [];
-      
+
       for (const file of files) {
-        // Verificar tamanho do arquivo (máx 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          alert(`A imagem ${file.name} é muito grande. Máximo 5MB por imagem.`);
+        if (file.size > 10 * 1024 * 1024) {
+          alert(`A imagem ${file.name} é muito grande. Máximo 10MB por imagem.`);
           continue;
         }
-        
-        // Verificar tipo
         if (!file.type.startsWith('image/')) {
           alert(`${file.name} não é uma imagem válida.`);
           continue;
         }
-        
-        // Comprimir e converter para base64
-        const compressed = await compressImage(file);
-        newImages.push(compressed);
+
+        // Comprimir e enviar para o Supabase Storage via backend
+        const blob = await compressImageToBlob(file);
+        const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+        const { url } = await api.uploadImage(compressedFile);
+        newImages.push(url);
       }
-      
+
       setImages([...images, ...newImages]);
     } catch (error) {
-      console.error('Erro ao processar imagens:', error);
-      alert('Erro ao processar as imagens. Tente novamente.');
+      console.error('Erro ao fazer upload das imagens:', error);
+      alert('Erro ao enviar as imagens. Tente novamente.');
     } finally {
       setUploadingImages(false);
     }
@@ -257,15 +229,10 @@ export default function CreateListingPage() {
         return;
       }
 
-      // Validar imagens (aceita URLs http/https e base64)
-      const validImages = images.filter(img => {
-        // Aceita base64 (data:image/...)
-        if (img.startsWith('data:image/')) {
-          return true;
-        }
-        // Aceita URLs http/https válidas
-        return img.startsWith('http://') || img.startsWith('https://');
-      });
+      // Validar imagens (apenas URLs http/https - as imagens já foram enviadas ao Storage)
+      const validImages = images.filter(img =>
+        img.startsWith('http://') || img.startsWith('https://')
+      );
 
       // Monta o objeto location
       const location = {

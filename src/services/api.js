@@ -142,6 +142,40 @@ class ApiService {
     console.log('🗑️ Cache da API limpo');
   }
 
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const headers = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch(`${this.baseURL}/api/listings/upload-image`, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao fazer upload');
+      }
+
+      return await response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  }
+
   async request(endpoint, options = {}) {
     const method = options.method || 'GET';
     const isGet = method === 'GET';
