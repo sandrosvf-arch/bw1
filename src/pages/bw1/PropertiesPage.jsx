@@ -524,9 +524,9 @@ export default function PropertiesPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="w-full pl-4 pr-24 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
+                className="w-full pl-4 pr-32 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 placeholder-slate-400"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {searchTerm && (
                   <button
                     onClick={handleClearSearch}
@@ -539,7 +539,11 @@ export default function PropertiesPage() {
                 <button
                   onClick={handleSearchSubmit}
                   disabled={isSearching}
-                  className="flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-lg p-1.5 transition"
+                  className={`flex items-center gap-1.5 text-white rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-300 disabled:opacity-60 ${
+                    searchTerm && searchTerm !== committedSearchTerm
+                      ? 'bg-emerald-500 hover:bg-emerald-600'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
                   title="Buscar"
                 >
                   {isSearching ? (
@@ -548,8 +552,11 @@ export default function PropertiesPage() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   ) : (
-                    <Search size={16} />
+                    <Search size={15} />
                   )}
+                  <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
+                    searchTerm && searchTerm !== committedSearchTerm ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'
+                  }`}>Buscar</span>
                 </button>
               </div>
             </div>
@@ -1035,10 +1042,17 @@ export default function PropertiesPage() {
             </div>
           )}
           
-          {/* Mensagem quando não há mais anúncios */}
+          {/* Divisor elegante ao chegar ao fim dos resultados */}
           {!hasMore && listings.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-slate-500">Não há mais imóveis para exibir</p>
+            <div className="flex items-center gap-4 pt-12 pb-0">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="flex items-center gap-2 text-slate-400 text-sm">
+                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Você viu todos os anúncios
+              </span>
+              <div className="flex-1 h-px bg-slate-200" />
             </div>
           )}
           

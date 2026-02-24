@@ -58,8 +58,9 @@ export default function VehiclesPage() {
   const specificCache = api.getListingsFromCache({ category: 'vehicle' });
   
   // Filtrar veículos do cache geral
+  const VEHICLE_CATEGORIES = ['vehicle', 'carro', 'moto', 'caminhao', 'van', 'pickup', 'truck', 'motorcycle', 'onibus', 'barco', 'boat'];
   const generalVehicles = generalCache?.listings?.filter(item => 
-    item.category === 'vehicle' || item.category === 'carro'
+    item.category && VEHICLE_CATEGORIES.includes(item.category.toLowerCase())
   ) || [];
   
   // Usar cache específico se houver, senão usar veículos do cache geral
@@ -241,9 +242,10 @@ export default function VehiclesPage() {
   };
 
   const filteredListings = useMemo(() => {
+    const VEHICLE_CATS = ['vehicle', 'carro', 'moto', 'caminhao', 'van', 'pickup', 'truck', 'motorcycle', 'onibus', 'barco', 'boat'];
     let result = listings.filter((item) => {
-      // Apenas veículos (suporta PT e EN)
-      const isVehicle = item.category === "vehicle" || item.category === "carro";
+      // Apenas veículos (suporta PT e EN e subcategorias)
+      const isVehicle = item.category && VEHICLE_CATS.includes(item.category.toLowerCase());
       if (!isVehicle) return false;
 
       // Busca (filtro local complementar ao resultado da API)
@@ -524,9 +526,9 @@ export default function VehiclesPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="w-full pl-4 pr-24 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400"
+                className="w-full pl-4 pr-32 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-900 placeholder-slate-400"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {searchTerm && (
                   <button
                     onClick={handleClearSearch}
@@ -539,7 +541,11 @@ export default function VehiclesPage() {
                 <button
                   onClick={handleSearchSubmit}
                   disabled={isSearching}
-                  className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg p-1.5 transition"
+                  className={`flex items-center gap-1.5 text-white rounded-lg px-3 py-1.5 text-sm font-semibold transition-all duration-300 disabled:opacity-60 ${
+                    searchTerm && searchTerm !== committedSearchTerm
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                   title="Buscar"
                 >
                   {isSearching ? (
@@ -548,8 +554,11 @@ export default function VehiclesPage() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   ) : (
-                    <Search size={16} />
+                    <Search size={15} />
                   )}
+                  <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
+                    searchTerm && searchTerm !== committedSearchTerm ? 'max-w-[60px] opacity-100' : 'max-w-0 opacity-0'
+                  }`}>Buscar</span>
                 </button>
               </div>
             </div>
@@ -1087,10 +1096,17 @@ export default function VehiclesPage() {
             </div>
           )}
           
-          {/* Mensagem quando não há mais anúncios */}
+          {/* Divisor elegante ao chegar ao fim dos resultados */}
           {!hasMore && listings.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-slate-500">Não há mais veículos para exibir</p>
+            <div className="flex items-center gap-4 pt-12 pb-0">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="flex items-center gap-2 text-slate-400 text-sm">
+                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Você viu todos os anúncios
+              </span>
+              <div className="flex-1 h-px bg-slate-200" />
             </div>
           )}
           

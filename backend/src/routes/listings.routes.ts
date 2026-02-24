@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
     if (category) {
       // Suportar filtro por categoria em PT e EN
       if (category === 'vehicle') {
-        query = query.or('category.eq.vehicle,category.eq.carro');
+        query = query.or('category.eq.vehicle,category.eq.carro,category.eq.moto,category.eq.caminhao,category.eq.van,category.eq.pickup,category.eq.truck,category.eq.motorcycle,category.eq.onibus,category.eq.barco,category.eq.boat');
       } else if (category === 'property') {
         query = query.or('category.eq.property,category.eq.apartamento,category.eq.casa');
       } else {

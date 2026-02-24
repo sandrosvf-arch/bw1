@@ -27,6 +27,8 @@ export default function BW1Platform() {
   const { showTermsModal, handleAcceptTerms } = useTermsModal();
   
   const [searchTerm, setSearchTerm] = useState("");
+  const [committedSearchTerm, setCommittedSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [ordering, setOrdering] = useState("recent");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +36,9 @@ export default function BW1Platform() {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const observerRef = useRef(null);
+  const searchModeRef = useRef(false);
 
-  // Carregar os primeiros 4 anúncios
+  // Carregar os primeiros anúncios
   useEffect(() => {
     loadInitialListings();
   }, []);
@@ -57,9 +60,61 @@ export default function BW1Platform() {
     }
   };
 
-  // Função para carregar mais 4 anúncios
+  // Busca por submissão (lupa ou Enter)
+  const handleSearchSubmit = async () => {
+    if (isSearching) return;
+    const term = searchTerm.trim();
+    if (term === committedSearchTerm) return;
+    setCommittedSearchTerm(term);
+    searchModeRef.current = !!term;
+    setIsSearching(true);
+    try {
+      const response = await api.getListings(
+        { ...(term ? { search: term } : {}), limit: 100 },
+        { forceRefresh: true }
+      );
+      const fetched = response.listings || [];
+      setListings(fetched);
+      if (term) {
+        setOffset(fetched.length);
+        setHasMore(false);
+      } else {
+        setOffset(BATCH_SIZE);
+        setHasMore(fetched.length === BATCH_SIZE);
+      }
+    } catch (err) {
+      console.error('Erro na busca:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearchSubmit();
+  };
+
+  const handleClearSearch = async () => {
+    setSearchTerm("");
+    if (committedSearchTerm === "") return;
+    setCommittedSearchTerm("");
+    searchModeRef.current = false;
+    setIsSearching(true);
+    try {
+      const response = await api.getListings({ limit: BATCH_SIZE, offset: 0 }, { forceRefresh: true });
+      const fetched = response.listings || [];
+      setListings(fetched);
+      setOffset(BATCH_SIZE);
+      setHasMore(fetched.length === BATCH_SIZE);
+    } catch (err) {
+      console.error('Erro ao limpar busca:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Função para carregar mais anúncios (só quando não há busca ativa)
   const loadMoreListings = async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || searchModeRef.current) return;
 
     setLoadingMore(true);
     try {
@@ -81,11 +136,11 @@ export default function BW1Platform() {
     }
   };
 
-  // Intersection Observer para detectar quando o usuário chega ao fim da página
+  // Intersection Observer — desativado durante busca ativa
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading && !searchModeRef.current) {
           loadMoreListings();
         }
       },
@@ -103,26 +158,17 @@ export default function BW1Platform() {
     };
   }, [hasMore, loadingMore, loading, offset]);
 
-  const filteredListings = useMemo(() => {
-    let filtered = listings.filter((item) => {
-      const s = searchTerm.toLowerCase();
-      const matchesSearch =
-        !searchTerm ||
-        item.title.toLowerCase().includes(s) ||
-        (item.location?.city || item.location || '').toLowerCase().includes(s) ||
-        (item.location?.state || '').toLowerCase().includes(s);
-
-      return matchesSearch;
-    });
+  const displayedListings = useMemo(() => {
+    let filtered = [...listings];
 
     if (ordering === "price-asc") {
-      filtered = [...filtered].sort((a, b) => {
+      filtered.sort((a, b) => {
         const priceA = typeof a.price === "number" ? a.price : parseFloat(String(a.price).replace(/[^0-9]/g, "")) || 0;
         const priceB = typeof b.price === "number" ? b.price : parseFloat(String(b.price).replace(/[^0-9]/g, "")) || 0;
         return priceA - priceB;
       });
     } else if (ordering === "price-desc") {
-      filtered = [...filtered].sort((a, b) => {
+      filtered.sort((a, b) => {
         const priceA = typeof a.price === "number" ? a.price : parseFloat(String(a.price).replace(/[^0-9]/g, "")) || 0;
         const priceB = typeof b.price === "number" ? b.price : parseFloat(String(b.price).replace(/[^0-9]/g, "")) || 0;
         return priceB - priceA;
@@ -130,7 +176,7 @@ export default function BW1Platform() {
     }
 
     return filtered;
-  }, [searchTerm, ordering, listings]);
+  }, [ordering, listings]);
 
   if (loading) {
     return (
@@ -144,7 +190,7 @@ export default function BW1Platform() {
             />
           }
         >
-          <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+          <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} onSearchSubmit={handleSearchSubmit} onSearchKeyDown={handleSearchKeyDown} />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
             <div className="flex items-center justify-center py-16">
               <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
@@ -188,13 +234,15 @@ export default function BW1Platform() {
           />
         }
       >
-        <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+        <Hero hero={HERO} searchTerm={searchTerm} onSearchChange={setSearchTerm} onSearchSubmit={handleSearchSubmit} onSearchKeyDown={handleSearchKeyDown} onSearchClear={handleClearSearch} committedSearchTerm={committedSearchTerm} />
 
         {/* ✅ padding-bottom grande pra não ficar nada escondido atrás da BottomNav */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
           <Tabs />
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Todos os anúncios</h2>
+            <h2 className="text-xl font-bold text-slate-900">
+              {committedSearchTerm ? `Resultados para "${committedSearchTerm}"` : 'Todos os anúncios'}
+            </h2>
             <select
               value={ordering}
               onChange={(e) => setOrdering(e.target.value)}
@@ -207,10 +255,21 @@ export default function BW1Platform() {
             </select>
           </div>
           
-          <ListingsGrid listings={filteredListings} loading={false} />
+          {isSearching ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="flex flex-col items-center gap-3">
+                <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <p className="text-slate-500 text-sm">Buscando anúncios...</p>
+              </div>
+            </div>
+          ) : (
+            <ListingsGrid listings={displayedListings} loading={false} />
+          )}
           
-          {/* Observer target para scroll infinito */}
-          {hasMore && <div ref={observerRef} className="h-4" />}
+          {/* Observer target para scroll infinito — desativado durante busca */}
+          {hasMore && !searchModeRef.current && <div ref={observerRef} className="h-4" />}
           
           {/* Indicador de carregamento de mais anúncios */}
           {loadingMore && (
@@ -238,10 +297,17 @@ export default function BW1Platform() {
             </div>
           )}
           
-          {/* Mensagem quando não há mais anúncios */}
+          {/* Divisor elegante ao chegar ao fim dos resultados */}
           {!hasMore && listings.length > 0 && (
-            <div className="text-center py-8">
-              <p className="text-slate-500">Não há mais anúncios para exibir</p>
+            <div className="flex items-center gap-4 pt-12 pb-0">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="flex items-center gap-2 text-slate-400 text-sm">
+                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Você viu todos os anúncios
+              </span>
+              <div className="flex-1 h-px bg-slate-200" />
             </div>
           )}
           
