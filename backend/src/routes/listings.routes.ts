@@ -34,6 +34,43 @@ function parseJsonField(value: any) {
   }
 }
 
+// Mapa de normalização dos estados brasileiros
+// Converte siglas, variações sem acento e grafias alternativas para o nome canônico
+const STATE_CANONICAL: Record<string, string> = {
+  'ac': 'Acre', 'acre': 'Acre',
+  'al': 'Alagoas', 'alagoas': 'Alagoas',
+  'ap': 'Amapá', 'amapá': 'Amapá', 'amapa': 'Amapá',
+  'am': 'Amazonas', 'amazonas': 'Amazonas',
+  'ba': 'Bahia', 'bahia': 'Bahia',
+  'ce': 'Ceará', 'ceará': 'Ceará', 'ceara': 'Ceará',
+  'df': 'Distrito Federal', 'distrito federal': 'Distrito Federal',
+  'es': 'Espírito Santo', 'espírito santo': 'Espírito Santo', 'espirito santo': 'Espírito Santo',
+  'go': 'Goiás', 'goiás': 'Goiás', 'goias': 'Goiás',
+  'ma': 'Maranhão', 'maranhão': 'Maranhão', 'maranhao': 'Maranhão',
+  'mt': 'Mato Grosso', 'mato grosso': 'Mato Grosso',
+  'ms': 'Mato Grosso do Sul', 'mato grosso do sul': 'Mato Grosso do Sul',
+  'mg': 'Minas Gerais', 'minas gerais': 'Minas Gerais',
+  'pa': 'Pará', 'pará': 'Pará', 'para': 'Pará',
+  'pb': 'Paraíba', 'paraíba': 'Paraíba', 'paraiba': 'Paraíba',
+  'pr': 'Paraná', 'paraná': 'Paraná', 'parana': 'Paraná',
+  'pe': 'Pernambuco', 'pernambuco': 'Pernambuco',
+  'pi': 'Piauí', 'piauí': 'Piauí', 'piaui': 'Piauí',
+  'rj': 'Rio de Janeiro', 'rio de janeiro': 'Rio de Janeiro',
+  'rn': 'Rio Grande do Norte', 'rio grande do norte': 'Rio Grande do Norte',
+  'rs': 'Rio Grande do Sul', 'rio grande do sul': 'Rio Grande do Sul',
+  'ro': 'Rondônia', 'rondônia': 'Rondônia', 'rondonia': 'Rondônia',
+  'rr': 'Roraima', 'roraima': 'Roraima',
+  'sc': 'Santa Catarina', 'santa catarina': 'Santa Catarina',
+  'sp': 'São Paulo', 'são paulo': 'São Paulo', 'sao paulo': 'São Paulo', 's paulo': 'São Paulo',
+  'se': 'Sergipe', 'sergipe': 'Sergipe',
+  'to': 'Tocantins', 'tocantins': 'Tocantins',
+};
+
+function normalizeState(raw: string): string {
+  const key = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  return STATE_CANONICAL[key] ?? raw.trim().replace(/\s+/g, ' ');
+}
+
 // Upload de imagem para Supabase Storage (autenticado)
 router.post('/upload-image', authMiddleware, upload.single('image'), async (req: AuthRequest, res) => {
   try {
@@ -64,11 +101,40 @@ router.post('/upload-image', authMiddleware, upload.single('image'), async (req:
   }
 });
 
+// Listar estados únicos com anúncios ativos (público)
+router.get('/states', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select('location')
+      .eq('status', 'active');
+
+    if (error) throw error;
+
+    const stateMap = new Map<string, string>();
+    for (const row of data || []) {
+      const loc = parseJsonField(row.location);
+      const raw: string | undefined = typeof loc === 'object' && loc !== null ? loc.state : undefined;
+      if (raw && raw.trim()) {
+        const canonical = normalizeState(raw);
+        stateMap.set(canonical.toLowerCase(), canonical);
+      }
+    }
+    const states = Array.from(stateMap.values()).sort((a, b) =>
+      a.localeCompare(b, 'pt-BR')
+    );
+    res.json({ states });
+  } catch (error) {
+    console.error('Get states error:', error);
+    res.status(500).json({ error: 'Failed to get states' });
+  }
+});
+
 // Listar todos os anúncios (público)
 router.get('/', async (req, res) => {
   try {
-    const { category, type, search, limit = 20, offset = 0 } = req.query;
-    const cacheParams = { category, type, search, limit, offset };
+    const { category, type, search, state, limit = 20, offset = 0 } = req.query;
+    const cacheParams = { category, type, search, state, limit, offset };
 
     // Tentar buscar do cache
     const cachedData = CacheService.getListings(cacheParams);
@@ -99,6 +165,26 @@ router.get('/', async (req, res) => {
 
     if (search) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    if (state) {
+      const canonical = normalizeState(String(state));
+      const variations = Object.entries(STATE_CANONICAL)
+        .filter(([, v]) => v === canonical)
+        .map(([k]) => k);
+      const allVariants = Array.from(new Set([canonical, ...variations, String(state)]));
+      // location é varchar com JSON serializado.
+      // Para nomes completos: busca o valor diretamente (%São Paulo%)
+      // Para abreviações curtas (≤2 chars): usa contexto do JSON key para evitar falsos positivos
+      const orClauses = allVariants
+        .flatMap(v => {
+          if (v.length <= 2) {
+            return [`location.ilike.%"state":"${v}"%`, `location.ilike.%"state": "${v}"%`];
+          }
+          return [`location.ilike.%${v}%`];
+        })
+        .join(',');
+      query = (query as any).or(orClauses);
     }
 
     query = query.range(Number(offset), Number(offset) + Number(limit) - 1);

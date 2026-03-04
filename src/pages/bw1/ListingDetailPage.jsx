@@ -184,6 +184,22 @@ export default function ListingDetailPage() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [id]);
 
+  // Auto-abrir WhatsApp após redirect do login
+  useEffect(() => {
+    if (!isAuthenticated || !item) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get('openWhatsapp') === 'true') {
+      const rawW = extractWhats(item);
+      const digits = normalizeWhatsapp(rawW);
+      if (digits) {
+        const msg = encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`);
+        window.open(`https://wa.me/${digits}?text=${msg}`, '_blank', 'noreferrer');
+      }
+      // Limpar o parâmetro da URL sem recarregar a página
+      window.history.replaceState({}, '', location.pathname);
+    }
+  }, [isAuthenticated, item]);
+
   // Detectar quando o botão de contato sai da tela para mostrar barra flutuante
   useEffect(() => {
     if (!item) return;
@@ -701,15 +717,20 @@ export default function ListingDetailPage() {
                       </button>
                       
                       {hasWhats && (
-                        <a
-                          href={`https://wa.me/${waDigits}?text=${encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`)}`}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          onClick={() => {
+                            if (!isAuthenticated) {
+                              localStorage.setItem('bw1_redirect_after_login', `${location.pathname}?openWhatsapp=true`);
+                              navigate('/login', { replace: true });
+                              return;
+                            }
+                            window.open(`https://wa.me/${waDigits}?text=${encodeURIComponent(`Olá! Tenho interesse no anúncio: ${item.title}`)}`, '_blank', 'noreferrer');
+                          }}
                           className="w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-sm hover:shadow-lg transition-all flex items-center justify-center gap-2"
                         >
                           <Phone size={20} />
                           WhatsApp
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>

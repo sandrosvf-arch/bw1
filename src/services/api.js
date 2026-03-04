@@ -285,6 +285,10 @@ class ApiService {
     return this.request(endpoint, options);
   }
 
+  async getListingStates() {
+    return this.request('/api/listings/states', { forceRefresh: true });
+  }
+
   getListingsFromCache(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = queryString ? `/api/listings?${queryString}` : '/api/listings';

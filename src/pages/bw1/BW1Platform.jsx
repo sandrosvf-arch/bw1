@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
+import { MapPin, ChevronDown, Check } from "lucide-react";
 import api from "../../services/api";
 
 import Navbar from "./components/Navbar";
@@ -30,6 +31,11 @@ export default function BW1Platform() {
   const [committedSearchTerm, setCommittedSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [ordering, setOrdering] = useState("recent");
+  const [selectedState, setSelectedState] = useState("");
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [availableStates, setAvailableStates] = useState([]);
+  const stateDropdownRef = useRef(null);
+  const selectedStateRef = useRef("");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -38,15 +44,34 @@ export default function BW1Platform() {
   const observerRef = useRef(null);
   const searchModeRef = useRef(false);
 
+  // Carregar estados do banco na inicialização (sempre fresh)
+  useEffect(() => {
+    // Limpa cache antigo de estados para evitar lista desatualizada
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.includes('listings/states')) localStorage.removeItem(k);
+      });
+    } catch {}
+    api.getListingStates().then(res => {
+      setAvailableStates(res.states || []);
+    }).catch(() => {});
+  }, []);
+
   // Carregar os primeiros anúncios
   useEffect(() => {
     loadInitialListings();
   }, []);
 
+  const buildParams = (extra = {}) => {
+    const params = { limit: BATCH_SIZE, ...extra };
+    if (selectedStateRef.current) params.state = selectedStateRef.current;
+    return params;
+  };
+
   const loadInitialListings = async () => {
     setLoading(true);
     try {
-      const response = await api.getListings({ limit: BATCH_SIZE, offset: 0 });
+      const response = await api.getListings(buildParams({ offset: 0 }));
       const newListings = response.listings || [];
       setListings(newListings);
       setOffset(BATCH_SIZE);
@@ -60,6 +85,26 @@ export default function BW1Platform() {
     }
   };
 
+  // Recarregar ao mudar o estado selecionado
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    selectedStateRef.current = selectedState;
+    searchModeRef.current = false;
+    setCommittedSearchTerm("");
+    setSearchTerm("");
+    setLoading(true);
+    api.getListings(buildParams({ offset: 0 }), { forceRefresh: true })
+      .then(res => {
+        const newListings = res.listings || [];
+        setListings(newListings);
+        setOffset(BATCH_SIZE);
+        setHasMore(newListings.length === BATCH_SIZE);
+      })
+      .catch(() => { setListings([]); setHasMore(false); })
+      .finally(() => setLoading(false));
+  }, [selectedState]);
+
   // Busca por submissão (lupa ou Enter)
   const handleSearchSubmit = async () => {
     if (isSearching) return;
@@ -69,10 +114,9 @@ export default function BW1Platform() {
     searchModeRef.current = !!term;
     setIsSearching(true);
     try {
-      const response = await api.getListings(
-        { ...(term ? { search: term } : {}), limit: 100 },
-        { forceRefresh: true }
-      );
+      const params = { ...(term ? { search: term } : {}), limit: 100 };
+      if (selectedStateRef.current) params.state = selectedStateRef.current;
+      const response = await api.getListings(params, { forceRefresh: true });
       const fetched = response.listings || [];
       setListings(fetched);
       if (term) {
@@ -100,7 +144,7 @@ export default function BW1Platform() {
     searchModeRef.current = false;
     setIsSearching(true);
     try {
-      const response = await api.getListings({ limit: BATCH_SIZE, offset: 0 }, { forceRefresh: true });
+      const response = await api.getListings(buildParams({ offset: 0 }), { forceRefresh: true });
       const fetched = response.listings || [];
       setListings(fetched);
       setOffset(BATCH_SIZE);
@@ -118,7 +162,7 @@ export default function BW1Platform() {
 
     setLoadingMore(true);
     try {
-      const response = await api.getListings({ limit: BATCH_SIZE, offset });
+      const response = await api.getListings(buildParams({ offset }));
       const newListings = response.listings || [];
       
       if (newListings.length > 0) {
@@ -157,6 +201,17 @@ export default function BW1Platform() {
       }
     };
   }, [hasMore, loadingMore, loading, offset]);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (stateDropdownRef.current && !stateDropdownRef.current.contains(e.target)) {
+        setStateDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const displayedListings = useMemo(() => {
     let filtered = [...listings];
@@ -239,10 +294,58 @@ export default function BW1Platform() {
         {/* ✅ padding-bottom grande pra não ficar nada escondido atrás da BottomNav */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pb-28 lg:pb-8 -mt-16">
           <Tabs />
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900">
-              {committedSearchTerm ? `Resultados para "${committedSearchTerm}"` : 'Todos os anúncios'}
-            </h2>
+
+          {/* Barra de filtros */}
+          <div className="flex items-center justify-between mb-6 gap-3">
+            {/* Filtro de estado — dropdown */}
+            <div className="relative" ref={stateDropdownRef}>
+              <button
+                onClick={() => setStateDropdownOpen((v) => !v)}
+                className={`inline-flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl text-sm font-medium border shadow-sm transition ${
+                  selectedState
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <MapPin size={14} className={selectedState ? "text-white" : "text-slate-400"} />
+                {selectedState || "Todos os estados"}
+                <ChevronDown
+                  size={15}
+                  className={`transition-transform ${stateDropdownOpen ? "rotate-180" : ""} ${selectedState ? "text-white/80" : "text-slate-400"}`}
+                />
+              </button>
+
+              {stateDropdownOpen && (
+                <div className="absolute left-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 overflow-hidden">
+                  <button
+                    onClick={() => { setSelectedState(""); setStateDropdownOpen(false); }}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition ${
+                      selectedState === "" ? "text-blue-600 font-semibold bg-blue-50" : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    Todos os estados
+                    {selectedState === "" && <Check size={15} className="text-blue-600" />}
+                  </button>
+                  {availableStates.length === 0 && (
+                    <p className="px-4 py-2.5 text-xs text-slate-400">Nenhum estado disponível</p>
+                  )}
+                  {availableStates.map((uf) => (
+                    <button
+                      key={uf}
+                      onClick={() => { setSelectedState(uf === selectedState ? "" : uf); setStateDropdownOpen(false); }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition ${
+                        selectedState === uf ? "text-blue-600 font-semibold bg-blue-50" : "text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {uf}
+                      {selectedState === uf && <Check size={15} className="text-blue-600" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Ordenação */}
             <select
               value={ordering}
               onChange={(e) => setOrdering(e.target.value)}

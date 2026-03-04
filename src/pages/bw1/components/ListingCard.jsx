@@ -536,10 +536,17 @@ function ListingCard({ item, onViewMore }) {
         <div className="mt-auto flex gap-2">
           {/* CONTATAR / CHAT */}
           {hasWhats ? (
-            <a
-              href={waLink}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isAuthenticated) {
+                  localStorage.setItem('bw1_redirect_after_login', `/anuncio/${item.id}?openWhatsapp=true`);
+                  navigate('/login');
+                  return;
+                }
+                window.open(waLink, '_blank', 'noreferrer');
+              }}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
               title="Chamar no WhatsApp"
             >
@@ -552,7 +559,7 @@ function ListingCard({ item, onViewMore }) {
                 />
               )}
               Contatar
-            </a>
+            </button>
           ) : (
             <button
               onClick={startChat}
