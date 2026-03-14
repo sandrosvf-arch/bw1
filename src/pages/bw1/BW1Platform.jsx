@@ -38,6 +38,7 @@ export default function BW1Platform() {
   const selectedStateRef = useRef("");
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
@@ -70,6 +71,7 @@ export default function BW1Platform() {
 
   const loadInitialListings = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const response = await api.getListings(buildParams({ offset: 0 }), { forceRefresh: true });
       const newListings = response.listings || [];
@@ -79,6 +81,7 @@ export default function BW1Platform() {
     } catch (error) {
       console.error('Erro ao carregar anúncios:', error);
       setListings([]);
+      setLoadError(true);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -366,6 +369,13 @@ export default function BW1Platform() {
                 </svg>
                 <p className="text-slate-500 text-sm">Buscando anúncios...</p>
               </div>
+            </div>
+          ) : loadError ? (
+            <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
+              <p className="text-slate-500 mb-4">Não foi possível carregar os anúncios. Verifique sua conexão.</p>
+              <button onClick={loadInitialListings} className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
+                Tentar novamente
+              </button>
             </div>
           ) : (
             <ListingsGrid listings={displayedListings} loading={false} />

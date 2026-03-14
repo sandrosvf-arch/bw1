@@ -173,20 +173,16 @@ router.get('/', async (req, res) => {
       return res.json(cachedData);
     }
 
-    const selectFields = bumpColumnsReady
-      ? 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at'
-      : 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured';
+    // Sempre inclui bumped_at — colunas existem após a migração SQL
+    const selectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at';
 
-    let query = supabase
+    let query = (supabase as any)
       .from('listings')
       .select(selectFields)
       .eq('status', 'active')
-      .order('featured', { ascending: false });
-
-    if (bumpColumnsReady) {
-      query = (query as any).order('bumped_at', { ascending: false, nullsFirst: false });
-    }
-    query = (query as any).order('created_at', { ascending: false });
+      .order('featured', { ascending: false })
+      .order('bumped_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
 
     if (category) {
       // Suportar filtro por categoria em PT e EN
@@ -235,7 +231,7 @@ router.get('/', async (req, res) => {
 
     // Processar dados para garantir que campos JSONB sejam objetos
     // Apenas a 1ª imagem é retornada na listagem para reduzir bandwidth
-    const processedData = (data || []).map(listing => {
+    const processedData = (data || []).map((listing: any) => {
       const imgs = parseJsonField(listing.images);
       const imgsArray = Array.isArray(imgs) ? imgs : (imgs ? [imgs] : []);
       return {
@@ -446,11 +442,10 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
 // Meus anúncios (autenticado)
 router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const mySelectFields = bumpColumnsReady
-      ? 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at'
-      : 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured';
+    // Sempre inclui bumped_at e bumps_remaining — colunas existem após a migração SQL
+    const mySelectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at';
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('listings')
       .select(mySelectFields)
       .eq('user_id', req.userId)
@@ -459,7 +454,7 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
     if (error) throw error;
 
     // Processar dados para garantir que campos JSONB sejam objetos
-    const processedData = (data || []).map(listing => {
+    const processedData = (data || []).map((listing: any) => {
       const imgs = parseJsonField(listing.images);
       const imgsArray = Array.isArray(imgs) ? imgs : (imgs ? [imgs] : []);
       return {

@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import keepAliveService from "./services/keepAlive.js";
 import api from "./services/api.js";
 import ScrollToTop from "./components/ScrollToTop.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 // Páginas críticas - carregamento imediato (apenas a home)
 import BW1Platform from "./pages/bw1/BW1Platform.jsx";
@@ -70,6 +71,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ScrollToTop />
+      <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<BW1Platform />} />
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }
