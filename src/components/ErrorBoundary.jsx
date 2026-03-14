@@ -1,5 +1,15 @@
 import React from 'react';
 
+const isChunkError = (error) => {
+  const msg = error?.message || '';
+  return (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Importing a module script failed') ||
+    msg.includes('dynamically imported module') ||
+    error?.name === 'ChunkLoadError'
+  );
+};
+
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -12,10 +22,31 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary] Crash capturado:', error, info);
+
+    // Stale chunk após novo deploy → recarregar automaticamente (uma vez)
+    if (isChunkError(error)) {
+      const reloaded = sessionStorage.getItem('chunk_reload');
+      if (!reloaded) {
+        sessionStorage.setItem('chunk_reload', '1');
+        window.location.reload();
+      }
+    }
   }
 
   render() {
     if (this.state.hasError) {
+      // Se for chunk error, já está recarregando — mostrar spinner
+      if (isChunkError(this.state.error)) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+            <div className="text-center">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent mb-3"></div>
+              <p className="text-sm text-slate-600">Atualizando aplicativo...</p>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
