@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, X, ImagePlus, Video } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -22,17 +22,53 @@ const TRANSMISSION_OPTIONS = ["Manual", "Automático", "CVT", "Semi-automático"
 const BODY_OPTIONS = ["Sedan", "Hatch", "SUV", "Picape", "Coupe", "Conversível", "Minivan", "Van", "Caminhonete", "Outros"];
 const DEAL_TYPES = ["Venda", "Aluguel", "Permuta"];
 const FURNISHED_OPTIONS = ["Sim", "Não", "Semi-mobiliado"];
+const MAX_VIDEO_SIZE_MB = 200;
+const MAX_IMAGES = { basic: 5, standard: 10, pro: 15, premium: 15 };
+
+const compressImageToBlob = (file, maxWidth = 1200, quality = 0.75) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
 
 export default function EditListingPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const imageInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [listing, setListing] = useState(null);
+
+  // Images
+  const [images, setImages] = useState([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+
+  // Video (premium only)
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
+  const [videoError, setVideoError] = useState("");
+  const [videoUploaded, setVideoUploaded] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -78,10 +114,14 @@ export default function EditListingPage() {
       const loc = typeof l.location === "string" ? JSON.parse(l.location) : l.location || {};
       const det = typeof l.details === "string" ? JSON.parse(l.details) : l.details || {};
       const cont = typeof l.contact === "string" ? JSON.parse(l.contact) : l.contact || {};
+      const imgs = typeof l.images === "string" ? JSON.parse(l.images) : l.images || [];
+
+      setImages(Array.isArray(imgs) ? imgs : []);
+      setVideoUrl(det.video_url || "");
 
       setForm({
         title: l.title || "",
-        description: l.description || det.description || "",
+        description: det.description || l.description || "",
         price: l.price || "",
         dealType: l.dealType || loc.dealType || "Venda",
         state: loc.state || "",
@@ -111,14 +151,86 @@ export default function EditListingPage() {
     }
   };
 
-  const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  // ── Image handlers ──
+  const maxImgs = MAX_IMAGES[listing?.plan] || 5;
+
+  const handleImageFilesChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (images.length + files.length > maxImgs) {
+      alert(`Máximo de ${maxImgs} fotos para o plano ${listing?.plan || "básico"}.`);
+      return;
+    }
+    setUploadingImages(true);
+    setUploadProgress({ current: 0, total: files.length });
+    try {
+      const newUrls = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress({ current: i + 1, total: files.length });
+        if (file.size > 10 * 1024 * 1024) { alert(`${file.name} muito grande (máx 10 MB).`); continue; }
+        if (!file.type.startsWith("image/")) { alert(`${file.name} não é uma imagem.`); continue; }
+        const blob = await compressImageToBlob(file);
+        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+        const { url } = await api.uploadImage(compressed);
+        newUrls.push(url);
+      }
+      setImages((prev) => [...prev, ...newUrls]);
+    } catch {
+      alert("Erro ao enviar imagem. Tente novamente.");
+    } finally {
+      setUploadingImages(false);
+      setUploadProgress({ current: 0, total: 0 });
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = (idx) => setImages((prev) => prev.filter((_, i) => i !== idx));
+  const setAsCover = (idx) => {
+    if (idx === 0) return;
+    setImages((prev) => { const a = [...prev]; const [item] = a.splice(idx, 1); a.unshift(item); return a; });
+  };
+
+  // ── Video handlers (premium) ──
+  const handleVideoFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) { setVideoError("Envie um vídeo (mp4, mov, etc)."); return; }
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > MAX_VIDEO_SIZE_MB) { setVideoError(`Vídeo muito grande (${sizeMB.toFixed(1)} MB). Máx ${MAX_VIDEO_SIZE_MB} MB.`); return; }
+    setVideoError("");
+    setVideoFile(file);
+  };
+
+  const handleVideoUpload = async () => {
+    if (!videoFile) return;
+    setUploadingVideo(true);
+    setVideoUploadProgress(10);
+    setVideoError("");
+    try {
+      setVideoUploadProgress(40);
+      const result = await api.uploadVideo(id, videoFile);
+      setVideoUploadProgress(100);
+      setVideoUrl(result.video_url);
+      setVideoUploaded(true);
+      setVideoFile(null);
+    } catch (err) {
+      setVideoError(err.message || "Erro ao enviar o vídeo.");
+    } finally {
+      setUploadingVideo(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.price || !form.state || !form.city) {
       setError("Preencha título, preço, estado e cidade.");
+      return;
+    }
+    if (images.length === 0) {
+      setError("Adicione pelo menos 1 foto.");
       return;
     }
     try {
@@ -128,10 +240,16 @@ export default function EditListingPage() {
       const isVehicle = listing?.type === "vehicle";
       const isProperty = listing?.type === "property";
 
+      const det = typeof listing?.details === "string" ? JSON.parse(listing.details) : listing?.details || {};
+      const { description: _d, year: _y, km: _k, fuel: _f, bodyType: _b, transmission: _t,
+        color: _c, doors: _do, beds: _be, baths: _ba, area: _a, parkingSpaces: _p,
+        acceptsPets: _ap, furnished: _fu, floor: _fl, ...restDetails } = det;
+
       const payload = {
         title: form.title.trim(),
         price: form.price,
         dealType: form.dealType,
+        images,
         location: {
           state: form.state,
           city: form.city,
@@ -140,34 +258,9 @@ export default function EditListingPage() {
         contact: { whatsapp: form.whatsapp },
         details: {
           description: form.description,
-          ...(isVehicle && {
-            year: form.year,
-            km: form.km,
-            fuel: form.fuel,
-            bodyType: form.bodyType,
-            transmission: form.transmission,
-            color: form.color,
-            doors: form.doors,
-          }),
-          ...(isProperty && {
-            beds: form.beds,
-            baths: form.baths,
-            area: form.area,
-            parkingSpaces: form.parkingSpaces,
-            acceptsPets: form.acceptsPets,
-            furnished: form.furnished,
-            floor: form.floor,
-          }),
-          // preservar campos extras como video_url
-          ...(() => {
-            const d = typeof listing?.details === "string"
-              ? JSON.parse(listing.details)
-              : listing?.details || {};
-            const { description: _d, year: _y, km: _k, fuel: _f, bodyType: _b, transmission: _t,
-              color: _c, doors: _do, beds: _be, baths: _ba, area: _a, parkingSpaces: _p,
-              acceptsPets: _ap, furnished: _fu, floor: _fl, ...rest } = d;
-            return rest;
-          })(),
+          ...(isVehicle && { year: form.year, km: form.km, fuel: form.fuel, bodyType: form.bodyType, transmission: form.transmission, color: form.color, doors: form.doors }),
+          ...(isProperty && { beds: form.beds, baths: form.baths, area: form.area, parkingSpaces: form.parkingSpaces, acceptsPets: form.acceptsPets, furnished: form.furnished, floor: form.floor }),
+          ...restDetails,
         },
       };
 
@@ -183,6 +276,8 @@ export default function EditListingPage() {
 
   const isVehicle = listing?.type === "vehicle";
   const isProperty = listing?.type === "property";
+  const isPremium = listing?.plan === "premium";
+  const maxImgsDisplay = MAX_IMAGES[listing?.plan] || 5;
 
   const inputCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white";
   const selectCls = `${inputCls} appearance-none`;
@@ -224,6 +319,94 @@ export default function EditListingPage() {
 
           {!loading && listing && (
             <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* ── FOTOS ── */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-slate-800">Fotos</h2>
+                  <span className="text-xs text-slate-400">{images.length}/{maxImgsDisplay}</span>
+                </div>
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {images.map((url, idx) => (
+                      <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-slate-100">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        {idx === 0 && (
+                          <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">Capa</span>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                          {idx !== 0 && (
+                            <button type="button" onClick={() => setAsCover(idx)}
+                              className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
+                              Capa
+                            </button>
+                          )}
+                          <button type="button" onClick={() => removeImage(idx)}
+                            className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {images.length < maxImgsDisplay && (
+                  <div>
+                    <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageFilesChange} />
+                    <button type="button" onClick={() => imageInputRef.current?.click()} disabled={uploadingImages}
+                      className="w-full border-2 border-dashed border-slate-300 rounded-xl py-4 flex flex-col items-center gap-1 text-slate-500 hover:border-blue-400 hover:text-blue-500 transition disabled:opacity-60">
+                      {uploadingImages ? (
+                        <><Loader2 className="animate-spin" size={20} /><span className="text-sm">Enviando {uploadProgress.current}/{uploadProgress.total}...</span></>
+                      ) : (
+                        <><ImagePlus size={22} /><span className="text-sm font-medium">Adicionar fotos</span><span className="text-xs text-slate-400">JPG, PNG — máx 10 MB cada</span></>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ── VÍDEO (premium) ── */}
+              {isPremium && (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 shadow-sm border border-amber-200 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Video size={18} className="text-amber-600" />
+                    <h2 className="font-semibold text-slate-800">Vídeo do anúncio</h2>
+                    <span className="text-xs bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full ml-auto">PREMIUM</span>
+                  </div>
+                  {videoUrl && !videoUploaded && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-500 font-medium">Vídeo atual:</p>
+                      <video src={videoUrl} controls className="w-full rounded-xl max-h-48 bg-black" />
+                    </div>
+                  )}
+                  {videoUploaded && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">✓ Novo vídeo enviado com sucesso!</div>
+                  )}
+                  {!videoUploaded && (
+                    <div className="space-y-3">
+                      <label className="w-full border-2 border-dashed border-amber-300 rounded-xl py-4 flex flex-col items-center gap-1 text-amber-600 hover:border-amber-500 transition cursor-pointer">
+                        <Video size={22} />
+                        <span className="text-sm font-medium">{videoFile ? videoFile.name : videoUrl ? "Substituir vídeo" : "Adicionar vídeo"}</span>
+                        <span className="text-xs text-slate-400">MP4, MOV, AVI — até {MAX_VIDEO_SIZE_MB} MB</span>
+                        <input type="file" accept="video/*" className="hidden" onChange={handleVideoFileChange} />
+                      </label>
+                      {videoFile && !uploadingVideo && (
+                        <button type="button" onClick={handleVideoUpload}
+                          className="w-full py-3 rounded-xl bg-amber-500 text-white font-semibold text-sm hover:bg-amber-600 transition flex items-center justify-center gap-2">
+                          <Video size={16} /> Enviar vídeo
+                        </button>
+                      )}
+                      {uploadingVideo && (
+                        <div className="w-full bg-amber-100 rounded-full h-2">
+                          <div className="bg-amber-500 h-2 rounded-full transition-all" style={{ width: `${videoUploadProgress}%` }} />
+                        </div>
+                      )}
+                      {videoError && <p className="text-red-600 text-xs">{videoError}</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Informações básicas */}
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
                 <h2 className="font-semibold text-slate-800">Informações básicas</h2>
@@ -415,7 +598,7 @@ export default function EditListingPage() {
 
               <button
                 type="submit"
-                disabled={saving || success}
+                disabled={saving || success || uploadingImages || uploadingVideo}
                 className="w-full py-4 rounded-2xl bg-blue-600 text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-blue-700 transition disabled:opacity-60"
               >
                 {saving ? (
