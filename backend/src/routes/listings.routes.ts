@@ -29,8 +29,7 @@ const VIDEO_BUCKET = 'listing-videos';
 (async () => {
   const { error } = await supabaseAdmin.storage.createBucket(VIDEO_BUCKET, {
     public: true,
-    fileSizeLimit: 500 * 1024 * 1024,
-    allowedMimeTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mpeg'],
+    // fileSizeLimit não definido aqui — Supabase free tier rejeita limits muito altos (>50MB)
   });
   if (error && !error.message.includes('already exists')) {
     console.warn('⚠️ Video bucket warning:', error.message);
