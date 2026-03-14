@@ -54,6 +54,7 @@ export default function CreateListingPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [imagesError, setImagesError] = useState(false);
+  const [step2Errors, setStep2Errors] = useState({});
   const [customColor, setCustomColor] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -64,6 +65,26 @@ export default function CreateListingPage() {
   }, [step]);
 
   // Drag and drop handlers
+  const validateStep2 = () => {
+    const errors = {};
+    if (!formData.title.trim()) errors.title = 'Título é obrigatório';
+    if (!formData.price.trim()) errors.price = 'Preço é obrigatório';
+    if (!formData.state.trim()) errors.state = 'Estado é obrigatório';
+    if (!formData.city.trim()) errors.city = 'Cidade é obrigatória';
+    if (formData.type === 'vehicle') {
+      if (!formData.year) errors.year = 'Ano é obrigatório';
+      if (!formData.km.trim()) errors.km = 'KM é obrigatório';
+      if (!formData.fuel) errors.fuel = 'Combustível é obrigatório';
+    }
+    if (formData.type === 'property') {
+      if (!formData.beds) errors.beds = 'Quartos é obrigatório';
+      if (!formData.baths) errors.baths = 'Banheiros é obrigatório';
+      if (!formData.area.trim()) errors.area = 'Área é obrigatória';
+    }
+    setStep2Errors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -510,11 +531,11 @@ export default function CreateListingPage() {
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    placeholder="Ex: Honda Civic 2020 automático"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    onChange={(e) => { handleInputChange("title", e.target.value); setStep2Errors(p => ({...p, title: ''})); }}
+                    placeholder={formData.type === 'vehicle' ? 'Ex: Honda Civic 2020 automático' : 'Ex: Apartamento 3 quartos no centro'}
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.title ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                   />
+                  {step2Errors.title && <p className="text-xs text-red-500 mt-1">{step2Errors.title}</p>}
                 </div>
 
                 {/* Descrição */}
@@ -572,11 +593,11 @@ export default function CreateListingPage() {
                   <input
                     type="text"
                     value={formData.price}
-                    onChange={(e) => handlePriceChange(e.target.value)}
+                    onChange={(e) => { handlePriceChange(e.target.value); setStep2Errors(p => ({...p, price: ''})); }}
                     placeholder="R$ 50.000,00"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.price ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                   />
+                  {step2Errors.price && <p className="text-xs text-red-500 mt-1">{step2Errors.price}</p>}
                   <p className="text-xs text-slate-500 mt-1">
                     💡 Digite apenas números. Ex: 50000 = R$ 500,00
                   </p>
@@ -593,11 +614,11 @@ export default function CreateListingPage() {
                         <input
                           type="number"
                           value={formData.year}
-                          onChange={(e) => handleInputChange("year", e.target.value)}
+                          onChange={(e) => { handleInputChange("year", e.target.value); setStep2Errors(p => ({...p, year: ''})); }}
                           placeholder="2020"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.year ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         />
+                        {step2Errors.year && <p className="text-xs text-red-500 mt-1">{step2Errors.year}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -606,11 +627,11 @@ export default function CreateListingPage() {
                         <input
                           type="text"
                           value={formData.km}
-                          onChange={(e) => handleInputChange("km", e.target.value)}
+                          onChange={(e) => { handleInputChange("km", e.target.value); setStep2Errors(p => ({...p, km: ''})); }}
                           placeholder="50.000 km"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.km ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         />
+                        {step2Errors.km && <p className="text-xs text-red-500 mt-1">{step2Errors.km}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -618,9 +639,8 @@ export default function CreateListingPage() {
                         </label>
                         <select
                           value={formData.fuel}
-                          onChange={(e) => handleInputChange("fuel", e.target.value)}
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required
+                          onChange={(e) => { handleInputChange("fuel", e.target.value); setStep2Errors(p => ({...p, fuel: ''})); }}
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.fuel ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         >
                           <option value="">Selecione...</option>
                           <option value="Flex">Flex</option>
@@ -629,6 +649,7 @@ export default function CreateListingPage() {
                           <option value="Elétrico">Elétrico</option>
                           <option value="Híbrido">Híbrido</option>
                         </select>
+                        {step2Errors.fuel && <p className="text-xs text-red-500 mt-1">{step2Errors.fuel}</p>}
                       </div>
                     </div>
                     
@@ -756,39 +777,42 @@ export default function CreateListingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          Quartos
+                          Quartos *
                         </label>
                         <input
                           type="number"
                           value={formData.beds}
-                          onChange={(e) => handleInputChange("beds", e.target.value)}
+                          onChange={(e) => { handleInputChange("beds", e.target.value); setStep2Errors(p => ({...p, beds: ''})); }}
                           placeholder="3"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.beds ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         />
+                        {step2Errors.beds && <p className="text-xs text-red-500 mt-1">{step2Errors.beds}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          Banheiros
+                          Banheiros *
                         </label>
                         <input
                           type="number"
                           value={formData.baths}
-                          onChange={(e) => handleInputChange("baths", e.target.value)}
+                          onChange={(e) => { handleInputChange("baths", e.target.value); setStep2Errors(p => ({...p, baths: ''})); }}
                           placeholder="2"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.baths ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         />
+                        {step2Errors.baths && <p className="text-xs text-red-500 mt-1">{step2Errors.baths}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-2">
-                          Área (m²)
+                          Área (m²) *
                         </label>
                         <input
                           type="text"
                           value={formData.area}
-                          onChange={(e) => handleInputChange("area", e.target.value)}
+                          onChange={(e) => { handleInputChange("area", e.target.value); setStep2Errors(p => ({...p, area: ''})); }}
                           placeholder="120 m²"
-                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.area ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                         />
+                        {step2Errors.area && <p className="text-xs text-red-500 mt-1">{step2Errors.area}</p>}
                       </div>
                     </div>
                     
@@ -892,11 +916,11 @@ export default function CreateListingPage() {
                       <input
                         type="text"
                         value={formData.state}
-                        onChange={(e) => handleInputChange("state", e.target.value)}
+                        onChange={(e) => { handleInputChange("state", e.target.value); setStep2Errors(p => ({...p, state: ''})); }}
                         placeholder="Ex: Paraná, São Paulo, Rio de Janeiro"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.state ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                       />
+                      {step2Errors.state && <p className="text-xs text-red-500 mt-1">{step2Errors.state}</p>}
                     </div>
                     {/* Cidade */}
                     <div>
@@ -904,11 +928,11 @@ export default function CreateListingPage() {
                       <input
                         type="text"
                         value={formData.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
+                        onChange={(e) => { handleInputChange("city", e.target.value); setStep2Errors(p => ({...p, city: ''})); }}
                         placeholder="Ex: Curitiba, São Paulo, Rio de Janeiro"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.city ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                       />
+                      {step2Errors.city && <p className="text-xs text-red-500 mt-1">{step2Errors.city}</p>}
                     </div>
                   </div>
                   <p className="text-xs text-slate-500 mt-2">
@@ -933,7 +957,13 @@ export default function CreateListingPage() {
               </div>
 
               {/* Botões */}
-              <div className="flex gap-4 mt-8">
+              {Object.values(step2Errors).some(e => e) && (
+                <div className="flex items-center gap-2 mt-6 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <span className="text-red-500">⚠️</span>
+                  <p className="text-sm text-red-600 font-medium">Preencha todos os campos obrigatórios marcados com * antes de continuar.</p>
+                </div>
+              )}
+              <div className="flex gap-4 mt-4">
                 <button
                   onClick={() => setStep(1)}
                   className="flex-1 py-3 px-6 rounded-xl font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition"
@@ -941,7 +971,7 @@ export default function CreateListingPage() {
                   Voltar
                 </button>
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => { if (validateStep2()) setStep(3); }}
                   className="flex-1 py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition"
                 >
                   Continuar
