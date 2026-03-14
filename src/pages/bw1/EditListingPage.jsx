@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, X, ImagePlus, Video } from "lucide-react";
+import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -61,6 +61,24 @@ export default function EditListingPage() {
   const [images, setImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [draggingIdx, setDraggingIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+
+  const handleDragStart = (idx) => setDraggingIdx(idx);
+  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx); };
+  const handleDrop = (e, idx) => {
+    e.preventDefault();
+    if (draggingIdx === null || draggingIdx === idx) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(draggingIdx, 1);
+      next.splice(idx, 0, moved);
+      return next;
+    });
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+  };
+  const handleDragEnd = () => { setDraggingIdx(null); setDragOverIdx(null); };
 
   // Video (premium only)
   const [videoUrl, setVideoUrl] = useState("");
@@ -327,28 +345,46 @@ export default function EditListingPage() {
                   <span className="text-xs text-slate-400">{images.length}/{maxImgsDisplay}</span>
                 </div>
                 {images.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.map((url, idx) => (
-                      <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-slate-100">
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        {idx === 0 && (
-                          <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">Capa</span>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                          {idx !== 0 && (
-                            <button type="button" onClick={() => setAsCover(idx)}
-                              className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
-                              Capa
-                            </button>
+                  <>
+                    <p className="text-xs text-slate-400 -mt-1">Arraste para reordenar · A primeira foto é a capa</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {images.map((url, idx) => (
+                        <div
+                          key={url + idx}
+                          draggable
+                          onDragStart={() => handleDragStart(idx)}
+                          onDragOver={(e) => handleDragOver(e, idx)}
+                          onDrop={(e) => handleDrop(e, idx)}
+                          onDragEnd={handleDragEnd}
+                          className={`relative group aspect-square rounded-xl overflow-hidden border-2 transition cursor-grab active:cursor-grabbing
+                            ${draggingIdx === idx ? "opacity-40 scale-95" : ""}
+                            ${dragOverIdx === idx && draggingIdx !== idx ? "border-blue-500 ring-2 ring-blue-300" : "border-slate-100"}
+                          `}
+                        >
+                          <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
+                          {idx === 0 && (
+                            <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">Capa</span>
                           )}
-                          <button type="button" onClick={() => removeImage(idx)}
-                            className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                            <X size={12} />
-                          </button>
+                          {/* Drag handle hint */}
+                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
+                            <GripVertical size={14} className="text-white drop-shadow" />
+                          </div>
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                            {idx !== 0 && (
+                              <button type="button" onClick={() => setAsCover(idx)}
+                                className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
+                                Capa
+                              </button>
+                            )}
+                            <button type="button" onClick={() => removeImage(idx)}
+                              className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                              <X size={12} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </>
                 )}
                 {images.length < maxImgsDisplay && (
                   <div>
