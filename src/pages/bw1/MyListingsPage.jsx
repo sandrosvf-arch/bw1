@@ -77,12 +77,16 @@ export default function MyListingsPage() {
     return { label: `Próximo bump: ${diffDays}d`, color: 'text-blue-600' };
   };
 
-  // Visualizações com offset deterministico baseado no ID (invisível ao usuário)
+  // Visualizações fake baseadas no tempo (10-20 no dia 1, 20-35 no dia 2, etc.)
   const getDisplayViews = (listing) => {
     const real = listing.views || 0;
     const seed = (listing.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-    const offset = (seed % 850) + 150; // sempre 150-999 para o mesmo anúncio
-    return real + offset;
+    const createdAt = listing.created_at ? new Date(listing.created_at).getTime() : Date.now();
+    const daysOld = Math.max(0, (Date.now() - createdAt) / (24 * 60 * 60 * 1000));
+    const dailyRate = 8 + (seed % 7);   // 8–14 views por dia (fixo por anúncio)
+    const jitter = seed % 5;             // 0–4 extra
+    const fakeViews = Math.floor(daysOld * dailyRate) + jitter;
+    return real + fakeViews;
   };
 
   const getPlanBadge = (plan) => {
@@ -340,10 +344,14 @@ export default function MyListingsPage() {
                           >
                             {listing.title}
                           </h3>
-                          {getPlanBadge(listing.plan)}
                         </div>
                         {getStatusBadge(listing.status)}
                       </div>
+                      {listing.plan && listing.plan !== 'basic' && (
+                        <div className="flex justify-center my-1">
+                          {getPlanBadge(listing.plan)}
+                        </div>
+                      )}
                       <p className="text-2xl font-extrabold text-slate-900 mb-3">
                         {formatPrice(listing.price)}
                       </p>

@@ -356,6 +356,17 @@ class ApiService {
     return this.request(`/api/listings/${listingId}/bump`, { method: 'POST' });
   }
 
+  async getVideoUploadUrl(listingId) {
+    return this.request(`/api/listings/${listingId}/video-upload-url`, { forceRefresh: true });
+  }
+
+  async confirmVideoUpload(listingId, path) {
+    return this.request(`/api/listings/${listingId}/video-confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    });
+  }
+
   async uploadVideo(listingId, file) {
     const formData = new FormData();
     formData.append('video', file);

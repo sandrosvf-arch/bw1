@@ -473,6 +473,73 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   }
 });
 
+// GET /api/listings/:id/video-upload-url — gera URL assinada para upload direto ao Supabase
+router.get('/:id/video-upload-url', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: listing, error: fetchErr } = await supabaseAdmin
+      .from('listings')
+      .select('user_id, plan')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !listing) return res.status(404).json({ error: 'Anúncio não encontrado' });
+    if (listing.user_id !== req.userId) return res.status(403).json({ error: 'Sem permissão' });
+    if (listing.plan !== 'premium') return res.status(403).json({ error: 'Disponível apenas para Premium' });
+
+    const fileName = `${req.userId}/${id}-${uuidv4()}.mp4`;
+    const { data: signData, error: signErr } = await supabaseAdmin.storage
+      .from(VIDEO_BUCKET)
+      .createSignedUploadUrl(fileName);
+
+    if (signErr || !signData) throw signErr || new Error('Erro ao gerar URL de upload');
+
+    const { data: { publicUrl } } = supabaseAdmin.storage.from(VIDEO_BUCKET).getPublicUrl(fileName);
+
+    return res.json({ signedUrl: signData.signedUrl, path: fileName, publicUrl });
+  } catch (error: any) {
+    console.error('Video signed URL error:', error);
+    return res.status(500).json({ error: 'Erro ao gerar URL de upload' });
+  }
+});
+
+// POST /api/listings/:id/video-confirm — salva video_url após upload direto ao Supabase
+router.post('/:id/video-confirm', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { path } = req.body as { path: string };
+
+    if (!path) return res.status(400).json({ error: 'path é obrigatório' });
+
+    const { data: listing, error: fetchErr } = await supabaseAdmin
+      .from('listings')
+      .select('user_id, details')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !listing) return res.status(404).json({ error: 'Anúncio não encontrado' });
+    if (listing.user_id !== req.userId) return res.status(403).json({ error: 'Sem permissão' });
+
+    const { data: { publicUrl } } = supabaseAdmin.storage.from(VIDEO_BUCKET).getPublicUrl(path);
+    const currentDetails = typeof listing.details === 'string' ? JSON.parse(listing.details) : (listing.details || {});
+
+    const { error: updateErr } = await supabaseAdmin
+      .from('listings')
+      .update({ details: { ...currentDetails, video_url: publicUrl } })
+      .eq('id', id);
+
+    if (updateErr) throw updateErr;
+
+    CacheService.invalidateListingsCache();
+
+    return res.json({ success: true, video_url: publicUrl });
+  } catch (error: any) {
+    console.error('Video confirm error:', error);
+    return res.status(500).json({ error: 'Erro ao confirmar vídeo' });
+  }
+});
+
 // POST /api/listings/:id/video — upload de vídeo premium
 router.post('/:id/video', authMiddleware, videoUpload.single('video'), async (req: AuthRequest, res) => {
   try {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical } from "lucide-react";
+import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -79,6 +79,16 @@ export default function EditListingPage() {
     setDragOverIdx(null);
   };
   const handleDragEnd = () => { setDraggingIdx(null); setDragOverIdx(null); };
+
+  const moveImage = (idx, direction) => {
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= images.length) return;
+    setImages((prev) => {
+      const next = [...prev];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      return next;
+    });
+  };
 
   // Video (premium only)
   const [videoUrl, setVideoUrl] = useState("");
@@ -225,17 +235,41 @@ export default function EditListingPage() {
   const handleVideoUpload = async () => {
     if (!videoFile) return;
     setUploadingVideo(true);
-    setVideoUploadProgress(10);
+    setVideoUploadProgress(5);
     setVideoError("");
     try {
-      setVideoUploadProgress(40);
-      const result = await api.uploadVideo(id, videoFile);
+      // 1. Obter URL assinada do backend
+      setVideoUploadProgress(10);
+      const { signedUrl, path } = await api.getVideoUploadUrl(id);
+
+      // 2. Upload direto para o Supabase Storage (sem passar pelo backend)
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", signedUrl);
+        xhr.setRequestHeader("Content-Type", videoFile.type || "video/mp4");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setVideoUploadProgress(10 + Math.round((e.loaded / e.total) * 80));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Erro no upload: ${xhr.status} ${xhr.responseText}`));
+        };
+        xhr.onerror = () => reject(new Error("Erro de rede ao enviar vídeo."));
+        xhr.send(videoFile);
+      });
+
+      // 3. Confirmar com o backend para salvar a URL no banco
+      setVideoUploadProgress(95);
+      const result = await api.confirmVideoUpload(id, path);
       setVideoUploadProgress(100);
       setVideoUrl(result.video_url);
       setVideoUploaded(true);
       setVideoFile(null);
     } catch (err) {
       setVideoError(err.message || "Erro ao enviar o vídeo.");
+      setVideoUploadProgress(0);
     } finally {
       setUploadingVideo(false);
     }
@@ -381,6 +415,25 @@ export default function EditListingPage() {
                               <X size={12} />
                             </button>
                           </div>
+                          {/* Move buttons - always visible, work on touch */}
+                          <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); moveImage(idx, -1); }}
+                              disabled={idx === 0}
+                              className="p-1 bg-black/60 text-white rounded disabled:opacity-30 hover:bg-black/80 active:scale-95"
+                            >
+                              <ChevronLeft size={12} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); moveImage(idx, 1); }}
+                              disabled={idx === images.length - 1}
+                              className="p-1 bg-black/60 text-white rounded disabled:opacity-30 hover:bg-black/80 active:scale-95"
+                            >
+                              <ChevronRight size={12} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -433,8 +486,14 @@ export default function EditListingPage() {
                         </button>
                       )}
                       {uploadingVideo && (
-                        <div className="w-full bg-amber-100 rounded-full h-2">
-                          <div className="bg-amber-500 h-2 rounded-full transition-all" style={{ width: `${videoUploadProgress}%` }} />
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-amber-700">
+                            <span>{videoUploadProgress < 10 ? "Preparando..." : videoUploadProgress < 95 ? "Enviando vídeo..." : "Finalizando..."}</span>
+                            <span>{videoUploadProgress}%</span>
+                          </div>
+                          <div className="w-full bg-amber-100 rounded-full h-2">
+                            <div className="bg-amber-500 h-2 rounded-full transition-all" style={{ width: `${videoUploadProgress}%` }} />
+                          </div>
                         </div>
                       )}
                       {videoError && <p className="text-red-600 text-xs">{videoError}</p>}
