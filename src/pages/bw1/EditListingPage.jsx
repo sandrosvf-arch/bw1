@@ -175,31 +175,28 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
             ].join(' ')}
           >
             <img src={url} alt="" className="w-full h-full object-cover pointer-events-none select-none" draggable={false} />
-            {idx === 0 && (
-              <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold pointer-events-none">Capa</span>
-            )}
-            <div className="absolute top-1 right-1 pointer-events-none">
-              <GripVertical size={14} className="text-white drop-shadow opacity-70" />
-            </div>
-            {/* Overlay buttons — stopPropagation so they don’t trigger drag */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-              {idx !== 0 && (
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => onSetCover(idx)}
-                  className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
-                  Capa
-                </button>
-              )}
+            {idx === 0 ? (
+              <span className="absolute top-1.5 left-1.5 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-full font-bold pointer-events-none shadow">
+                ★ Capa
+              </span>
+            ) : (
               <button
                 type="button"
                 onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onRemove(idx)}
-                className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                <X size={12} />
+                onClick={() => onSetCover(idx)}
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs bg-black/65 text-white px-3 py-1 rounded-full font-semibold hover:bg-blue-600 active:bg-blue-700 transition whitespace-nowrap shadow-md"
+              >
+                Definir capa
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onRemove(idx)}
+              className="absolute top-1.5 right-1.5 w-7 h-7 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 active:bg-red-700 transition shadow-md"
+            >
+              <X size={14} strokeWidth={2.5} />
+            </button>
           </div>
         ))}
       </div>
