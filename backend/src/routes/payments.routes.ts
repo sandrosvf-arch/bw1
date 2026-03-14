@@ -114,7 +114,7 @@ router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) =
     if (data.status === 'pending') {
       try {
         const payment = new Payment(getMPClient());
-        const result = await payment.get({ id: paymentId });
+        const result = await payment.get({ id: Number(paymentId) });
 
         if (result.status === 'approved') {
           const plan = result.metadata?.plan || data.plan;
