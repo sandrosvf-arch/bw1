@@ -25,7 +25,7 @@ export default function MyListingsPage() {
   const [filter, setFilter] = useState("all"); // all, active, paused, sold
   const [showMenu, setShowMenu] = useState(null);
   const [logoOk, setLogoOk] = useState(true);
-  const [bumpingId, setBumpingId] = useState(null);
+
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -55,19 +55,24 @@ export default function MyListingsPage() {
     return item.status === filter;
   });
 
-  const handleBump = async (id) => {
-    try {
-      setBumpingId(id);
-      const result = await api.bumpListing(id);
-      setListings(listings.map((l) =>
-        l.id === id ? { ...l, bumps_remaining: result.bumps_remaining } : l
-      ));
-      alert(`✅ Anúncio voltou ao topo! Bumps restantes: ${result.bumps_remaining}`);
-    } catch (error) {
-      alert(error.message || 'Erro ao voltar ao topo.');
-    } finally {
-      setBumpingId(null);
+  const BUMP_INTERVALS_DAYS = { standard: 11, pro: 12, premium: 7 };
+
+  const getNextBumpInfo = (listing) => {
+    if (!listing.plan || listing.plan === 'basic') return null;
+    const interval = BUMP_INTERVALS_DAYS[listing.plan];
+    if (!interval) return null;
+    const isPremium = listing.plan === 'premium';
+    if (!isPremium && (!listing.bumps_remaining || listing.bumps_remaining <= 0)) {
+      return { label: 'Ciclo encerrado', color: 'text-gray-400' };
     }
+    if (!listing.bumped_at) {
+      return { label: 'Próximo bump: em breve', color: 'text-green-600' };
+    }
+    const nextBump = new Date(listing.bumped_at).getTime() + interval * 24 * 60 * 60 * 1000;
+    const diffMs = nextBump - Date.now();
+    if (diffMs <= 0) return { label: 'Próximo bump: em breve', color: 'text-green-600' };
+    const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    return { label: `Próximo bump: ${diffDays}d`, color: 'text-blue-600' };
   };
 
   const getPlanBadge = (plan) => {
@@ -353,17 +358,16 @@ export default function MyListingsPage() {
                           )}
                         </button>
 
-                        {/* Volta ao topo — só para planos pagos com bumps disponíveis */}
-                        {listing.plan && listing.plan !== 'basic' && listing.bumps_remaining > 0 && (
-                          <button
-                            onClick={() => handleBump(listing.id)}
-                            disabled={bumpingId === listing.id}
-                            className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-700 hover:bg-green-200 transition disabled:opacity-60"
-                          >
-                            <TrendingUp size={16} className="inline mr-1" />
-                            {bumpingId === listing.id ? 'Subindo...' : `Topo (${listing.bumps_remaining}×)`}
-                          </button>
-                        )}
+                        {/* Volta ao topo automático — mostra info para planos pagos */}
+                        {listing.plan && listing.plan !== 'basic' && (() => {
+                          const info = getNextBumpInfo(listing);
+                          return info ? (
+                            <span className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
+                              <TrendingUp size={14} />
+                              {info.label}
+                            </span>
+                          ) : null;
+                        })()}
 
                         {/* Impulsionar — para anúncios sem plano pago */}
                         {(!listing.plan || listing.plan === 'basic') && (

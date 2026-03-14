@@ -11,6 +11,7 @@ import chatRoutes from './routes/chat.routes';
 import usersRoutes from './routes/users.routes';
 import profileRoutes from './routes/profile.routes';
 import paymentsRoutes from './routes/payments.routes';
+import { startAutoBumpService } from './services/autoBump.service';
 
 dotenv.config();
 
@@ -78,4 +79,5 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  startAutoBumpService();
 });
