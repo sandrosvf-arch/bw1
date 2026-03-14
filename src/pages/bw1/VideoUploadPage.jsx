@@ -50,17 +50,41 @@ export default function VideoUploadPage() {
   const handleUpload = async () => {
     if (!videoFile || !listingId) return;
     setUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
     setError("");
 
     try {
-      setUploadProgress(40);
-      const result = await api.uploadVideo(listingId, videoFile);
+      // 1. Obter URL assinada do backend
+      setUploadProgress(10);
+      const { signedUrl, path } = await api.getVideoUploadUrl(listingId);
+
+      // 2. Upload direto ao Supabase Storage (sem passar pelo backend)
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", signedUrl);
+        xhr.setRequestHeader("Content-Type", videoFile.type || "video/mp4");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(10 + Math.round((e.loaded / e.total) * 80));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Erro no upload: ${xhr.status}`));
+        };
+        xhr.onerror = () => reject(new Error("Erro de rede ao enviar vídeo."));
+        xhr.send(videoFile);
+      });
+
+      // 3. Confirmar com o backend para salvar a URL no banco
+      setUploadProgress(95);
+      const result = await api.confirmVideoUpload(listingId, path);
       setUploadProgress(100);
       setVideoUrl(result.video_url);
       setUploaded(true);
     } catch (err) {
       setError(err.message || "Erro ao enviar o vídeo. Tente novamente.");
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
