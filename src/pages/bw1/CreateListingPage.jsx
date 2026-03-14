@@ -55,6 +55,7 @@ export default function CreateListingPage() {
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [imagesError, setImagesError] = useState(false);
   const [step2Errors, setStep2Errors] = useState({});
+  const [selectedPlan, setSelectedPlan] = useState('basic');
   const [customColor, setCustomColor] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -234,7 +235,7 @@ export default function CreateListingPage() {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (plan = 'basic') => {
     try {
       setLoading(true);
 
@@ -321,23 +322,38 @@ export default function CreateListingPage() {
       const response = await api.createListing(listingData);
 
       console.log("Anúncio criado com sucesso:", response);
+      const listingId = response?.listing?.id || response?.id || response?.data?.id || null;
 
-      // Navegar para a página de sucesso com dados do anúncio
-      navigate("/anuncio-publicado", {
-        state: {
-          listingData: {
-            title: formData.title,
-            price: priceNumber,
-            category: formData.category,
-            type: formData.type,
-            dealType: formData.dealType,
-            location,
-            images: validImages,
-            description: formData.description,
+      if (plan === 'basic') {
+        navigate("/anuncio-publicado", {
+          state: {
+            listingData: {
+              title: formData.title,
+              price: priceNumber,
+              category: formData.category,
+              type: formData.type,
+              dealType: formData.dealType,
+              location,
+              images: validImages,
+              description: formData.description,
+            },
+            listingId,
           },
-          listingId: response?.listing?.id || response?.id || response?.data?.id || null,
-        },
-      });
+        });
+      } else {
+        // Plano pago: cria pagamento PIX
+        const payment = await api.createPayment({ listingId, plan });
+        navigate(`/pagamento/${payment.paymentId}`, {
+          state: {
+            qrCode: payment.qrCode,
+            qrCodeBase64: payment.qrCodeBase64,
+            amount: payment.amount,
+            plan,
+            listingId,
+            listingTitle: formData.title,
+          },
+        });
+      }
     } catch (error) {
       console.error("Erro ao criar anúncio:", error);
       alert(`❌ Erro ao criar anúncio: ${error.message}\n\nVerifique se você está logado e tente novamente.`);
@@ -1181,171 +1197,135 @@ export default function CreateListingPage() {
             </div>
           )}
 
-          {/* Step 4: Planos de Monetização */}
+          {/* Step 4: Planos */}
           {step === 4 && (
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                Impulsione seu anúncio
-              </h2>
-              <p className="text-slate-600 mb-8">
-                Escolha um plano para dar mais visibilidade e vender mais rápido
-              </p>
+            <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-1">Impulsione seu anúncio</h2>
+              <p className="text-slate-500 mb-6 text-sm">Escolha um plano e pague via PIX. Pagamento confirmado em segundos.</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Plano Básico - Grátis */}
-                <div className="border-2 border-slate-200 rounded-2xl p-6 hover:border-slate-300 transition">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900">Básico</h3>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-bold rounded-full">
-                      Grátis
-                    </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+                {/* Básico - Grátis */}
+                <div
+                  onClick={() => setSelectedPlan('basic')}
+                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                    selectedPlan === 'basic' ? 'border-slate-700 bg-slate-50 ring-2 ring-slate-400' : 'border-slate-200 hover:border-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-slate-900">Básico</h3>
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">GRÁTIS</span>
                   </div>
-                  <div className="mb-4">
-                    <p className="text-3xl font-extrabold text-slate-900">R$ 0</p>
-                    <p className="text-sm text-slate-500">Publicação simples</p>
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm text-slate-600">
-                      <span className="text-green-500 mt-0.5">✓</span>
-                      Anúncio ativo por 30 dias
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-600">
-                      <span className="text-green-500 mt-0.5">✓</span>
-                      Até 5 fotos
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-600">
-                      <span className="text-green-500 mt-0.5">✓</span>
-                      Aparece nos resultados normais
-                    </li>
+                  <p className="text-3xl font-extrabold text-slate-900 mb-3">R$ 0</p>
+                  <ul className="space-y-1.5 text-sm text-slate-600">
+                    <li className="flex gap-2"><span className="text-green-500">✓</span> Anúncio ativo por 20 dias</li>
+                    <li className="flex gap-2"><span className="text-green-500">✓</span> Até 5 fotos</li>
+                    <li className="flex gap-2"><span className="text-green-500">✓</span> Resultados normais</li>
+                    <li className="flex gap-2"><span className="text-green-500">✓</span> 1× no topo ao publicar</li>
                   </ul>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                  >
-                    {loading ? "Publicando..." : "Publicar grátis"}
-                  </button>
                 </div>
 
-                {/* Plano Destaque */}
-                <div className="border-2 border-blue-600 rounded-2xl p-6 relative bg-blue-50/50">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
-                    MAIS POPULAR
+                {/* Destaque Standard */}
+                <div
+                  onClick={() => setSelectedPlan('standard')}
+                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all relative ${
+                    selectedPlan === 'standard' ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-400' : 'border-blue-300 hover:border-blue-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-slate-900">Destaque Standard</h3>
+                    <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">POPULAR</span>
                   </div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900">Destaque</h3>
-                    <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full">
-                      Recomendado
-                    </span>
-                  </div>
-                  <div className="mb-4">
-                    <p className="text-3xl font-extrabold text-blue-600">R$ 29</p>
-                    <p className="text-sm text-slate-500">Por 30 dias</p>
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
-                      <strong>Aparece 3x mais</strong> nos resultados
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
-                      <strong>Badge "Destaque"</strong> no anúncio
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
-                      Até 10 fotos
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-green-500 mt-0.5 font-bold">✓</span>
-                      Prioridade no chat
-                    </li>
+                  <p className="text-3xl font-extrabold text-blue-600 mb-3">R$ 19 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <ul className="space-y-1.5 text-sm text-slate-700">
+                    <li className="flex gap-2"><span className="text-blue-500">✓</span> Anúncio ativo por 35 dias</li>
+                    <li className="flex gap-2"><span className="text-blue-500">✓</span> Flag <strong>"Destaque"</strong> no anúncio</li>
+                    <li className="flex gap-2"><span className="text-blue-500">✓</span> Até 10 fotos</li>
+                    <li className="flex gap-2"><span className="text-blue-500">✓</span> Volta ao topo 3×</li>
                   </ul>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Publicando..." : "Escolher Destaque"}
-                  </button>
                 </div>
 
-                {/* Plano Super Destaque */}
-                <div className="border-2 border-amber-500 rounded-2xl p-6 bg-gradient-to-br from-amber-50 to-orange-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900">Super Destaque</h3>
-                    <span className="px-3 py-1 bg-amber-500 text-white text-sm font-bold rounded-full">
-                      Premium
-                    </span>
+                {/* Destaque PRO */}
+                <div
+                  onClick={() => setSelectedPlan('pro')}
+                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                    selectedPlan === 'pro' ? 'border-violet-600 bg-violet-50 ring-2 ring-violet-400' : 'border-violet-300 hover:border-violet-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-slate-900">Destaque PRO</h3>
+                    <span className="px-2 py-0.5 bg-violet-600 text-white text-xs font-bold rounded-full">PRO</span>
                   </div>
-                  <div className="mb-4">
-                    <p className="text-3xl font-extrabold text-amber-600">R$ 59</p>
-                    <p className="text-sm text-slate-500">Por 30 dias</p>
-                  </div>
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
-                      <strong>Sempre no topo</strong> da categoria
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
-                      <strong>Badge "Super Destaque"</strong> dourado
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
-                      Até 20 fotos
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
-                      Destaque na home por 7 dias
-                    </li>
-                    <li className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-amber-500 mt-0.5 font-bold">★</span>
-                      Estatísticas detalhadas
-                    </li>
+                  <p className="text-3xl font-extrabold text-violet-600 mb-3">R$ 39 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <ul className="space-y-1.5 text-sm text-slate-700">
+                    <li className="flex gap-2"><span className="text-violet-500">✓</span> Anúncio ativo por 60 dias</li>
+                    <li className="flex gap-2"><span className="text-violet-500">✓</span> Flag <strong>"Destaque PRO"</strong> no anúncio</li>
+                    <li className="flex gap-2"><span className="text-violet-500">✓</span> Até 15 fotos</li>
+                    <li className="flex gap-2"><span className="text-violet-500">✓</span> Volta ao topo 5×</li>
                   </ul>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full py-3 px-6 rounded-xl font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Publicando..." : "Escolher Super Destaque"}
-                  </button>
+                </div>
+
+                {/* Super Destaque Premium */}
+                <div
+                  onClick={() => setSelectedPlan('premium')}
+                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                    selectedPlan === 'premium' ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-400' : 'border-amber-300 hover:border-amber-500'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-slate-900">Super Destaque</h3>
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full">PREMIUM</span>
+                  </div>
+                  <p className="text-3xl font-extrabold text-amber-600 mb-3">R$ 79 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <ul className="space-y-1.5 text-sm text-slate-700">
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> Ativo <strong>até vender</strong></li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> Flag <strong>"PREMIUM"</strong> no anúncio</li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> Até 20 fotos + 1 vídeo</li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> Volta ao topo 1× por semana</li>
+                  </ul>
                 </div>
               </div>
 
-              {/* Add-ons Extras */}
-              <div className="border-t border-slate-200 pt-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-4">
-                  Recursos extras (opcional)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="flex items-center gap-4 p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 cursor-pointer transition">
-                    <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900">Renovação Automática</p>
-                      <p className="text-sm text-slate-600">Seu anúncio nunca expira</p>
-                    </div>
-                    <span className="font-bold text-blue-600">+R$ 15</span>
-                  </label>
-                  
-                  <label className="flex items-center gap-4 p-4 border-2 border-slate-200 rounded-xl hover:border-blue-500 cursor-pointer transition">
-                    <input type="checkbox" className="w-5 h-5 text-blue-600 rounded" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900">Refresh Diário</p>
-                      <p className="text-sm text-slate-600">Volta ao topo todo dia</p>
-                    </div>
-                    <span className="font-bold text-blue-600">+R$ 20</span>
-                  </label>
+              {/* Resumo do plano selecionado */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-500">Plano selecionado</p>
+                  <p className="font-bold text-slate-900">
+                    {selectedPlan === 'basic' && 'Básico — Grátis'}
+                    {selectedPlan === 'standard' && 'Destaque Standard — R$ 19 via PIX'}
+                    {selectedPlan === 'pro' && 'Destaque PRO — R$ 39 via PIX'}
+                    {selectedPlan === 'premium' && 'Super Destaque Premium — R$ 79 via PIX'}
+                  </p>
                 </div>
+                {selectedPlan !== 'basic' && (
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Pagamento</p>
+                    <p className="font-bold text-green-600 flex items-center gap-1">🔑 PIX</p>
+                  </div>
+                )}
               </div>
 
-              {/* Botões finais */}
-              <div className="flex gap-4 mt-8">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setStep(3)}
                   className="flex-1 py-3 px-6 rounded-xl font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition"
                 >
                   Voltar
+                </button>
+                <button
+                  onClick={() => handleSubmit(selectedPlan)}
+                  disabled={loading}
+                  className={`flex-1 py-3 px-6 rounded-xl font-semibold transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                    selectedPlan === 'basic'
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                  }`}
+                >
+                  {loading
+                    ? 'Publicando...'
+                    : selectedPlan === 'basic'
+                      ? 'Publicar grátis'
+                      : 'Pagar com PIX e publicar'}
                 </button>
               </div>
             </div>

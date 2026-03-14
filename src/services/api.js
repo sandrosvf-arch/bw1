@@ -340,6 +340,18 @@ class ApiService {
     return this.request('/api/listings/user/my-listings');
   }
 
+  // Pagamentos
+  async createPayment({ listingId, plan }) {
+    return this.request('/api/payments/create', {
+      method: 'POST',
+      body: JSON.stringify({ listingId, plan }),
+    });
+  }
+
+  async getPaymentStatus(paymentId) {
+    return this.request(`/api/payments/${paymentId}/status`);
+  }
+
   // Chat
   async getConversations() {
     return this.request('/api/chat/conversations');

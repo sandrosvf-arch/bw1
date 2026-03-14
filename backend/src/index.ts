@@ -10,6 +10,7 @@ import listingsRoutes from './routes/listings.routes';
 import chatRoutes from './routes/chat.routes';
 import usersRoutes from './routes/users.routes';
 import profileRoutes from './routes/profile.routes';
+import paymentsRoutes from './routes/payments.routes';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/listings', listingsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // 404 handler
 app.use((req, res) => {
