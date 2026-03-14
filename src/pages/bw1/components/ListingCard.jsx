@@ -429,29 +429,32 @@ function ListingCard({ item, onViewMore }) {
             </div>
           </>
         )}
+
+        {/* Badge de Destaque — pill overlay sobre a imagem */}
+        {item.plan && item.plan !== 'basic' && item.featured && (
+          <div className="absolute top-[52px] left-4 z-10">
+            {item.plan === 'standard' && (
+              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-blue-600 shadow-lg shadow-blue-900/40 border border-blue-400/30">
+                <span className="text-[12px] leading-none">⭐</span>
+                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Destaque</span>
+              </div>
+            )}
+            {item.plan === 'pro' && (
+              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-gradient-to-r from-violet-700 to-purple-500 shadow-lg shadow-purple-900/40 border border-violet-400/20">
+                <span className="text-[12px] leading-none">👑</span>
+                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Destaque Pro</span>
+              </div>
+            )}
+            {item.plan === 'premium' && (
+              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/50 border border-amber-300/30">
+                <span className="text-[12px] leading-none">✨</span>
+                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Premium</span>
+              </div>
+            )}
+          </div>
+        )}
         </div>
       </Link>
-
-      {/* Badges de Destaque baseado no plano */}
-      {item.plan && item.plan !== 'basic' && item.featured && (
-        <div className="w-full">
-          {item.plan === 'standard' && (
-            <div className="w-full py-1.5 px-4 bg-blue-600 text-white text-center text-xs font-bold uppercase tracking-wider">
-              ⭐ DESTAQUE
-            </div>
-          )}
-          {item.plan === 'pro' && (
-            <div className="w-full py-1.5 px-4 bg-violet-600 text-white text-center text-xs font-bold uppercase tracking-wider">
-              ⭐ DESTAQUE PRO
-            </div>
-          )}
-          {item.plan === 'premium' && (
-            <div className="w-full py-1.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center text-xs font-bold uppercase tracking-wider">
-              ★ SUPER DESTAQUE PREMIUM
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Content */}
       <div className="p-6 flex-1 flex flex-col">
