@@ -1275,7 +1275,7 @@ export default function CreateListingPage() {
                     <h3 className="text-lg font-bold text-slate-900">Destaque Standard</h3>
                     <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">POPULAR</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-blue-600 mb-3">R$ 19 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <p className="text-3xl font-extrabold text-blue-600 mb-3">R$ 1 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     <li className="flex gap-2"><span className="text-blue-500">✓</span> Anúncio ativo por 35 dias</li>
                     <li className="flex gap-2"><span className="text-blue-500">✓</span> Flag <strong>"Destaque"</strong> no anúncio</li>
@@ -1299,7 +1299,7 @@ export default function CreateListingPage() {
                     <h3 className="text-lg font-bold text-slate-900">Destaque PRO</h3>
                     <span className="px-2 py-0.5 bg-violet-600 text-white text-xs font-bold rounded-full">PRO</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-violet-600 mb-3">R$ 39 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <p className="text-3xl font-extrabold text-violet-600 mb-3">R$ 1 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     <li className="flex gap-2"><span className="text-violet-500">✓</span> Anúncio ativo por 60 dias</li>
                     <li className="flex gap-2"><span className="text-violet-500">✓</span> Flag <strong>"Destaque PRO"</strong> no anúncio</li>
@@ -1319,7 +1319,7 @@ export default function CreateListingPage() {
                     <h3 className="text-lg font-bold text-slate-900">Super Destaque</h3>
                     <span className="px-2 py-0.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold rounded-full">PREMIUM</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-amber-600 mb-3">R$ 79 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
+                  <p className="text-3xl font-extrabold text-amber-600 mb-3">R$ 1 <span className="text-sm font-normal text-slate-500">via PIX</span></p>
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Ativo <strong>até vender</strong></li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Flag <strong>"PREMIUM"</strong> no anúncio</li>
@@ -1335,9 +1335,9 @@ export default function CreateListingPage() {
                   <p className="text-sm text-slate-500">Plano selecionado</p>
                   <p className="font-bold text-slate-900">
                     {selectedPlan === 'basic' && 'Básico — Grátis'}
-                    {selectedPlan === 'standard' && 'Destaque Standard — R$ 19 via PIX'}
-                    {selectedPlan === 'pro' && 'Destaque PRO — R$ 39 via PIX'}
-                    {selectedPlan === 'premium' && 'Super Destaque Premium — R$ 79 via PIX'}
+                    {selectedPlan === 'standard' && 'Destaque Standard — R$ 1 via PIX'}
+                    {selectedPlan === 'pro' && 'Destaque PRO — R$ 1 via PIX'}
+                    {selectedPlan === 'premium' && 'Super Destaque Premium — R$ 1 via PIX'}
                   </p>
                 </div>
                 {selectedPlan !== 'basic' && (
