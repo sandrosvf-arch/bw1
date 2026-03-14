@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -18,9 +18,11 @@ const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 // ── Sortable Photo Grid ──────────────────────────────────────────────────────
-function SortablePhotoGrid({ images, setImages, onRemove, onSetCover, onMoveImage }) {
+const DRAG_THRESHOLD = 8; // px de movimento antes de ativar o drag
+
+function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
   const gridRef = useRef(null);
-  const drag = useRef({ active: false, fromIdx: null, ghostEl: null, overIdx: null });
+  const state = useRef({ phase: 'idle', fromIdx: null, startX: 0, startY: 0, ghostEl: null, overIdx: null });
   const [overIdx, setOverIdx] = useState(null);
   const [draggingIdx, setDraggingIdx] = useState(null);
 
@@ -29,85 +31,105 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover, onMoveImag
     const cells = gridRef.current.querySelectorAll('[data-sortidx]');
     for (const cell of cells) {
       const r = cell.getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom)
         return parseInt(cell.dataset.sortidx, 10);
-      }
     }
     return null;
   }, []);
 
-  const endDrag = useCallback((applyDrop) => {
-    const d = drag.current;
-    if (d.ghostEl) { d.ghostEl.remove(); d.ghostEl = null; }
-    if (applyDrop && d.fromIdx !== null && d.overIdx !== null && d.fromIdx !== d.overIdx) {
+  const cancelDrag = useCallback(() => {
+    const s = state.current;
+    if (s.ghostEl) { s.ghostEl.remove(); s.ghostEl = null; }
+    s.phase = 'idle'; s.fromIdx = null;
+    setDraggingIdx(null);
+    setOverIdx(null);
+  }, []);
+
+  const commitDrop = useCallback(() => {
+    const s = state.current;
+    if (s.fromIdx !== null && s.overIdx !== null && s.fromIdx !== s.overIdx) {
+      const from = s.fromIdx, to = s.overIdx;
       setImages((prev) => {
         const next = [...prev];
-        const [moved] = next.splice(d.fromIdx, 1);
-        next.splice(d.overIdx, 0, moved);
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
         return next;
       });
     }
-    d.active = false; d.fromIdx = null; d.overIdx = null;
-    setDraggingIdx(null);
-    setOverIdx(null);
-  }, [setImages]);
+    cancelDrag();
+  }, [cancelDrag, setImages]);
 
   const onPointerDown = useCallback((e, idx) => {
-    // only single touch / left mouse
-    if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault();
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    const s = state.current;
+    s.phase = 'pending';
+    s.fromIdx = idx;
+    s.startX = e.clientX;
+    s.startY = e.clientY;
+    s.overIdx = idx;
 
-    const cell = e.currentTarget;
-    const rect = cell.getBoundingClientRect();
+    const cellEl = e.currentTarget;
 
-    // Create ghost
-    const ghost = cell.cloneNode(true);
-    const size = rect.width;
-    Object.assign(ghost.style, {
-      position: 'fixed',
-      width: size + 'px',
-      height: size + 'px',
-      top: (e.clientY - size / 2) + 'px',
-      left: (e.clientX - size / 2) + 'px',
-      pointerEvents: 'none',
-      zIndex: 9999,
-      opacity: '0.85',
-      borderRadius: '12px',
-      transform: 'scale(1.08)',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
-      transition: 'none',
-    });
-    document.body.appendChild(ghost);
-
-    drag.current = { active: true, fromIdx: idx, ghostEl: ghost, overIdx: idx };
-    setDraggingIdx(idx);
-    setOverIdx(idx);
-
-    // Use pointer capture on document to track moves everywhere
     const onMove = (ev) => {
-      const d = drag.current;
-      if (!d.active) return;
-      const cx = ev.clientX, cy = ev.clientY;
-      if (d.ghostEl) {
-        d.ghostEl.style.top = (cy - size / 2) + 'px';
-        d.ghostEl.style.left = (cx - size / 2) + 'px';
+      const dx = ev.clientX - s.startX;
+      const dy = ev.clientY - s.startY;
+
+      if (s.phase === 'pending') {
+        // Activate drag only after threshold movement
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        s.phase = 'dragging';
+
+        // Prevent page scroll while dragging
+        document.body.style.overflow = 'hidden';
+
+        // Create ghost
+        const rect = cellEl.getBoundingClientRect();
+        const size = rect.width;
+        const ghost = cellEl.cloneNode(true);
+        Object.assign(ghost.style, {
+          position: 'fixed',
+          width: size + 'px',
+          height: size + 'px',
+          top: (ev.clientY - size / 2) + 'px',
+          left: (ev.clientX - size / 2) + 'px',
+          pointerEvents: 'none',
+          zIndex: 9999,
+          opacity: '0.88',
+          borderRadius: '12px',
+          transform: 'scale(1.09)',
+          boxShadow: '0 10px 36px rgba(0,0,0,0.35)',
+          transition: 'none',
+        });
+        document.body.appendChild(ghost);
+        s.ghostEl = ghost;
+        setDraggingIdx(idx);
       }
-      const target = getIdxFromPoint(cx, cy);
-      if (target !== null && target !== d.overIdx) {
-        d.overIdx = target;
-        setOverIdx(target);
+
+      if (s.phase === 'dragging') {
+        const size = parseFloat(s.ghostEl.style.width);
+        s.ghostEl.style.top = (ev.clientY - size / 2) + 'px';
+        s.ghostEl.style.left = (ev.clientX - size / 2) + 'px';
+        const target = getIdxFromPoint(ev.clientX, ev.clientY);
+        if (target !== null && target !== s.overIdx) {
+          s.overIdx = target;
+          setOverIdx(target);
+        }
       }
     };
+
     const onUp = () => {
-      endDrag(true);
+      document.body.style.overflow = '';
+      if (s.phase === 'dragging') commitDrop();
+      else cancelDrag();
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointercancel', onUp);
     };
+
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
     document.addEventListener('pointercancel', onUp);
-  }, [endDrag, getIdxFromPoint]);
+  }, [cancelDrag, commitDrop, getIdxFromPoint]);
 
   return (
     <>
@@ -118,24 +140,23 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover, onMoveImag
             key={url + idx}
             data-sortidx={idx}
             onPointerDown={(e) => onPointerDown(e, idx)}
-            style={{ touchAction: 'none', userSelect: 'none' }}
+            style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
             className={[
-              'relative group aspect-square rounded-xl overflow-hidden border-2 transition-transform',
-              draggingIdx === idx ? 'opacity-30 scale-95' : 'cursor-grab active:cursor-grabbing',
+              'relative group aspect-square rounded-xl overflow-hidden border-2 transition-all select-none',
+              draggingIdx === idx ? 'opacity-25 scale-95' : 'cursor-grab',
               overIdx === idx && draggingIdx !== null && draggingIdx !== idx
-                ? 'border-blue-500 ring-2 ring-blue-300 scale-105'
+                ? 'border-blue-500 ring-2 ring-blue-300 scale-[1.04]'
                 : 'border-slate-100',
             ].join(' ')}
           >
-            <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
+            <img src={url} alt="" className="w-full h-full object-cover pointer-events-none select-none" draggable={false} />
             {idx === 0 && (
               <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold pointer-events-none">Capa</span>
             )}
-            {/* Grip hint */}
             <div className="absolute top-1 right-1 pointer-events-none">
               <GripVertical size={14} className="text-white drop-shadow opacity-70" />
             </div>
-            {/* Hover overlay */}
+            {/* Overlay buttons — stopPropagation so they don’t trigger drag */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
               {idx !== 0 && (
                 <button
@@ -152,27 +173,6 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover, onMoveImag
                 onClick={() => onRemove(idx)}
                 className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
                 <X size={12} />
-              </button>
-            </div>
-            {/* Move arrows - visible on small screens where hover is unavailable */}
-            <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1 sm:hidden">
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onMoveImage(idx, -1)}
-                disabled={idx === 0}
-                className="p-1 bg-black/60 text-white rounded disabled:opacity-30"
-              >
-                <ChevronLeft size={12} />
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onMoveImage(idx, 1)}
-                disabled={idx === images.length - 1}
-                className="p-1 bg-black/60 text-white rounded disabled:opacity-30"
-              >
-                <ChevronRight size={12} />
               </button>
             </div>
           </div>
@@ -237,6 +237,9 @@ export default function EditListingPage() {
       return next;
     });
   };
+
+  // Remove arrow buttons from call site — no longer needed
+  void moveImage;
 
   // Video (premium only)
   const [videoUrl, setVideoUrl] = useState("");
@@ -532,7 +535,6 @@ export default function EditListingPage() {
                     setImages={setImages}
                     onRemove={removeImage}
                     onSetCover={setAsCover}
-                    onMoveImage={moveImage}
                   />
                 )}
                 {images.length < maxImgsDisplay && (
