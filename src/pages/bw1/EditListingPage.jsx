@@ -18,11 +18,18 @@ const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 // ── Sortable Photo Grid ──────────────────────────────────────────────────────
-const DRAG_THRESHOLD = 8; // px de movimento antes de ativar o drag
+const HOLD_DELAY = 200;   // ms — segure para ativar o drag
+const DRAG_THRESHOLD = 8; // px — ou mova para ativar imediatamente
 
 function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
   const gridRef = useRef(null);
-  const state = useRef({ phase: 'idle', fromIdx: null, startX: 0, startY: 0, ghostEl: null, overIdx: null });
+  const state = useRef({
+    phase: 'idle', // idle | pending | dragging
+    fromIdx: null,
+    startX: 0, startY: 0, lastX: 0, lastY: 0,
+    ghostEl: null, overIdx: null,
+    holdTimer: null, cellEl: null,
+  });
   const [overIdx, setOverIdx] = useState(null);
   const [draggingIdx, setDraggingIdx] = useState(null);
 
@@ -37,9 +44,43 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
     return null;
   }, []);
 
-  const cancelDrag = useCallback(() => {
+  const activateDrag = useCallback((idx, cx, cy) => {
     const s = state.current;
+    if (s.phase === 'dragging') return;
+    s.phase = 'dragging';
+    // Haptic — "salto" no dedo
+    if (navigator.vibrate) navigator.vibrate(30);
+    document.body.style.overflow = 'hidden';
+    const rect = s.cellEl.getBoundingClientRect();
+    const size = rect.width;
+    const ghost = s.cellEl.cloneNode(true);
+    Object.assign(ghost.style, {
+      position: 'fixed',
+      width: size + 'px', height: size + 'px',
+      top: (cy - size / 2) + 'px', left: (cx - size / 2) + 'px',
+      pointerEvents: 'none', zIndex: 9999, opacity: '0.93',
+      borderRadius: '12px',
+      // Começa comprimida → salta para scale(1.12)
+      transform: 'scale(0.82)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      transition: 'none',
+    });
+    document.body.appendChild(ghost);
+    ghost.getBoundingClientRect(); // trigger reflow
+    ghost.style.transition = 'transform 0.22s cubic-bezier(0.34,1.6,0.64,1), box-shadow 0.22s ease';
+    ghost.style.transform = 'scale(1.12)';
+    ghost.style.boxShadow = '0 18px 54px rgba(0,0,0,0.45)';
+    s.ghostEl = ghost;
+    s.overIdx = idx;
+    setDraggingIdx(idx);
+    setOverIdx(idx);
+  }, []);
+
+  const cancelAll = useCallback(() => {
+    const s = state.current;
+    if (s.holdTimer) { clearTimeout(s.holdTimer); s.holdTimer = null; }
     if (s.ghostEl) { s.ghostEl.remove(); s.ghostEl = null; }
+    document.body.style.overflow = '';
     s.phase = 'idle'; s.fromIdx = null;
     setDraggingIdx(null);
     setOverIdx(null);
@@ -56,57 +97,42 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
         return next;
       });
     }
-    cancelDrag();
-  }, [cancelDrag, setImages]);
+    cancelAll();
+  }, [cancelAll, setImages]);
 
   const onPointerDown = useCallback((e, idx) => {
     if (e.button !== 0 && e.pointerType !== 'touch') return;
     const s = state.current;
     s.phase = 'pending';
     s.fromIdx = idx;
-    s.startX = e.clientX;
-    s.startY = e.clientY;
+    s.startX = s.lastX = e.clientX;
+    s.startY = s.lastY = e.clientY;
     s.overIdx = idx;
+    s.cellEl = e.currentTarget;
 
-    const cellEl = e.currentTarget;
+    // Timer: ativa o drag por pressionar sem mover
+    s.holdTimer = setTimeout(() => {
+      s.holdTimer = null;
+      if (s.phase !== 'pending') return;
+      activateDrag(idx, s.lastX, s.lastY);
+    }, HOLD_DELAY);
 
     const onMove = (ev) => {
-      const dx = ev.clientX - s.startX;
-      const dy = ev.clientY - s.startY;
+      s.lastX = ev.clientX;
+      s.lastY = ev.clientY;
 
       if (s.phase === 'pending') {
-        // Activate drag only after threshold movement
-        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-        s.phase = 'dragging';
-
-        // Prevent page scroll while dragging
-        document.body.style.overflow = 'hidden';
-
-        // Create ghost
-        const rect = cellEl.getBoundingClientRect();
-        const size = rect.width;
-        const ghost = cellEl.cloneNode(true);
-        Object.assign(ghost.style, {
-          position: 'fixed',
-          width: size + 'px',
-          height: size + 'px',
-          top: (ev.clientY - size / 2) + 'px',
-          left: (ev.clientX - size / 2) + 'px',
-          pointerEvents: 'none',
-          zIndex: 9999,
-          opacity: '0.88',
-          borderRadius: '12px',
-          transform: 'scale(1.09)',
-          boxShadow: '0 10px 36px rgba(0,0,0,0.35)',
-          transition: 'none',
-        });
-        document.body.appendChild(ghost);
-        s.ghostEl = ghost;
-        setDraggingIdx(idx);
+        if (Math.hypot(ev.clientX - s.startX, ev.clientY - s.startY) >= DRAG_THRESHOLD) {
+          if (s.holdTimer) { clearTimeout(s.holdTimer); s.holdTimer = null; }
+          activateDrag(idx, ev.clientX, ev.clientY);
+        }
+        return;
       }
 
-      if (s.phase === 'dragging') {
+      if (s.phase === 'dragging' && s.ghostEl) {
         const size = parseFloat(s.ghostEl.style.width);
+        s.ghostEl.style.transition = 'none';
+        s.ghostEl.style.transform = 'scale(1.1)';
         s.ghostEl.style.top = (ev.clientY - size / 2) + 'px';
         s.ghostEl.style.left = (ev.clientX - size / 2) + 'px';
         const target = getIdxFromPoint(ev.clientX, ev.clientY);
@@ -118,9 +144,8 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
     };
 
     const onUp = () => {
-      document.body.style.overflow = '';
       if (s.phase === 'dragging') commitDrop();
-      else cancelDrag();
+      else cancelAll();
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointercancel', onUp);
@@ -129,7 +154,7 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
     document.addEventListener('pointercancel', onUp);
-  }, [cancelDrag, commitDrop, getIdxFromPoint]);
+  }, [activateDrag, cancelAll, commitDrop, getIdxFromPoint]);
 
   return (
     <>
@@ -142,11 +167,11 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
             onPointerDown={(e) => onPointerDown(e, idx)}
             style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
             className={[
-              'relative group aspect-square rounded-xl overflow-hidden border-2 transition-all select-none',
-              draggingIdx === idx ? 'opacity-25 scale-95' : 'cursor-grab',
+              'relative group aspect-square rounded-xl overflow-hidden border-2 transition-all duration-150 select-none',
+              draggingIdx === idx ? 'opacity-20 scale-90 border-blue-300' : 'cursor-grab',
               overIdx === idx && draggingIdx !== null && draggingIdx !== idx
                 ? 'border-blue-500 ring-2 ring-blue-300 scale-[1.04]'
-                : 'border-slate-100',
+                : draggingIdx !== idx ? 'border-slate-100' : '',
             ].join(' ')}
           >
             <img src={url} alt="" className="w-full h-full object-cover pointer-events-none select-none" draggable={false} />
