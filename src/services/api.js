@@ -8,7 +8,7 @@ const API_URL = isDev
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 const STALE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutos para fallback rápido
-const CACHE_KEY_PREFIX = 'bw1_cache_v4_';
+const CACHE_KEY_PREFIX = 'bw1_cache_v5_';
 
 class ApiService {
   constructor() {

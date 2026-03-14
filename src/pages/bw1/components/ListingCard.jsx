@@ -335,7 +335,15 @@ function ListingCard({ item, onViewMore }) {
   const [showWhatsLogo, setShowWhatsLogo] = useState(true);
 
   return (
-    <div className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col relative">
+    <div className={`group bg-white rounded-3xl transition-all duration-300 overflow-hidden flex flex-col relative ${
+      item.plan === 'standard' && item.featured
+        ? 'border-2 border-blue-500 shadow-md shadow-blue-100 hover:shadow-lg hover:shadow-blue-200'
+        : item.plan === 'pro' && item.featured
+        ? 'border-2 border-violet-500 shadow-md shadow-violet-100 hover:shadow-lg hover:shadow-violet-200'
+        : item.plan === 'premium' && item.featured
+        ? 'border-2 border-amber-400 shadow-md shadow-amber-100 hover:shadow-lg hover:shadow-amber-200'
+        : 'border border-slate-100 shadow-sm hover:shadow-2xl'
+    }`}>
       {/* Image */}
       <Link to={`/anuncio/${item.id}`} className="block">
         <div 
@@ -430,31 +438,31 @@ function ListingCard({ item, onViewMore }) {
           </>
         )}
 
-        {/* Badge de Destaque — pill overlay sobre a imagem */}
-        {item.plan && item.plan !== 'basic' && item.featured && (
-          <div className="absolute top-[52px] left-4 z-10">
-            {item.plan === 'standard' && (
-              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-blue-600 shadow-lg shadow-blue-900/40 border border-blue-400/30">
-                <span className="text-[12px] leading-none">⭐</span>
-                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Destaque</span>
-              </div>
-            )}
-            {item.plan === 'pro' && (
-              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-gradient-to-r from-violet-700 to-purple-500 shadow-lg shadow-purple-900/40 border border-violet-400/20">
-                <span className="text-[12px] leading-none">👑</span>
-                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Destaque Pro</span>
-              </div>
-            )}
-            {item.plan === 'premium' && (
-              <div className="flex items-center gap-1 pl-2 pr-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/50 border border-amber-300/30">
-                <span className="text-[12px] leading-none">✨</span>
-                <span className="text-white text-[10px] font-extrabold uppercase tracking-wider">Premium</span>
-              </div>
-            )}
-          </div>
-        )}
         </div>
       </Link>
+
+      {/* Badge de Destaque — barra abaixo da imagem */}
+      {item.plan && item.plan !== 'basic' && item.featured && (
+        <div className={`w-full flex items-center justify-center gap-2.5 py-2 ${
+          item.plan === 'standard'
+            ? 'bg-blue-600'
+            : item.plan === 'pro'
+            ? 'bg-violet-600'
+            : 'bg-gradient-to-r from-amber-500 to-orange-500'
+        }`}>
+          <span className={`block w-1.5 h-1.5 rounded-full ${
+            item.plan === 'premium' ? 'bg-white/60' : 'bg-white/50'
+          }`} />
+          <span className="text-white text-[11px] font-bold uppercase tracking-[0.15em]">
+            {item.plan === 'standard' && 'Destaque'}
+            {item.plan === 'pro' && 'Destaque Pro'}
+            {item.plan === 'premium' && 'Super Destaque Premium'}
+          </span>
+          <span className={`block w-1.5 h-1.5 rounded-full ${
+            item.plan === 'premium' ? 'bg-white/60' : 'bg-white/50'
+          }`} />
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-6 flex-1 flex flex-col">
