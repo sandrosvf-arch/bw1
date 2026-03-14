@@ -71,7 +71,7 @@ export default function BW1Platform() {
   const loadInitialListings = async () => {
     setLoading(true);
     try {
-      const response = await api.getListings(buildParams({ offset: 0 }));
+      const response = await api.getListings(buildParams({ offset: 0 }), { forceRefresh: true });
       const newListings = response.listings || [];
       setListings(newListings);
       setOffset(BATCH_SIZE);
