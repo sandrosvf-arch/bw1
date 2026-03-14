@@ -46,7 +46,7 @@ export default function App() {
   useEffect(() => {
     try {
       Object.keys(localStorage)
-        .filter((key) => key.startsWith("bw1_cache_v2_"))
+        .filter((key) => key.startsWith("bw1_cache_v2_") || key.startsWith("bw1_cache_v3_"))
         .forEach((key) => localStorage.removeItem(key));
     } catch {
       // noop
