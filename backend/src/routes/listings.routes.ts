@@ -6,7 +6,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import CacheService from '../services/cache.service';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
-const videoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
+const videoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } });
 
 const STORAGE_BUCKET = 'listing-images';
 const VIDEO_BUCKET = 'listing-videos';
@@ -29,7 +29,7 @@ const VIDEO_BUCKET = 'listing-videos';
 (async () => {
   const { error } = await supabaseAdmin.storage.createBucket(VIDEO_BUCKET, {
     public: true,
-    fileSizeLimit: 200 * 1024 * 1024,
+    fileSizeLimit: 500 * 1024 * 1024,
     allowedMimeTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mpeg'],
   });
   if (error && !error.message.includes('already exists')) {

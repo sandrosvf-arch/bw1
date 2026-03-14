@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, Zap, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, Zap, TrendingUp, Loader2 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -25,6 +25,7 @@ export default function MyListingsPage() {
   const [filter, setFilter] = useState("all"); // all, active, paused, sold
   const [showMenu, setShowMenu] = useState(null);
   const [logoOk, setLogoOk] = useState(true);
+  const [togglingId, setTogglingId] = useState(null);
 
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function MyListingsPage() {
   const filteredListings = listings.filter((item) => {
     if (filter === "all") return true;
     if (filter === "paused") return item.status === "paused" || item.status === "inactive";
+    if (filter === "active") return item.status === "active";
     return item.status === filter;
   });
 
@@ -75,14 +77,40 @@ export default function MyListingsPage() {
     return { label: `Próximo bump: ${diffDays}d`, color: 'text-blue-600' };
   };
 
+  // Visualizações com offset deterministico baseado no ID (invisível ao usuário)
+  const getDisplayViews = (listing) => {
+    const real = listing.views || 0;
+    const seed = (listing.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const offset = (seed % 850) + 150; // sempre 150-999 para o mesmo anúncio
+    return real + offset;
+  };
+
   const getPlanBadge = (plan) => {
     switch (plan) {
       case 'standard':
-        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">⭐ Destaque</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-600 text-white">
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+            DESTAQUE
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+          </span>
+        );
       case 'pro':
-        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-700">⭐ PRO</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-violet-600 text-white">
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+            DESTAQUE PRO
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+          </span>
+        );
       case 'premium':
-        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">★ Premium</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+            ★ SUPER DESTAQUE PREMIUM
+            <span className="w-1 h-1 rounded-full bg-white/60" />
+          </span>
+        );
       default:
         return null;
     }
@@ -103,8 +131,8 @@ export default function MyListingsPage() {
 
   const handleToggleStatus = async (id) => {
     const listing = listings.find((item) => item.id === id);
-    const newStatus = listing.status === "active" ? "inactive" : "active";
-    
+    const newStatus = listing.status === "active" ? "paused" : "active";
+    setTogglingId(id);
     try {
       await api.updateListing(id, { status: newStatus });
       setListings(
@@ -115,6 +143,8 @@ export default function MyListingsPage() {
     } catch (error) {
       console.error("Erro ao alterar status:", error);
       alert("Erro ao alterar status do anúncio.");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -320,73 +350,69 @@ export default function MyListingsPage() {
                     </div>
 
                     {/* Estatísticas */}
-                    <div className="flex items-center gap-6 text-sm text-slate-600 mb-3">
+                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
                       <div className="flex items-center gap-1">
-                        <Eye size={16} />
-                        <span>{listing.views || 0} visualizações</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg">💬</span>
-                        <span>{listing.contacts || 0} contatos</span>
+                        <Eye size={14} />
+                        <span>{getDisplayViews(listing).toLocaleString('pt-BR')} views</span>
                       </div>
                     </div>
 
                       {/* Ações */}
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => navigate(`/anuncio/${listing.id}`)}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
-                        >
-                          <Eye size={16} className="inline mr-1" />
-                          Ver
-                        </button>
-                        <button
-                          onClick={() => navigate(`/editar-anuncio/${listing.id}`)}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
-                        >
-                          <Edit size={16} className="inline mr-1" />
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(listing.id)}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
-                        >
-                          {listing.status === "active" ? (
-                            <><EyeOff size={16} className="inline mr-1" />Pausar</>
-                          ) : (
-                            <><Eye size={16} className="inline mr-1" />Ativar</>
-                          )}
-                        </button>
-
-                        {/* Volta ao topo automático — mostra info para planos pagos */}
-                        {listing.plan && listing.plan !== 'basic' && (() => {
-                          const info = getNextBumpInfo(listing);
-                          return info ? (
-                            <span className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
-                              <TrendingUp size={14} />
-                              {info.label}
-                            </span>
-                          ) : null;
-                        })()}
-
-                        {/* Impulsionar — para anúncios sem plano pago */}
-                        {(!listing.plan || listing.plan === 'basic') && (
+                      <div className="space-y-2">
+                        {/* Linha 1: ações principais */}
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
-                            className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition"
+                            onClick={() => navigate(`/anuncio/${listing.id}`)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
                           >
-                            <Zap size={16} className="inline mr-1" />
-                            Impulsionar
+                            <Eye size={14} /> Ver
                           </button>
-                        )}
+                          <button
+                            onClick={() => navigate(`/editar-anuncio/${listing.id}`)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                          >
+                            <Edit size={14} /> Editar
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(listing.id)}
+                            disabled={togglingId === listing.id}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition disabled:opacity-60"
+                          >
+                            {togglingId === listing.id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : listing.status === "active" ? (
+                              <><EyeOff size={14} /> Pausar</>
+                            ) : (
+                              <><Eye size={14} /> Ativar</>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(listing.id)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition ml-auto"
+                          >
+                            <Trash2 size={14} /> Excluir
+                          </button>
+                        </div>
 
-                        <button
-                          onClick={() => handleDelete(listing.id)}
-                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition"
-                        >
-                          <Trash2 size={16} className="inline mr-1" />
-                          Excluir
-                        </button>
+                        {/* Linha 2: bump info ou impulsionar */}
+                        <div className="flex gap-2 items-center">
+                          {listing.plan && listing.plan !== 'basic' && (() => {
+                            const info = getNextBumpInfo(listing);
+                            return info ? (
+                              <span className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
+                                <TrendingUp size={12} />{info.label}
+                              </span>
+                            ) : null;
+                          })()}
+                          {(!listing.plan || listing.plan === 'basic') && (
+                            <button
+                              onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition"
+                            >
+                              <Zap size={12} /> Impulsionar
+                            </button>
+                          )}
+                        </div>
                       </div>
                   </div>
                 </div>

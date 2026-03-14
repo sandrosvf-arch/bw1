@@ -22,7 +22,7 @@ const TRANSMISSION_OPTIONS = ["Manual", "Automático", "CVT", "Semi-automático"
 const BODY_OPTIONS = ["Sedan", "Hatch", "SUV", "Picape", "Coupe", "Conversível", "Minivan", "Van", "Caminhonete", "Outros"];
 const DEAL_TYPES = ["Venda", "Aluguel", "Permuta"];
 const FURNISHED_OPTIONS = ["Sim", "Não", "Semi-mobiliado"];
-const MAX_VIDEO_SIZE_MB = 200;
+const MAX_VIDEO_SIZE_MB = 500;
 const MAX_IMAGES = { basic: 5, standard: 10, pro: 15, premium: 15 };
 
 const compressImageToBlob = (file, maxWidth = 1200, quality = 0.75) =>
