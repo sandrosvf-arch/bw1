@@ -349,7 +349,7 @@ class ApiService {
   }
 
   async getPaymentStatus(paymentId) {
-    return this.request(`/api/payments/${paymentId}/status`);
+    return this.request(`/api/payments/${paymentId}/status`, { forceRefresh: true });
   }
 
   // Chat
