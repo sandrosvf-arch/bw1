@@ -37,6 +37,7 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(EXPIRY_MINUTES * 60);
   const [polling, setPolling] = useState(true);
+  const [manualChecking, setManualChecking] = useState(false);
 
   // Se não veio com dados no state, busca do backend
   useEffect(() => {
@@ -67,6 +68,12 @@ export default function PaymentPage() {
       // ignora erros de rede temporários
     }
   }, [paymentId]);
+
+  const handleManualCheck = async () => {
+    setManualChecking(true);
+    await checkStatus();
+    setManualChecking(false);
+  };
 
   useEffect(() => {
     if (!polling || !paymentId) return;
@@ -243,18 +250,31 @@ export default function PaymentPage() {
                 </div>
               )}
 
+              {/* Botão verificar manualmente */}
+              <button
+                onClick={handleManualCheck}
+                disabled={manualChecking}
+                className="w-full mt-4 py-3 px-4 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {manualChecking ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Verificando...
+                  </>
+                ) : '✅ Já paguei — verificar agora'}
+              </button>
+
               {/* Status polling indicator */}
-              <div className="flex items-center justify-center gap-2 text-sm text-slate-400 mt-4">
-                <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <div className="flex items-center justify-center gap-2 text-sm text-slate-400 mt-3">
+                <svg className="animate-spin h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Aguardando confirmação do pagamento...
+                Verificando automaticamente a cada 4 segundos...
               </div>
-
-              <p className="text-center text-xs text-slate-400 mt-2">
-                A página atualiza automaticamente assim que o pagamento for detectado.
-              </p>
             </div>
           )}
         </main>

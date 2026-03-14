@@ -95,7 +95,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
 });
 
 // GET /api/payments/:paymentId/status
-// Consulta status do pagamento (usado pelo frontend para polling)
+// Consulta status do pagamento — verifica diretamente no MP como fallback
 router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { paymentId } = req.params;
@@ -108,6 +108,49 @@ router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) =
 
     if (!data) {
       return res.status(404).json({ error: 'Pagamento não encontrado' });
+    }
+
+    // Se ainda pending, consulta direto no MP para garantir atualização em tempo real
+    if (data.status === 'pending') {
+      try {
+        const payment = new Payment(getMPClient());
+        const result = await payment.get({ id: paymentId });
+
+        if (result.status === 'approved') {
+          const plan = result.metadata?.plan || data.plan;
+          const listingId = result.metadata?.listing_id || data.listing_id;
+          const planConfig = PLANS[plan];
+          const expiresAt = planConfig?.days
+            ? new Date(Date.now() + planConfig.days * 24 * 60 * 60 * 1000).toISOString()
+            : null;
+
+          await supabaseAdmin
+            .from('payments')
+            .update({ status: 'approved', paid_at: new Date().toISOString() })
+            .eq('mp_payment_id', paymentId);
+
+          await supabaseAdmin
+            .from('listings')
+            .update({ plan, plan_expires_at: expiresAt, featured: true })
+            .eq('id', listingId);
+
+          return res.json({
+            status: 'approved',
+            plan: data.plan,
+            listingId: data.listing_id,
+            amount: data.amount,
+          });
+        } else if (result.status === 'rejected' || result.status === 'cancelled') {
+          await supabaseAdmin
+            .from('payments')
+            .update({ status: result.status })
+            .eq('mp_payment_id', paymentId);
+
+          return res.json({ status: result.status, plan: data.plan, listingId: data.listing_id, amount: data.amount });
+        }
+      } catch (mpErr) {
+        console.warn('Falha ao consultar MP diretamente:', mpErr);
+      }
     }
 
     return res.json({
