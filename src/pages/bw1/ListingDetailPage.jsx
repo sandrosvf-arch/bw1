@@ -536,6 +536,19 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
+                {/* VIDEO (premium) */}
+                {item.details?.video_url && (
+                  <div className="bg-white rounded-3xl p-6 shadow-sm">
+                    <h2 className="text-lg font-bold text-slate-900 mb-3">Vídeo</h2>
+                    <video
+                      src={item.details.video_url}
+                      controls
+                      className="w-full rounded-xl bg-black max-h-72"
+                      playsInline
+                    />
+                  </div>
+                )}
+
                 {/* Descrição - Desktop: Abaixo da galeria, Mobile: Mais abaixo */}
                 <div className="hidden lg:block bg-white rounded-3xl p-6 shadow-sm">
                   <h2 className="text-lg font-bold text-slate-900 mb-4">Descrição</h2>
