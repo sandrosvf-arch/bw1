@@ -6,10 +6,12 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import CacheService from '../services/cache.service';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const videoUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 const STORAGE_BUCKET = 'listing-images';
+const VIDEO_BUCKET = 'listing-videos';
 
-// Garante que o bucket existe ao iniciar
+// Garante que o bucket de imagens existe
 (async () => {
   const { error } = await supabaseAdmin.storage.createBucket(STORAGE_BUCKET, {
     public: true,
@@ -20,6 +22,20 @@ const STORAGE_BUCKET = 'listing-images';
     console.warn('⚠️ Bucket creation warning:', error.message);
   } else {
     console.log(`✅ Storage bucket '${STORAGE_BUCKET}' pronto`);
+  }
+})();
+
+// Garante que o bucket de vídeos existe
+(async () => {
+  const { error } = await supabaseAdmin.storage.createBucket(VIDEO_BUCKET, {
+    public: true,
+    fileSizeLimit: 100 * 1024 * 1024,
+    allowedMimeTypes: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/mpeg'],
+  });
+  if (error && !error.message.includes('already exists')) {
+    console.warn('⚠️ Video bucket warning:', error.message);
+  } else {
+    console.log(`✅ Storage bucket '${VIDEO_BUCKET}' pronto`);
   }
 })();
 
@@ -432,6 +448,56 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   } catch (error) {
     console.error('Get my listings error:', error);
     res.status(500).json({ error: 'Failed to get listings' });
+  }
+});
+
+// POST /api/listings/:id/video — upload de vídeo premium
+router.post('/:id/video', authMiddleware, videoUpload.single('video'), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) return res.status(400).json({ error: 'Nenhum vídeo enviado' });
+
+    // Verifica ownership
+    const { data: listing, error: fetchErr } = await supabaseAdmin
+      .from('listings')
+      .select('user_id, details, plan')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !listing) return res.status(404).json({ error: 'Anúncio não encontrado' });
+    if (listing.user_id !== req.userId) return res.status(403).json({ error: 'Sem permissão' });
+    if (listing.plan !== 'premium') return res.status(403).json({ error: 'Upload de vídeo disponível apenas no plano Premium' });
+
+    const ext = req.file.originalname.split('.').pop() || 'mp4';
+    const fileName = `${req.userId}/${id}-${uuidv4()}.${ext}`;
+
+    const { error: uploadErr } = await supabaseAdmin.storage
+      .from(VIDEO_BUCKET)
+      .upload(fileName, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    const { data: { publicUrl } } = supabaseAdmin.storage.from(VIDEO_BUCKET).getPublicUrl(fileName);
+
+    // Salva video_url dentro do campo details (JSONB)
+    const currentDetails = typeof listing.details === 'string' ? JSON.parse(listing.details) : (listing.details || {});
+    const { error: updateErr } = await supabaseAdmin
+      .from('listings')
+      .update({ details: { ...currentDetails, video_url: publicUrl } })
+      .eq('id', id);
+
+    if (updateErr) throw updateErr;
+
+    CacheService.invalidateListingsCache();
+
+    return res.json({ success: true, video_url: publicUrl });
+  } catch (error: any) {
+    console.error('Video upload error:', error);
+    return res.status(500).json({ error: 'Erro ao fazer upload do vídeo' });
   }
 });
 

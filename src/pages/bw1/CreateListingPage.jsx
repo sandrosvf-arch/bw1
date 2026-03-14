@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Upload, X, MapPin, DollarSign, Image as ImageIcon, GripVertical, Star } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -19,8 +19,14 @@ const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const [step, setStep] = useState(1); // 1: Categoria, 2: Detalhes, 3: Fotos
+
+  // Modo impulsionar: upgrade de um anúncio já existente (pula steps 1-3)
+  const upgradeListingId = location.state?.impulsionar || null;
+  const isUpgradeMode = Boolean(upgradeListingId);
+
+  const [step, setStep] = useState(isUpgradeMode ? 4 : 1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: "", // vehicle ou property
@@ -247,6 +253,26 @@ export default function CreateListingPage() {
         return;
       }
 
+      // ── MODO IMPULSIONAR: apenas cria o pagamento para o anúncio existente ──
+      if (isUpgradeMode) {
+        if (plan === 'basic') {
+          navigate('/meus-anuncios');
+          return;
+        }
+        const payment = await api.createPayment({ listingId: upgradeListingId, plan });
+        navigate(`/pagamento/${payment.paymentId}`, {
+          state: {
+            qrCode: payment.qrCode,
+            qrCodeBase64: payment.qrCodeBase64,
+            amount: payment.amount,
+            plan,
+            listingId: upgradeListingId,
+            listingTitle: 'Seu anúncio',
+          },
+        });
+        return;
+      }
+
       // Validação básica
       if (!formData.title || !formData.price || !formData.category) {
         alert("Por favor, preencha todos os campos obrigatórios (título, preço e categoria).");
@@ -384,15 +410,17 @@ export default function CreateListingPage() {
               Voltar
             </button>
             <h1 className="text-3xl font-bold text-slate-900">
-              Anunciar gratuitamente
+              {isUpgradeMode ? 'Impulsionar anúncio' : 'Anunciar gratuitamente'}
             </h1>
             <p className="text-slate-600 mt-2">
-              Preencha os dados do seu anúncio para começar a vender
+              {isUpgradeMode
+                ? 'Escolha um plano para destacar seu anúncio entre os demais'
+                : 'Preencha os dados do seu anúncio para começar a vender'}
             </p>
           </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-8">
+          {/* Progress Steps — oculto no modo impulsionar */}
+          {!isUpgradeMode && <div className="flex items-center justify-center mb-8">
             <div className="flex items-center gap-4">
               <div
                 className={`flex items-center gap-2 ${
@@ -454,7 +482,7 @@ export default function CreateListingPage() {
                 <span className="font-semibold hidden sm:inline">Planos</span>
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Step 1: Categoria */}
           {step === 1 && (
@@ -1200,8 +1228,19 @@ export default function CreateListingPage() {
           {/* Step 4: Planos */}
           {step === 4 && (
             <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-1">Impulsione seu anúncio</h2>
-              <p className="text-slate-500 mb-6 text-sm">Escolha um plano e pague via PIX. Pagamento confirmado em segundos.</p>
+              {isUpgradeMode && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold mb-4">
+                  ⚡ Impulsionar anúncio existente
+                </div>
+              )}
+              <h2 className="text-2xl font-bold text-slate-900 mb-1">
+                {isUpgradeMode ? 'Escolha um plano de destaque' : 'Impulsione seu anúncio'}
+              </h2>
+              <p className="text-slate-500 mb-6 text-sm">
+                {isUpgradeMode
+                  ? 'Seu anúncio será atualizado imediatamente após a confirmação do PIX.'
+                  : 'Escolha um plano e pague via PIX. Pagamento confirmado em segundos.'}
+              </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
@@ -1311,10 +1350,10 @@ export default function CreateListingPage() {
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => setStep(3)}
+                  onClick={() => isUpgradeMode ? navigate('/meus-anuncios') : setStep(3)}
                   className="flex-1 py-3 px-6 rounded-xl font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition"
                 >
-                  Voltar
+                  {isUpgradeMode ? 'Cancelar' : 'Voltar'}
                 </button>
                 <button
                   onClick={() => handleSubmit(selectedPlan)}
@@ -1326,10 +1365,10 @@ export default function CreateListingPage() {
                   }`}
                 >
                   {loading
-                    ? 'Publicando...'
+                    ? (isUpgradeMode ? 'Processando...' : 'Publicando...')
                     : selectedPlan === 'basic'
-                      ? 'Publicar grátis'
-                      : 'Pagar com PIX e publicar'}
+                      ? (isUpgradeMode ? 'Manter plano básico' : 'Publicar grátis')
+                      : (isUpgradeMode ? 'Impulsionar com PIX' : 'Pagar com PIX e publicar')}
                 </button>
               </div>
             </div>

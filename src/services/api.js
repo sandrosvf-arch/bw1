@@ -356,6 +356,35 @@ class ApiService {
     return this.request(`/api/listings/${listingId}/bump`, { method: 'POST' });
   }
 
+  async uploadVideo(listingId, file) {
+    const formData = new FormData();
+    formData.append('video', file);
+
+    const headers = {};
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min para vídeos
+
+    try {
+      const response = await fetch(`${this.baseURL}/api/listings/${listingId}/video`, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao enviar vídeo');
+      }
+      return await response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  }
+
   // Chat
   async getConversations() {
     return this.request('/api/chat/conversations');
