@@ -96,7 +96,7 @@ router.post('/create', authMiddleware, async (req: AuthRequest, res) => {
 
 // GET /api/payments/:paymentId/status
 // Consulta status do pagamento — verifica diretamente no MP como fallback
-router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) => {
+router.get('/:paymentId/status', async (req, res) => {
   try {
     const { paymentId } = req.params;
 
@@ -115,6 +115,8 @@ router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) =
       try {
         const payment = new Payment(getMPClient());
         const result = await payment.get({ id: Number(paymentId) });
+
+        console.log(`[MP STATUS] paymentId=${paymentId} → status=${result.status}`);
 
         if (result.status === 'approved') {
           const plan = result.metadata?.plan || data.plan;
@@ -148,8 +150,8 @@ router.get('/:paymentId/status', authMiddleware, async (req: AuthRequest, res) =
 
           return res.json({ status: result.status, plan: data.plan, listingId: data.listing_id, amount: data.amount });
         }
-      } catch (mpErr) {
-        console.warn('Falha ao consultar MP diretamente:', mpErr);
+      } catch (mpErr: any) {
+        console.error('Falha ao consultar MP diretamente:', mpErr?.message || mpErr);
       }
     }
 
