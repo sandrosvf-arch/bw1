@@ -13,7 +13,7 @@ import * as NavMod from "./content/navigation.js";
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 
-const MAX_VIDEO_SIZE_MB = 50;
+const MAX_VIDEO_SIZE_MB = 200;
 
 export default function VideoUploadPage() {
   const { listingId } = useParams();
