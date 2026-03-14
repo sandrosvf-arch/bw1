@@ -39,6 +39,21 @@ const VIDEO_BUCKET = 'listing-videos';
   }
 })();
 
+// Detecta se as colunas bumped_at/bumps_remaining já existem no banco
+let bumpColumnsReady = false;
+(async () => {
+  const { error } = await supabaseAdmin
+    .from('listings')
+    .select('bumped_at, bumps_remaining')
+    .limit(1);
+  if (!error) {
+    bumpColumnsReady = true;
+    console.log('✅ Colunas bumped_at/bumps_remaining detectadas — Volta ao Topo ativo');
+  } else {
+    console.log('ℹ️  Colunas bumped_at/bumps_remaining ausentes — execute add-bumped-at.sql no Supabase para ativar Volta ao Topo');
+  }
+})();
+
 const router = Router();
 
 function parseJsonField(value: any) {
@@ -158,12 +173,20 @@ router.get('/', async (req, res) => {
       return res.json(cachedData);
     }
 
+    const selectFields = bumpColumnsReady
+      ? 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at'
+      : 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured';
+
     let query = supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured')
+      .select(selectFields)
       .eq('status', 'active')
-      .order('featured', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('featured', { ascending: false });
+
+    if (bumpColumnsReady) {
+      query = (query as any).order('bumped_at', { ascending: false, nullsFirst: false });
+    }
+    query = (query as any).order('created_at', { ascending: false });
 
     if (category) {
       // Suportar filtro por categoria em PT e EN
@@ -423,9 +446,13 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
 // Meus anúncios (autenticado)
 router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) => {
   try {
+    const mySelectFields = bumpColumnsReady
+      ? 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at'
+      : 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured';
+
     const { data, error } = await supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured')
+      .select(mySelectFields)
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
 
