@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, Loader2, X, ImagePlus, Video, GripVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import api from "../../services/api";
@@ -16,6 +16,172 @@ import * as FooterMod from "./content/footer.js";
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const NAVIGATION = NavMod.default ?? NavMod.NAVIGATION;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
+
+// ── Sortable Photo Grid ──────────────────────────────────────────────────────
+function SortablePhotoGrid({ images, setImages, onRemove, onSetCover, onMoveImage }) {
+  const gridRef = useRef(null);
+  const drag = useRef({ active: false, fromIdx: null, ghostEl: null, overIdx: null });
+  const [overIdx, setOverIdx] = useState(null);
+  const [draggingIdx, setDraggingIdx] = useState(null);
+
+  const getIdxFromPoint = useCallback((x, y) => {
+    if (!gridRef.current) return null;
+    const cells = gridRef.current.querySelectorAll('[data-sortidx]');
+    for (const cell of cells) {
+      const r = cell.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        return parseInt(cell.dataset.sortidx, 10);
+      }
+    }
+    return null;
+  }, []);
+
+  const endDrag = useCallback((applyDrop) => {
+    const d = drag.current;
+    if (d.ghostEl) { d.ghostEl.remove(); d.ghostEl = null; }
+    if (applyDrop && d.fromIdx !== null && d.overIdx !== null && d.fromIdx !== d.overIdx) {
+      setImages((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(d.fromIdx, 1);
+        next.splice(d.overIdx, 0, moved);
+        return next;
+      });
+    }
+    d.active = false; d.fromIdx = null; d.overIdx = null;
+    setDraggingIdx(null);
+    setOverIdx(null);
+  }, [setImages]);
+
+  const onPointerDown = useCallback((e, idx) => {
+    // only single touch / left mouse
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+
+    const cell = e.currentTarget;
+    const rect = cell.getBoundingClientRect();
+
+    // Create ghost
+    const ghost = cell.cloneNode(true);
+    const size = rect.width;
+    Object.assign(ghost.style, {
+      position: 'fixed',
+      width: size + 'px',
+      height: size + 'px',
+      top: (e.clientY - size / 2) + 'px',
+      left: (e.clientX - size / 2) + 'px',
+      pointerEvents: 'none',
+      zIndex: 9999,
+      opacity: '0.85',
+      borderRadius: '12px',
+      transform: 'scale(1.08)',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+      transition: 'none',
+    });
+    document.body.appendChild(ghost);
+
+    drag.current = { active: true, fromIdx: idx, ghostEl: ghost, overIdx: idx };
+    setDraggingIdx(idx);
+    setOverIdx(idx);
+
+    // Use pointer capture on document to track moves everywhere
+    const onMove = (ev) => {
+      const d = drag.current;
+      if (!d.active) return;
+      const cx = ev.clientX, cy = ev.clientY;
+      if (d.ghostEl) {
+        d.ghostEl.style.top = (cy - size / 2) + 'px';
+        d.ghostEl.style.left = (cx - size / 2) + 'px';
+      }
+      const target = getIdxFromPoint(cx, cy);
+      if (target !== null && target !== d.overIdx) {
+        d.overIdx = target;
+        setOverIdx(target);
+      }
+    };
+    const onUp = () => {
+      endDrag(true);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  }, [endDrag, getIdxFromPoint]);
+
+  return (
+    <>
+      <p className="text-xs text-slate-400 -mt-1">Segure e arraste para reordenar · A primeira foto é a capa</p>
+      <div ref={gridRef} className="grid grid-cols-3 gap-2">
+        {images.map((url, idx) => (
+          <div
+            key={url + idx}
+            data-sortidx={idx}
+            onPointerDown={(e) => onPointerDown(e, idx)}
+            style={{ touchAction: 'none', userSelect: 'none' }}
+            className={[
+              'relative group aspect-square rounded-xl overflow-hidden border-2 transition-transform',
+              draggingIdx === idx ? 'opacity-30 scale-95' : 'cursor-grab active:cursor-grabbing',
+              overIdx === idx && draggingIdx !== null && draggingIdx !== idx
+                ? 'border-blue-500 ring-2 ring-blue-300 scale-105'
+                : 'border-slate-100',
+            ].join(' ')}
+          >
+            <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
+            {idx === 0 && (
+              <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold pointer-events-none">Capa</span>
+            )}
+            {/* Grip hint */}
+            <div className="absolute top-1 right-1 pointer-events-none">
+              <GripVertical size={14} className="text-white drop-shadow opacity-70" />
+            </div>
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+              {idx !== 0 && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => onSetCover(idx)}
+                  className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
+                  Capa
+                </button>
+              )}
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onRemove(idx)}
+                className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                <X size={12} />
+              </button>
+            </div>
+            {/* Move arrows - visible on small screens where hover is unavailable */}
+            <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1 sm:hidden">
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onMoveImage(idx, -1)}
+                disabled={idx === 0}
+                className="p-1 bg-black/60 text-white rounded disabled:opacity-30"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onMoveImage(idx, 1)}
+                disabled={idx === images.length - 1}
+                className="p-1 bg-black/60 text-white rounded disabled:opacity-30"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 const FUEL_OPTIONS = ["Gasolina", "Etanol", "Flex", "Diesel", "Elétrico", "Híbrido", "GNV"];
 const TRANSMISSION_OPTIONS = ["Manual", "Automático", "CVT", "Semi-automático"];
@@ -61,24 +227,6 @@ export default function EditListingPage() {
   const [images, setImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [draggingIdx, setDraggingIdx] = useState(null);
-  const [dragOverIdx, setDragOverIdx] = useState(null);
-
-  const handleDragStart = (idx) => setDraggingIdx(idx);
-  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx); };
-  const handleDrop = (e, idx) => {
-    e.preventDefault();
-    if (draggingIdx === null || draggingIdx === idx) return;
-    setImages((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(draggingIdx, 1);
-      next.splice(idx, 0, moved);
-      return next;
-    });
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-  };
-  const handleDragEnd = () => { setDraggingIdx(null); setDragOverIdx(null); };
 
   const moveImage = (idx, direction) => {
     const newIdx = idx + direction;
@@ -379,65 +527,13 @@ export default function EditListingPage() {
                   <span className="text-xs text-slate-400">{images.length}/{maxImgsDisplay}</span>
                 </div>
                 {images.length > 0 && (
-                  <>
-                    <p className="text-xs text-slate-400 -mt-1">Arraste para reordenar · A primeira foto é a capa</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {images.map((url, idx) => (
-                        <div
-                          key={url + idx}
-                          draggable
-                          onDragStart={() => handleDragStart(idx)}
-                          onDragOver={(e) => handleDragOver(e, idx)}
-                          onDrop={(e) => handleDrop(e, idx)}
-                          onDragEnd={handleDragEnd}
-                          className={`relative group aspect-square rounded-xl overflow-hidden border-2 transition cursor-grab active:cursor-grabbing
-                            ${draggingIdx === idx ? "opacity-40 scale-95" : ""}
-                            ${dragOverIdx === idx && draggingIdx !== idx ? "border-blue-500 ring-2 ring-blue-300" : "border-slate-100"}
-                          `}
-                        >
-                          <img src={url} alt="" className="w-full h-full object-cover pointer-events-none" />
-                          {idx === 0 && (
-                            <span className="absolute top-1 left-1 text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full font-bold">Capa</span>
-                          )}
-                          {/* Drag handle hint */}
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
-                            <GripVertical size={14} className="text-white drop-shadow" />
-                          </div>
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                            {idx !== 0 && (
-                              <button type="button" onClick={() => setAsCover(idx)}
-                                className="text-[10px] bg-white text-slate-800 px-2 py-1 rounded-lg font-semibold hover:bg-blue-50">
-                                Capa
-                              </button>
-                            )}
-                            <button type="button" onClick={() => removeImage(idx)}
-                              className="p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                              <X size={12} />
-                            </button>
-                          </div>
-                          {/* Move buttons - always visible, work on touch */}
-                          <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); moveImage(idx, -1); }}
-                              disabled={idx === 0}
-                              className="p-1 bg-black/60 text-white rounded disabled:opacity-30 hover:bg-black/80 active:scale-95"
-                            >
-                              <ChevronLeft size={12} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); moveImage(idx, 1); }}
-                              disabled={idx === images.length - 1}
-                              className="p-1 bg-black/60 text-white rounded disabled:opacity-30 hover:bg-black/80 active:scale-95"
-                            >
-                              <ChevronRight size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                  <SortablePhotoGrid
+                    images={images}
+                    setImages={setImages}
+                    onRemove={removeImage}
+                    onSetCover={setAsCover}
+                    onMoveImage={moveImage}
+                  />
                 )}
                 {images.length < maxImgsDisplay && (
                   <div>
