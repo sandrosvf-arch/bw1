@@ -175,19 +175,10 @@ function SortablePhotoGrid({ images, setImages, onRemove, onSetCover }) {
             ].join(' ')}
           >
             <img src={url} alt="" className="w-full h-full object-cover pointer-events-none select-none" draggable={false} />
-            {idx === 0 ? (
+            {idx === 0 && (
               <span className="absolute top-1.5 left-1.5 text-xs bg-blue-600 text-white px-2.5 py-1 rounded-full font-bold pointer-events-none shadow">
                 ★ Capa
               </span>
-            ) : (
-              <button
-                type="button"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onSetCover(idx)}
-                className="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs bg-black/65 text-white px-3 py-1 rounded-full font-semibold hover:bg-blue-600 active:bg-blue-700 transition whitespace-nowrap shadow-md"
-              >
-                Definir capa
-              </button>
             )}
             <button
               type="button"
