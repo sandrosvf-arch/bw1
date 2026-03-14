@@ -144,10 +144,9 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured')
       .eq('status', 'active')
       .order('featured', { ascending: false })
-      .order('bumped_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
     if (category) {
@@ -410,7 +409,7 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured')
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
 
