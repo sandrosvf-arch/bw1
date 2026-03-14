@@ -531,6 +531,7 @@ router.post('/:id/video-confirm', authMiddleware, async (req: AuthRequest, res) 
     if (updateErr) throw updateErr;
 
     CacheService.invalidateListingsCache();
+    CacheService.deleteListing(id); // invalida cache individual do anúncio
 
     return res.json({ success: true, video_url: publicUrl });
   } catch (error: any) {
@@ -538,8 +539,6 @@ router.post('/:id/video-confirm', authMiddleware, async (req: AuthRequest, res) 
     return res.status(500).json({ error: 'Erro ao confirmar vídeo' });
   }
 });
-
-// POST /api/listings/:id/video — upload de vídeo premium
 router.post('/:id/video', authMiddleware, videoUpload.single('video'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;

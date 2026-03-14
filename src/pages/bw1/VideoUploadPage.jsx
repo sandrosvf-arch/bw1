@@ -79,6 +79,7 @@ export default function VideoUploadPage() {
       // 3. Confirmar com o backend para salvar a URL no banco
       setUploadProgress(95);
       const result = await api.confirmVideoUpload(listingId, path);
+      api.clearCacheFor(`/api/listings/${listingId}`);
       setUploadProgress(100);
       setVideoUrl(result.video_url);
       setUploaded(true);

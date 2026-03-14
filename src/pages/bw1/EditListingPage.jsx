@@ -427,6 +427,7 @@ export default function EditListingPage() {
       // 3. Confirmar com o backend para salvar a URL no banco
       setVideoUploadProgress(95);
       const result = await api.confirmVideoUpload(id, path);
+      api.clearCacheFor(`/api/listings/${id}`);
       setVideoUploadProgress(100);
       setVideoUrl(result.video_url);
       setVideoUploaded(true);

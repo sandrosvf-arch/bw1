@@ -356,6 +356,12 @@ class ApiService {
     return this.request(`/api/listings/${listingId}/bump`, { method: 'POST' });
   }
 
+  clearCacheFor(endpoint) {
+    const cacheKey = this.getCacheKey(endpoint);
+    this.cache.delete(cacheKey);
+    try { localStorage.removeItem(cacheKey); } catch {}
+  }
+
   async getVideoUploadUrl(listingId) {
     return this.request(`/api/listings/${listingId}/video-upload-url`, { forceRefresh: true });
   }
