@@ -144,8 +144,10 @@ router.get('/', async (req, res) => {
 
     let query = supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at')
       .eq('status', 'active')
+      .order('featured', { ascending: false })
+      .order('bumped_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false });
 
     if (category) {
@@ -408,7 +410,7 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   try {
     const { data, error } = await supabase
       .from('listings')
-      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at')
+      .select('id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at')
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
 
@@ -431,6 +433,43 @@ router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) =>
   } catch (error) {
     console.error('Get my listings error:', error);
     res.status(500).json({ error: 'Failed to get listings' });
+  }
+});
+
+// POST /api/listings/:id/bump
+// Volta o anúncio ao topo (consome 1 bump)
+router.post('/:id/bump', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: listing, error: fetchErr } = await supabaseAdmin
+      .from('listings')
+      .select('user_id, plan, bumps_remaining')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !listing) return res.status(404).json({ error: 'Anúncio não encontrado' });
+    if (listing.user_id !== req.userId) return res.status(403).json({ error: 'Sem permissão' });
+    if (!listing.bumps_remaining || listing.bumps_remaining <= 0) {
+      return res.status(400).json({ error: 'Sem bumps disponíveis para este plano' });
+    }
+
+    const { error: updateErr } = await supabaseAdmin
+      .from('listings')
+      .update({
+        bumped_at: new Date().toISOString(),
+        bumps_remaining: listing.bumps_remaining - 1,
+      })
+      .eq('id', id);
+
+    if (updateErr) throw updateErr;
+
+    CacheService.invalidateListingsCache();
+
+    return res.json({ success: true, bumps_remaining: listing.bumps_remaining - 1 });
+  } catch (error) {
+    console.error('Bump error:', error);
+    return res.status(500).json({ error: 'Falha ao voltar ao topo' });
   }
 });
 

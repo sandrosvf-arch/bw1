@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, ArrowLeft, Zap, TrendingUp } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -25,6 +25,7 @@ export default function MyListingsPage() {
   const [filter, setFilter] = useState("all"); // all, active, paused, sold
   const [showMenu, setShowMenu] = useState(null);
   const [logoOk, setLogoOk] = useState(true);
+  const [bumpingId, setBumpingId] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -53,6 +54,34 @@ export default function MyListingsPage() {
     if (filter === "paused") return item.status === "paused" || item.status === "inactive";
     return item.status === filter;
   });
+
+  const handleBump = async (id) => {
+    try {
+      setBumpingId(id);
+      const result = await api.bumpListing(id);
+      setListings(listings.map((l) =>
+        l.id === id ? { ...l, bumps_remaining: result.bumps_remaining } : l
+      ));
+      alert(`✅ Anúncio voltou ao topo! Bumps restantes: ${result.bumps_remaining}`);
+    } catch (error) {
+      alert(error.message || 'Erro ao voltar ao topo.');
+    } finally {
+      setBumpingId(null);
+    }
+  };
+
+  const getPlanBadge = (plan) => {
+    switch (plan) {
+      case 'standard':
+        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">⭐ Destaque</span>;
+      case 'pro':
+        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-700">⭐ PRO</span>;
+      case 'premium':
+        return <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">★ Premium</span>;
+      default:
+        return null;
+    }
+  };
 
   const handleDelete = async (id) => {
     if (confirm("Tem certeza que deseja excluir este anúncio?")) {
@@ -269,12 +298,15 @@ export default function MyListingsPage() {
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3
-                          className="text-lg font-bold text-slate-900 line-clamp-2 cursor-pointer hover:text-blue-600"
-                          onClick={() => navigate(`/anuncio/${listing.id}`)}
-                        >
-                          {listing.title}
-                        </h3>
+                        <div className="flex flex-col gap-1">
+                          <h3
+                            className="text-lg font-bold text-slate-900 line-clamp-2 cursor-pointer hover:text-blue-600"
+                            onClick={() => navigate(`/anuncio/${listing.id}`)}
+                          >
+                            {listing.title}
+                          </h3>
+                          {getPlanBadge(listing.plan)}
+                        </div>
                         {getStatusBadge(listing.status)}
                       </div>
                       <p className="text-2xl font-extrabold text-slate-900 mb-3">
@@ -294,46 +326,64 @@ export default function MyListingsPage() {
                       </div>
                     </div>
 
-                    {/* Ações */}
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => navigate(`/anuncio/${listing.id}`)}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
-                      >
-                        <Eye size={16} className="inline mr-1" />
-                        Ver anúncio
-                      </button>
-                      <button
-                        onClick={() => navigate(`/editar-anuncio/${listing.id}`)}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
-                      >
-                        <Edit size={16} className="inline mr-1" />
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(listing.id)}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
-                      >
-                        {listing.status === "active" ? (
-                          <>
-                            <EyeOff size={16} className="inline mr-1" />
-                            Pausar
-                          </>
-                        ) : (
-                          <>
-                            <Eye size={16} className="inline mr-1" />
-                            Ativar
-                          </>
+                      {/* Ações */}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => navigate(`/anuncio/${listing.id}`)}
+                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+                        >
+                          <Eye size={16} className="inline mr-1" />
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => navigate(`/editar-anuncio/${listing.id}`)}
+                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                        >
+                          <Edit size={16} className="inline mr-1" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(listing.id)}
+                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+                        >
+                          {listing.status === "active" ? (
+                            <><EyeOff size={16} className="inline mr-1" />Pausar</>
+                          ) : (
+                            <><Eye size={16} className="inline mr-1" />Ativar</>
+                          )}
+                        </button>
+
+                        {/* Volta ao topo — só para planos pagos com bumps disponíveis */}
+                        {listing.plan && listing.plan !== 'basic' && listing.bumps_remaining > 0 && (
+                          <button
+                            onClick={() => handleBump(listing.id)}
+                            disabled={bumpingId === listing.id}
+                            className="px-4 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-700 hover:bg-green-200 transition disabled:opacity-60"
+                          >
+                            <TrendingUp size={16} className="inline mr-1" />
+                            {bumpingId === listing.id ? 'Subindo...' : `Topo (${listing.bumps_remaining}×)`}
+                          </button>
                         )}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(listing.id)}
-                        className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition"
-                      >
-                        <Trash2 size={16} className="inline mr-1" />
-                        Excluir
-                      </button>
-                    </div>
+
+                        {/* Impulsionar — para anúncios sem plano pago */}
+                        {(!listing.plan || listing.plan === 'basic') && (
+                          <button
+                            onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
+                            className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition"
+                          >
+                            <Zap size={16} className="inline mr-1" />
+                            Impulsionar
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleDelete(listing.id)}
+                          className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition"
+                        >
+                          <Trash2 size={16} className="inline mr-1" />
+                          Excluir
+                        </button>
+                      </div>
                   </div>
                 </div>
               ))}

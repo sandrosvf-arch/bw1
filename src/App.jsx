@@ -23,7 +23,10 @@ const AccountPage = lazy(() => import("./pages/bw1/AccountPage.jsx"));
 const FavoritesPage = lazy(() => import("./pages/bw1/FavoritesPage.jsx"));
 const ChatPage = lazy(() => import("./pages/bw1/ChatPage.jsx"));
 const ChatConversationPage = lazy(() => import("./pages/bw1/ChatConversationPage.jsx"));
-const UserProfilePage = lazy(() => import("./pages/bw1/UserProfilePage.jsx"));const PaymentPage = lazy(() => import('./pages/bw1/PaymentPage.jsx'));const LoginPage = lazy(() => import("./pages/auth/LoginPage.jsx"));
+const UserProfilePage = lazy(() => import("./pages/bw1/UserProfilePage.jsx"));
+const PaymentPage = lazy(() => import('./pages/bw1/PaymentPage.jsx'));
+const VideoUploadPage = lazy(() => import('./pages/bw1/VideoUploadPage.jsx'));
+const LoginPage = lazy(() => import("./pages/auth/LoginPage.jsx"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage.jsx"));
 const OAuthCallbackPage = lazy(() => import("./pages/auth/OAuthCallbackPage.jsx"));
 const DebugListingsPage = lazy(() => import("./pages/bw1/DebugListingsPage.jsx"));
@@ -92,6 +95,7 @@ export default function App() {
           
           <Route path="/anuncio-publicado" element={<ProtectedRoute><ListingSuccessPage /></ProtectedRoute>} />
           <Route path="/pagamento/:paymentId" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+          <Route path="/video/:listingId" element={<ProtectedRoute><VideoUploadPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

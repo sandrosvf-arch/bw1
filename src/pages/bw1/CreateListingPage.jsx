@@ -1248,11 +1248,15 @@ export default function CreateListingPage() {
                 {/* Destaque PRO */}
                 <div
                   onClick={() => setSelectedPlan('pro')}
-                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
+                  className={`border-2 rounded-2xl p-5 cursor-pointer transition-all relative ${
                     selectedPlan === 'pro' ? 'border-violet-600 bg-violet-50 ring-2 ring-violet-400' : 'border-violet-300 hover:border-violet-500'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  {/* Faixa "Mais Escolhido" */}
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                    <span className="px-3 py-1 bg-violet-600 text-white text-xs font-bold rounded-full shadow-lg">🏆 MAIS ESCOLHIDO</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3 mt-2">
                     <h3 className="text-lg font-bold text-slate-900">Destaque PRO</h3>
                     <span className="px-2 py-0.5 bg-violet-600 text-white text-xs font-bold rounded-full">PRO</span>
                   </div>

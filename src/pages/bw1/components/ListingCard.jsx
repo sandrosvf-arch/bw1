@@ -432,18 +432,22 @@ function ListingCard({ item, onViewMore }) {
         </div>
       </Link>
 
-      {/* Badges de Destaque - Fora da imagem, embaixo */}
-      {(item.badge === "destaque" || item.badge === "super-destaque") && (
+      {/* Badges de Destaque baseado no plano */}
+      {item.plan && item.plan !== 'basic' && item.featured && (
         <div className="w-full">
-          {item.badge === "destaque" && (
-            <div className="w-full py-2 px-4 bg-blue-600 text-white text-center text-xs font-bold uppercase tracking-wide">
+          {item.plan === 'standard' && (
+            <div className="w-full py-1.5 px-4 bg-blue-600 text-white text-center text-xs font-bold uppercase tracking-wider">
               ⭐ DESTAQUE
             </div>
           )}
-          
-          {item.badge === "super-destaque" && (
-            <div className="w-full py-2 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center text-xs font-bold uppercase tracking-wide">
-              ⭐ SUPER DESTAQUE
+          {item.plan === 'pro' && (
+            <div className="w-full py-1.5 px-4 bg-violet-600 text-white text-center text-xs font-bold uppercase tracking-wider">
+              ⭐ DESTAQUE PRO
+            </div>
+          )}
+          {item.plan === 'premium' && (
+            <div className="w-full py-1.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center text-xs font-bold uppercase tracking-wider">
+              ★ SUPER DESTAQUE PREMIUM
             </div>
           )}
         </div>

@@ -104,13 +104,17 @@ export default function PaymentPage() {
     });
   };
 
-  // Aprovado → redireciona para sucesso
+  // Aprovado → redireciona para sucesso (ou vídeo se premium)
   useEffect(() => {
     if (status === "approved") {
       const timer = setTimeout(() => {
-        navigate("/anuncio-publicado", {
-          state: { listingId, fromPayment: true, plan },
-        });
+        if (plan === "premium") {
+          navigate(`/video/${listingId}`, { state: { plan } });
+        } else {
+          navigate("/anuncio-publicado", {
+            state: { listingId, fromPayment: true, plan },
+          });
+        }
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -143,7 +147,11 @@ export default function PaymentPage() {
               <p className="text-slate-600 mb-2">
                 Seu plano <strong>{PLAN_LABELS[plan]}</strong> foi ativado.
               </p>
-              <p className="text-sm text-slate-500">Redirecionando para seu anúncio...</p>
+              <p className="text-sm text-slate-500">
+                {plan === "premium"
+                  ? "Redirecionando para adicionar seu vídeo..."
+                  : "Redirecionando para seu anúncio..."}
+              </p>
             </div>
           )}
 

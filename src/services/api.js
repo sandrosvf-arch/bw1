@@ -352,6 +352,10 @@ class ApiService {
     return this.request(`/api/payments/${paymentId}/status`, { forceRefresh: true });
   }
 
+  async bumpListing(listingId) {
+    return this.request(`/api/listings/${listingId}/bump`, { method: 'POST' });
+  }
+
   // Chat
   async getConversations() {
     return this.request('/api/chat/conversations');
