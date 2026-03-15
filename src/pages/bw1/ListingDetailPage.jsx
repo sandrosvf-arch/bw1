@@ -236,7 +236,7 @@ export default function ListingDetailPage() {
   const contactButtonRef = useRef(null);
 
   const videoRef = useRef(null);
-  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoMuted, setVideoMuted] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
   // Auto-play/pause video when it enters/leaves viewport
@@ -630,8 +630,10 @@ export default function ListingDetailPage() {
                     <button
                       type="button"
                       onClick={() => {
+                        const opening = !showVideoModal;
                         setShowVideoModal(m => !m);
-                        if (showVideoModal) { videoRef.current?.pause(); setVideoPlaying(false); }
+                        if (!opening) { videoRef.current?.pause(); setVideoPlaying(false); }
+                        else { setVideoMuted(false); }
                       }}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-md hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
                     >
