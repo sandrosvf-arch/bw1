@@ -1329,11 +1329,20 @@ export default function CreateListingPage() {
                   <ul className="space-y-1.5 text-sm text-slate-700">
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Ativo <strong>até vender</strong></li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Flag <strong>"PREMIUM"</strong> no anúncio</li>
-                    <li className="flex gap-2"><span className="text-amber-500">★</span> Até 20 fotos + 1 vídeo</li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> Até 20 fotos</li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Volta ao topo 1× por semana</li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> <strong>Favoritos sempre no topo</strong></li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> <strong>Mensagens destacadas no chat</strong></li>
                   </ul>
+                  {/* Exclusivo Premium: vídeo */}
+                  <div className="mt-3 flex items-start gap-2 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl px-3 py-2.5">
+                    <span className="text-lg leading-none mt-0.5">🎬</span>
+                    <div>
+                      <p className="text-sm font-extrabold text-amber-800">Vídeo no anúncio</p>
+                      <p className="text-xs text-amber-700">Exclusivo Premium — <strong>vende até 3× mais</strong></p>
+                    </div>
+                    <span className="ml-auto flex-shrink-0 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full self-start">EXCLUSIVO</span>
+                  </div>
                 </div>
               </div>
 
