@@ -46,6 +46,7 @@ export default function ChatPage() {
           ? (conv.listings.images[0] || conv?.other_user?.avatar || CHAT_IMG_FALLBACK)
           : (conv?.listings?.images || conv?.other_user?.avatar || CHAT_IMG_FALLBACK),
         listingId: conv?.listings?.id || conv?.listing_id || null,
+        listingPlan: conv?.listings?.plan || 'basic',
         advertiserName: conv?.other_user?.name || "Anunciante",
         lastMessage: "Toque para abrir a conversa",
         lastMessageTime: conv?.updated_at || conv?.created_at,
@@ -178,7 +179,11 @@ export default function ChatPage() {
                 <Link
                   key={conv.id}
                   to={`/chat/${conv.id}`}
-                  className="flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50 transition"
+                  className={`flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50 transition ${
+                    conv.listingPlan === 'premium' ? 'bg-amber-50/40' :
+                    conv.listingPlan === 'pro' ? 'bg-violet-50/40' :
+                    conv.listingPlan === 'standard' ? 'bg-blue-50/30' : ''
+                  }`}
                 >
                   {/* Imagem do anúncio */}
                   <img
@@ -193,9 +198,20 @@ export default function ChatPage() {
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-slate-900 truncate">
-                        {conv.title}
-                      </h3>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <h3 className="font-bold text-slate-900 truncate">
+                          {conv.title}
+                        </h3>
+                        {conv.listingPlan === 'premium' && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full border border-amber-300">★ PREMIUM</span>
+                        )}
+                        {conv.listingPlan === 'pro' && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-violet-100 text-violet-700 text-[10px] font-bold rounded-full border border-violet-300">🏆 PRO</span>
+                        )}
+                        {conv.listingPlan === 'standard' && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full border border-blue-200">★ DESTAQUE</span>
+                        )}
+                      </div>
                       <span className="text-xs text-slate-500 ml-2">
                         {getTimeAgo(conv.lastMessageTime)}
                       </span>

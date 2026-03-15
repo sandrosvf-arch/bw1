@@ -74,6 +74,7 @@ export default function ChatConversationPage() {
             : (conv?.listings?.images || conv?.other_user?.avatar || CHAT_IMG_FALLBACK),
           price: conv?.listings?.price || "",
           listingId: conv?.listings?.id || conv?.listing_id || null,
+          listingPlan: conv?.listings?.plan || 'basic',
           advertiserName: conv?.other_user?.name || "Anunciante",
           advertiserUserId: conv?.other_user?.id || null,
         });
@@ -86,6 +87,7 @@ export default function ChatConversationPage() {
           listingImage: CHAT_IMG_FALLBACK,
           price: "",
           listingId: null,
+          listingPlan: 'basic',
           advertiserName: "Anunciante",
           advertiserUserId: null,
         });
@@ -105,6 +107,7 @@ export default function ChatConversationPage() {
         listingImage: CHAT_IMG_FALLBACK,
         price: "",
         listingId: null,
+        listingPlan: 'basic',
         advertiserName: "Anunciante",
         advertiserUserId: null,
       });
@@ -253,6 +256,15 @@ export default function ChatConversationPage() {
                   {conversation.title}
                   {conversation.price ? ` • ${conversation.price}` : ""}
                 </p>
+                {conversation.listingPlan && conversation.listingPlan !== 'basic' && (
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold mt-0.5 ${
+                    conversation.listingPlan === 'premium' ? 'bg-amber-100 text-amber-700 border border-amber-300' :
+                    conversation.listingPlan === 'pro' ? 'bg-violet-100 text-violet-700 border border-violet-300' :
+                    'bg-blue-100 text-blue-700 border border-blue-200'
+                  }`}>
+                    {conversation.listingPlan === 'premium' ? '★ Anunciante Premium' : conversation.listingPlan === 'pro' ? '🏆 Anunciante PRO' : '★ Anunciante Destaque'}
+                  </span>
+                )}
               </div>
             </div>
             {conversation.listingId ? (
@@ -328,6 +340,9 @@ export default function ChatConversationPage() {
                       className={`max-w-[85%] sm:max-w-lg ${
                         msg.sender === "me"
                           ? "bg-blue-600 text-white"
+                          : conversation?.listingPlan === 'premium' ? "bg-amber-50 text-slate-900 shadow-sm border border-amber-100"
+                          : conversation?.listingPlan === 'pro' ? "bg-violet-50 text-slate-900 shadow-sm border border-violet-100"
+                          : conversation?.listingPlan === 'standard' ? "bg-blue-50 text-slate-900 shadow-sm border border-blue-100"
                           : "bg-white text-slate-900 shadow-sm"
                       } ${roundedClass} px-3 py-2`}
                     >

@@ -1283,6 +1283,8 @@ export default function CreateListingPage() {
                     <li className="flex gap-2"><span className="text-blue-500">✓</span> Flag <strong>"Destaque"</strong> no anúncio</li>
                     <li className="flex gap-2"><span className="text-blue-500">✓</span> Até 10 fotos</li>
                     <li className="flex gap-2"><span className="text-blue-500">✓</span> Volta ao topo 3×</li>
+                    <li className="flex gap-2"><span className="text-blue-500">★</span> <strong>Favoritos sempre no topo</strong></li>
+                    <li className="flex gap-2"><span className="text-blue-500">★</span> <strong>Mensagens destacadas no chat</strong></li>
                   </ul>
                 </div>
 
@@ -1307,6 +1309,8 @@ export default function CreateListingPage() {
                     <li className="flex gap-2"><span className="text-violet-500">✓</span> Flag <strong>"Destaque PRO"</strong> no anúncio</li>
                     <li className="flex gap-2"><span className="text-violet-500">✓</span> Até 15 fotos</li>
                     <li className="flex gap-2"><span className="text-violet-500">✓</span> Volta ao topo 5×</li>
+                    <li className="flex gap-2"><span className="text-violet-500">★</span> <strong>Favoritos sempre no topo</strong></li>
+                    <li className="flex gap-2"><span className="text-violet-500">★</span> <strong>Mensagens destacadas no chat</strong></li>
                   </ul>
                 </div>
 
@@ -1327,6 +1331,8 @@ export default function CreateListingPage() {
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Flag <strong>"PREMIUM"</strong> no anúncio</li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Até 20 fotos + 1 vídeo</li>
                     <li className="flex gap-2"><span className="text-amber-500">★</span> Volta ao topo 1× por semana</li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> <strong>Favoritos sempre no topo</strong></li>
+                    <li className="flex gap-2"><span className="text-amber-500">★</span> <strong>Mensagens destacadas no chat</strong></li>
                   </ul>
                 </div>
               </div>

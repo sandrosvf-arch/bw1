@@ -45,7 +45,7 @@ router.get('/conversations', authMiddleware, async (req: AuthRequest, res) => {
       listingIds.length
         ? supabase
             .from('listings')
-            .select('id, title, images, price, user_id')
+            .select('id, title, images, price, user_id, plan, featured')
             .in('id', listingIds)
         : Promise.resolve({ data: [], error: null } as any),
       otherUserIds.length
@@ -123,7 +123,7 @@ router.get('/conversations/:id', authMiddleware, async (req: AuthRequest, res) =
     const [listingResult, userResult] = await Promise.all([
       supabase
         .from('listings')
-        .select('id, title, images, price, user_id')
+        .select('id, title, images, price, user_id, plan, featured')
         .eq('id', data.listing_id)
         .maybeSingle(),
       supabase

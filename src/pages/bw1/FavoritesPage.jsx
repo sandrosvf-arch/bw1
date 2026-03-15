@@ -15,6 +15,9 @@ import * as FooterMod from "./content/footer.js";
 const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
+const PLAN_WEIGHT = { premium: 3, pro: 2, standard: 1, basic: 0 };
+const sortByPlan = (arr) => [...arr].sort((a, b) => (PLAN_WEIGHT[b?.plan] || 0) - (PLAN_WEIGHT[a?.plan] || 0));
+
 export default function FavoritesPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [logoOk, setLogoOk] = useState(true);
@@ -62,7 +65,7 @@ export default function FavoritesPage() {
         // 4. Atualiza localStorage com todos os IDs
         const allIds = allListings.map((item) => item.id);
         localStorage.setItem("bw1-favorites", JSON.stringify(allIds));
-        setFavorites(allListings);
+        setFavorites(sortByPlan(allListings));
         return;
       }
 
@@ -78,7 +81,7 @@ export default function FavoritesPage() {
       const listings = results
         .filter((r) => r.status === "fulfilled" && r.value?.listing)
         .map((r) => r.value.listing);
-      setFavorites(listings);
+      setFavorites(sortByPlan(listings));
     } catch (error) {
       console.error("Erro ao carregar favoritos:", error);
       setFavorites([]);
