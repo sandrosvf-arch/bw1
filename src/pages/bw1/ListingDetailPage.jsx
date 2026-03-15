@@ -563,6 +563,25 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
+                {/* BADGE DE PLANO — abaixo das fotos */}
+                {item.plan && item.plan !== 'basic' && (
+                  <div className={`w-full flex items-center justify-center gap-2 py-2 ${
+                    item.plan === 'standard'
+                      ? 'bg-blue-600'
+                      : item.plan === 'pro'
+                      ? 'bg-violet-600'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                  }`}>
+                    <span className="block w-1.5 h-1.5 rounded-full bg-white/60" />
+                    <span className="text-white text-[11px] font-bold uppercase tracking-[0.15em]">
+                      {item.plan === 'standard' && 'Destaque'}
+                      {item.plan === 'pro' && 'Destaque Pro'}
+                      {item.plan === 'premium' && 'Super Destaque Premium'}
+                    </span>
+                    <span className="block w-1.5 h-1.5 rounded-full bg-white/60" />
+                  </div>
+                )}
+
                 {/* VIDEO BUTTON + INLINE PLAYER */}
                 {item.details?.video_url && (
                   <>
@@ -580,7 +599,7 @@ export default function ListingDetailPage() {
                       {showVideoModal ? 'Fechar vídeo' : 'Ver vídeo do anúncio'}
                     </button>
                     {showVideoModal && (
-                      <div className="overflow-hidden bg-black relative select-none aspect-[9/16] w-full max-w-sm mx-auto">
+                      <div className="rounded-2xl overflow-hidden bg-black relative select-none aspect-[9/16] w-full max-w-sm mx-auto">
                         <div
                           className="w-full h-full"
                           onClick={() => {
@@ -733,21 +752,20 @@ export default function ListingDetailPage() {
                 <div className="lg:sticky lg:top-24 space-y-6">
                   {/* Preço e título */}
                   <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
-                    {/* Tag de Venda/Aluguel */}
-                    {(item.dealType || item.tag) && (
-                      <div className="mb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <p className="text-2xl lg:text-3xl font-extrabold text-slate-900">
+                        {formatPrice(item.price)}
+                      </p>
+                      {(item.dealType || item.tag) && (
                         <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase ${
                           String(item.dealType || item.tag).toLowerCase().trim() === 'venda' || String(item.dealType || item.tag).toLowerCase().includes('venda')
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                            ? 'bg-green-100 text-green-700 border border-green-200'
                             : 'bg-blue-100 text-blue-700 border border-blue-200'
                         }`}>
                           {item.dealType || item.tag}
                         </span>
-                      </div>
-                    )}
-                    <p className="text-2xl lg:text-3xl font-extrabold text-slate-900 mb-2">
-                      {formatPrice(item.price)}
-                    </p>
+                      )}
+                    </div>
                     <h1 className="text-lg lg:text-xl font-bold text-slate-900 mb-2 lg:mb-3">
                       {item.title}
                     </h1>
