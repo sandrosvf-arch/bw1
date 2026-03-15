@@ -28,6 +28,7 @@ import {
 
 import api from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { useFavorites } from "../../hooks/useFavorites";
 import * as BrandMod from "./content/brand.js";
 import * as NavMod from "./content/navigation.js";
 import * as FooterMod from "./content/footer.js";
@@ -157,7 +158,8 @@ export default function ListingDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
-  // Se vier via state, já exibe instantâneo
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [shareCopied, setShareCopied] = useState(false);
   const [item, setItem] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
 
@@ -429,16 +431,34 @@ export default function ListingDetailPage() {
                 {/* Right - Ações */}
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => item && toggleFavorite(item.id)}
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Favoritar"
                   >
-                    <Heart size={20} />
+                    <Heart size={20} className={item && isFavorite(item.id) ? 'fill-red-500 text-red-500' : ''} />
                   </button>
                   <button
-                    className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
+                    onClick={async () => {
+                      const url = window.location.href;
+                      const title = item?.title || 'Anúncio BW1';
+                      const text = `${title} — ${formatPrice(item?.price)}`;
+                      if (navigator.share) {
+                        try { await navigator.share({ title, text, url }); } catch {}
+                      } else {
+                        await navigator.clipboard.writeText(url);
+                        setShareCopied(true);
+                        setTimeout(() => setShareCopied(false), 2000);
+                      }
+                    }}
+                    className="relative p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Compartilhar"
                   >
                     <Share2 size={20} />
+                    {shareCopied && (
+                      <span className="absolute -bottom-8 right-0 text-[11px] bg-white text-slate-800 font-semibold px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
+                        Link copiado!
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
