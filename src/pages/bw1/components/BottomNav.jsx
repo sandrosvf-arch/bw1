@@ -4,37 +4,25 @@ import { Home, Plus, MessageCircle, Menu, User } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import useActivityCounts from "../../../hooks/useActivityCounts";
 
-/**
- * BottomNav (estilo OLX):
- * - Fixa embaixo
- * - “Floating pill”
- * - Item ativo com destaque
- *
- * Rotas padrão:
- * /            (Home)
- * /buscar      (Busca)
- * /anunciar    (Anunciar)
- * /chat        (Chat)
- * /menu        (Menu)
- *
- * Ajuste as rotas conforme seu app.
- */
-
 function Item({ to, label, Icon }) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         [
-          "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
-          isActive ? "text-white" : "text-slate-300 hover:text-white",
+          "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
+          isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
         ].join(" ")
       }
       title={label}
       aria-label={label}
     >
-      <Icon size={22} />
-      <span className="text-[11px] font-semibold leading-none">{label}</span>
+      {({ isActive }) => (
+        <>
+          <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+          <span className="text-[10px] font-semibold leading-none mt-0.5">{label}</span>
+        </>
+      )}
     </NavLink>
   );
 }
@@ -44,89 +32,86 @@ export default function BottomNav() {
   const { unreadChats } = useActivityCounts(isAuthenticated);
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 z-50 pointer-events-none w-full">
-      {/* Safe area + padding */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-[calc(env(safe-area-inset-bottom,0px)+14px)]">
-        <div className="pointer-events-auto">
-          <div
-            className="mx-auto w-full md:max-w-[520px] bg-slate-900/95 supports-[backdrop-filter]:backdrop-blur-md backdrop-blur-md border border-white/10 shadow-2xl rounded-[28px] px-2 py-2"
-            style={{ position: 'relative', bottom: 0 }}
-          >
-            <div className="grid grid-cols-5 items-center">
-              <Item to="/" label="Início" Icon={Home} />
-              {/* Chat com contador */}
-              <NavLink
-                to="/chat"
-                className={({ isActive }) =>
-                  [
-                    "relative flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
-                    isActive ? "text-white" : "text-slate-300 hover:text-white",
-                  ].join(" ")
-                }
-                title="Chat"
-                aria-label="Chat"
-              >
-                <MessageCircle size={22} />
-                <span className="text-[11px] font-semibold leading-none">Chat</span>
-                {unreadChats > 0 && (
-                  <span
-                    style={{ top: -2, right: 12 }}
-                    className="absolute min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-slate-900 pointer-events-none"
-                  >
-                    {unreadChats > 99 ? "99+" : unreadChats}
-                  </span>
-                )}
-              </NavLink>
-              {/* Botão central destacado */}
-              <NavLink
-                to="/criar-anuncio"
-                className={({ isActive }) =>
-                  [
-                    "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
-                    isActive ? "text-white bg-blue-600" : "text-white hover:bg-slate-800",
-                  ].join(" ")
-                }
-                title="Anunciar"
-                aria-label="Anunciar"
-              >
-                <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
-                  <Plus size={20} />
-                </div>
-                <span className="text-[11px] font-semibold leading-none">Anunciar</span>
-              </NavLink>
-              <NavLink
-                to="/conta"
-                className={({ isActive }) =>
-                  [
-                    "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition",
-                    isActive ? "text-white" : "text-slate-300 hover:text-white",
-                  ].join(" ")
-                }
-                title="Conta"
-                aria-label="Conta"
-              >
-                {isAuthenticated && user?.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt={user.name}
-                    className="w-6 h-6 rounded-full object-cover border-2 border-blue-500"
-                  />
-                ) : isAuthenticated ? (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
-                    <User size={14} className="text-slate-300" />
-                  </div>
-                )}
-                <span className="text-[11px] font-semibold leading-none">Conta</span>
-              </NavLink>
+    <div
+      className="fixed left-0 right-0 bottom-0 z-50 bg-white border-t border-slate-200 w-full"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="grid grid-cols-5 items-stretch h-14">
+        {/* Início */}
+        <Item to="/" label="Início" Icon={Home} />
 
-              <Item to="/menu" label="Menu" Icon={Menu} />
-            </div>
+        {/* Chat com contador */}
+        <NavLink
+          to="/chat"
+          className={({ isActive }) =>
+            [
+              "relative flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
+              isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
+            ].join(" ")
+          }
+          title="Chat"
+          aria-label="Chat"
+        >
+          {({ isActive }) => (
+            <>
+              <MessageCircle size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+              <span className="text-[10px] font-semibold leading-none mt-0.5">Chat</span>
+              {unreadChats > 0 && (
+                <span className="absolute top-1.5 left-1/2 translate-x-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">
+                  {unreadChats > 99 ? "99+" : unreadChats}
+                </span>
+              )}
+            </>
+          )}
+        </NavLink>
+
+        {/* Anunciar — botão central destacado */}
+        <NavLink
+          to="/criar-anuncio"
+          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors text-slate-400 hover:text-slate-600"
+          title="Anunciar"
+          aria-label="Anunciar"
+        >
+          <div className="w-9 h-9 -mt-4 bg-blue-600 rounded-full flex items-center justify-center shadow-md shadow-blue-200">
+            <Plus size={20} className="text-white" strokeWidth={2.5} />
           </div>
-        </div>
+          <span className="text-[10px] font-semibold leading-none text-slate-400 -mt-0.5">Anunciar</span>
+        </NavLink>
+
+        {/* Conta */}
+        <NavLink
+          to="/conta"
+          className={({ isActive }) =>
+            [
+              "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
+              isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
+            ].join(" ")
+          }
+          title="Conta"
+          aria-label="Conta"
+        >
+          {({ isActive }) => (
+            <>
+              {isAuthenticated && user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-blue-500' : 'border-slate-300'}`}
+                />
+              ) : isAuthenticated ? (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              ) : (
+                <User size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+              )}
+              <span className="text-[10px] font-semibold leading-none mt-0.5">Conta</span>
+            </>
+          )}
+        </NavLink>
+
+        {/* Menu */}
+        <Item to="/menu" label="Menu" Icon={Menu} />
       </div>
     </div>
   );
