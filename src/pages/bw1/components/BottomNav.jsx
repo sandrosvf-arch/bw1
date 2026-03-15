@@ -72,7 +72,7 @@ export default function BottomNav() {
           title="Anunciar"
           aria-label="Anunciar"
         >
-          <div className="w-9 h-9 -mt-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+          <div className="w-9 h-9 -mt-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
             <Plus size={20} className="text-white" strokeWidth={2.5} />
           </div>
           <span className="text-[10px] font-semibold leading-none text-slate-400 -mt-0.5">Anunciar</span>
