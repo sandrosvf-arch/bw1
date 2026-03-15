@@ -4,55 +4,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Obter perfil de um usuário (público)
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, name, avatar, created_at')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ user: data });
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ error: 'Failed to get user' });
-  }
-});
-
-// Atualizar perfil (autenticado)
-router.put('/profile', authMiddleware, async (req: AuthRequest, res) => {
-  try {
-    const { name, phone, avatar } = req.body;
-
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        name,
-        phone,
-        avatar,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', req.userId)
-      .select('id, email, name, phone, avatar')
-      .single();
-
-    if (error) throw error;
-
-    res.json({ user: data });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
-});
-
-// Favoritos
+// Favoritos (deve vir ANTES de /:id para não ser capturado como ID)
 router.get('/favorites', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const { data, error } = await supabase
@@ -112,6 +64,54 @@ router.delete('/favorites/:listingId', authMiddleware, async (req: AuthRequest, 
   } catch (error) {
     console.error('Remove favorite error:', error);
     res.status(500).json({ error: 'Failed to remove favorite' });
+  }
+});
+
+// Atualizar perfil (autenticado)
+router.put('/profile', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { name, phone, avatar } = req.body;
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        name,
+        phone,
+        avatar,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', req.userId)
+      .select('id, email, name, phone, avatar')
+      .single();
+
+    if (error) throw error;
+
+    res.json({ user: data });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Obter perfil de um usuário (público) — deve vir por ÚLTIMO pois captura qualquer /:id
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, avatar, created_at')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ user: data });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Failed to get user' });
   }
 });
 
