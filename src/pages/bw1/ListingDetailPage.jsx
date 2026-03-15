@@ -568,10 +568,10 @@ export default function ListingDetailPage() {
 
                 {/* Impulsionar — só para o dono com plano básico */}
                 {isAuthenticated && user?.id === item?.user_id && (!item.plan || item.plan === 'basic') && (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center" style={{ marginTop: '6px', marginBottom: '2px' }}>
                     <button
                       onClick={() => navigate('/criar-anuncio', { state: { impulsionar: item.id, step: 4 } })}
-                      className="relative overflow-hidden px-8 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/40 hover:shadow-amber-400/70 transition-all flex items-center gap-2"
+                      className="relative overflow-hidden px-8 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/40 hover:shadow-amber-400/70 transition-all flex items-center gap-2"
                     >
                       <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
                       <Zap size={15} />
