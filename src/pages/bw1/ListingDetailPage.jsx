@@ -566,6 +566,18 @@ export default function ListingDetailPage() {
                   )}
                 </div>
 
+                {/* Impulsionar — só para o dono com plano básico */}
+                {isAuthenticated && user?.id === item?.user_id && (!item.plan || item.plan === 'basic') && (
+                  <button
+                    onClick={() => navigate('/criar-anuncio', { state: { impulsionar: item.id, step: 4 } })}
+                    className="relative overflow-hidden w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/40 hover:shadow-amber-400/70 transition-all flex items-center justify-center gap-2"
+                  >
+                    <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+                    <Zap size={17} />
+                    Impulsionar anúncio
+                  </button>
+                )}
+
                 {/* VIDEO BUTTON + INLINE PLAYER */}
                 {item.details?.video_url && (
                   <>
@@ -765,17 +777,6 @@ export default function ListingDetailPage() {
 
                     {/* Botões de ação */}
                     <div className="space-y-2">
-                      {/* Impulsionar — só para o dono com plano básico */}
-                      {isAuthenticated && user?.id === item?.user_id && (!item.plan || item.plan === 'basic') && (
-                        <button
-                          onClick={() => navigate('/criar-anuncio', { state: { impulsionar: item.id, step: 4 } })}
-                          className="relative overflow-hidden w-full py-2.5 lg:py-3 rounded-xl text-sm lg:text-base font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/40 hover:shadow-amber-400/70 transition-all flex items-center justify-center gap-2"
-                        >
-                          <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
-                          <Zap size={18} />
-                          Impulsionar anúncio
-                        </button>
-                      )}
                       <button
                         ref={contactButtonRef}
                         onClick={async () => {
