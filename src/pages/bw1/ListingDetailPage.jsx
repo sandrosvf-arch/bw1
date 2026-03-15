@@ -545,13 +545,6 @@ export default function ListingDetailPage() {
                       </div>
                     ))}
                   </div>
-                  {/* TAG VENDA/ALUGUEL — colada abaixo das fotos */}
-                  {tag && tag !== '—' && (
-                    <div className={`w-full flex items-center justify-center gap-2 py-2 ${isVenda ? 'bg-green-600' : 'bg-blue-600'}`}>
-                      <span className="text-white text-[11px] font-bold uppercase tracking-[0.15em]">{tag}</span>
-                    </div>
-                  )}
-
                   {/* BADGE DE PLANO — colado abaixo das fotos */}
                   {item.plan && item.plan !== 'basic' && (
                     <div className={`w-full flex items-center justify-center gap-2 py-2 ${
