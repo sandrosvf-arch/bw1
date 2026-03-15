@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { ArrowLeft, Camera, CheckCircle2, Loader2, User, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, Loader2, User, Phone, Mail, Pencil, Check, X } from "lucide-react";
 import api from "../../services/api";
 import AppShell from "./components/AppShell";
 import BottomNav from "./components/BottomNav";
@@ -22,7 +22,34 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [logoOk, setLogoOk] = useState(true);
+  const [editingField, setEditingField] = useState(null); // 'name' | 'phone' | null
+  const [draftName, setDraftName] = useState(user?.name || "");
+  const [draftPhone, setDraftPhone] = useState(user?.phone || "");
   const fileInputRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const phoneInputRef = useRef(null);
+
+  const startEdit = (field) => {
+    if (field === 'name') setDraftName(name);
+    if (field === 'phone') setDraftPhone(phone);
+    setEditingField(field);
+    setTimeout(() => {
+      if (field === 'name') nameInputRef.current?.focus();
+      if (field === 'phone') phoneInputRef.current?.focus();
+    }, 50);
+  };
+
+  const confirmEdit = (field) => {
+    if (field === 'name') setName(draftName);
+    if (field === 'phone') setPhone(draftPhone);
+    setEditingField(null);
+  };
+
+  const cancelEdit = (field) => {
+    if (field === 'name') setDraftName(name);
+    if (field === 'phone') setDraftPhone(phone);
+    setEditingField(null);
+  };
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -175,13 +202,37 @@ export default function EditProfilePage() {
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                 <User size={14} /> Nome
               </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome completo"
-                className="w-full text-slate-900 font-medium bg-transparent outline-none placeholder:text-slate-400 text-base"
-              />
+              {editingField === 'name' ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEdit('name'); if (e.key === 'Escape') cancelEdit('name'); }}
+                    placeholder="Seu nome completo"
+                    className="flex-1 text-slate-900 font-medium bg-slate-50 border border-blue-400 rounded-lg px-3 py-1.5 outline-none text-base focus:ring-2 focus:ring-blue-200 transition"
+                  />
+                  <button onClick={() => confirmEdit('name')} className="w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg transition flex-shrink-0" title="Confirmar">
+                    <Check size={16} />
+                  </button>
+                  <button onClick={() => cancelEdit('name')} className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition flex-shrink-0" title="Cancelar">
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-900 font-medium text-base flex-1 truncate">
+                    {name || <span className="text-slate-400">Não informado</span>}
+                  </span>
+                  <button
+                    onClick={() => startEdit('name')}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-200"
+                  >
+                    <Pencil size={13} /> Editar
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Telefone */}
@@ -189,13 +240,37 @@ export default function EditProfilePage() {
               <label className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                 <Phone size={14} /> Telefone / WhatsApp
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 99999-9999"
-                className="w-full text-slate-900 font-medium bg-transparent outline-none placeholder:text-slate-400 text-base"
-              />
+              {editingField === 'phone' ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={phoneInputRef}
+                    type="tel"
+                    value={draftPhone}
+                    onChange={(e) => setDraftPhone(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') confirmEdit('phone'); if (e.key === 'Escape') cancelEdit('phone'); }}
+                    placeholder="(11) 99999-9999"
+                    className="flex-1 text-slate-900 font-medium bg-slate-50 border border-blue-400 rounded-lg px-3 py-1.5 outline-none text-base focus:ring-2 focus:ring-blue-200 transition"
+                  />
+                  <button onClick={() => confirmEdit('phone')} className="w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg transition flex-shrink-0" title="Confirmar">
+                    <Check size={16} />
+                  </button>
+                  <button onClick={() => cancelEdit('phone')} className="w-8 h-8 flex items-center justify-center bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition flex-shrink-0" title="Cancelar">
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-900 font-medium text-base flex-1 truncate">
+                    {phone || <span className="text-slate-400">Não informado</span>}
+                  </span>
+                  <button
+                    onClick={() => startEdit('phone')}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition border border-blue-200"
+                  >
+                    <Pencil size={13} /> Editar
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Email (somente leitura) */}
