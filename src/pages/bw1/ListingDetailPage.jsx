@@ -160,6 +160,7 @@ export default function ListingDetailPage() {
   const { isAuthenticated, user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [shareCopied, setShareCopied] = useState(false);
+  const [favAdded, setFavAdded] = useState(false);
   const [item, setItem] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
 
@@ -431,7 +432,12 @@ export default function ListingDetailPage() {
                 {/* Right - Ações */}
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => item && toggleFavorite(item.id)}
+                    onClick={() => {
+                      if (!item) return;
+                      toggleFavorite(item.id);
+                      setFavAdded(true);
+                      setTimeout(() => setFavAdded(false), 2500);
+                    }}
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Favoritar"
                   >
@@ -442,23 +448,37 @@ export default function ListingDetailPage() {
                       const url = window.location.href;
                       const title = item?.title || 'Anúncio BW1';
                       const text = `${title} — ${formatPrice(item?.price)}`;
+                      let copied = false;
                       if (navigator.share) {
-                        try { await navigator.share({ title, text, url }); } catch {}
-                      } else {
+                        try { await navigator.share({ title, text, url }); return; } catch {}
+                      }
+                      // Fallback 1: Clipboard API
+                      try {
                         await navigator.clipboard.writeText(url);
+                        copied = true;
+                      } catch {
+                        // Fallback 2: execCommand
+                        try {
+                          const ta = document.createElement('textarea');
+                          ta.value = url;
+                          ta.style.position = 'fixed';
+                          ta.style.opacity = '0';
+                          document.body.appendChild(ta);
+                          ta.focus();
+                          ta.select();
+                          copied = document.execCommand('copy');
+                          document.body.removeChild(ta);
+                        } catch {}
+                      }
+                      if (copied) {
                         setShareCopied(true);
-                        setTimeout(() => setShareCopied(false), 2000);
+                        setTimeout(() => setShareCopied(false), 2500);
                       }
                     }}
-                    className="relative p-2 rounded-xl hover:bg-slate-800 transition text-white"
+                    className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Compartilhar"
                   >
                     <Share2 size={20} />
-                    {shareCopied && (
-                      <span className="absolute -bottom-8 right-0 text-[11px] bg-white text-slate-800 font-semibold px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
-                        Link copiado!
-                      </span>
-                    )}
                   </button>
                 </div>
               </div>
@@ -1175,6 +1195,13 @@ export default function ListingDetailPage() {
         <Footer brand={BRAND} footer={FOOTER} />
 
         <BottomNav />
+
+        {/* Toast fixo — compartilhar / favorito */}
+        {(shareCopied || favAdded) && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[99999] px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-xl flex items-center gap-2 animate-fade-in">
+            {shareCopied ? '🔗 Link copiado!' : (isFavorite(item?.id) ? '❤️ Adicionado aos favoritos' : '🤍 Removido dos favoritos')}
+          </div>
+        )}
       </AppShell>
     </div>
   );
