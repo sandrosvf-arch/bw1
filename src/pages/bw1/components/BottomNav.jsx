@@ -11,7 +11,7 @@ function Item({ to, label, Icon }) {
       className={({ isActive }) =>
         [
           "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-          isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
+          isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
         ].join(" ")
       }
       title={label}
@@ -33,7 +33,7 @@ export default function BottomNav() {
 
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 z-50 bg-white border-t border-slate-200 w-full"
+      className="fixed left-0 right-0 bottom-0 z-50 bg-slate-900 border-t border-white/10 w-full"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="grid grid-cols-5 items-stretch h-14">
@@ -46,7 +46,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             [
               "relative flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-              isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
+              isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
             ].join(" ")
           }
           title="Chat"
@@ -68,7 +68,7 @@ export default function BottomNav() {
         {/* Anunciar — botão central destacado */}
         <NavLink
           to="/criar-anuncio"
-          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors text-slate-400 hover:text-slate-600"
+          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors text-slate-400 hover:text-slate-300"
           title="Anunciar"
           aria-label="Anunciar"
         >
@@ -84,7 +84,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             [
               "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-              isActive ? "text-blue-600" : "text-slate-400 hover:text-slate-600",
+              isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
             ].join(" ")
           }
           title="Conta"
@@ -96,7 +96,7 @@ export default function BottomNav() {
                 <img
                   src={user.avatar}
                   alt={user.name}
-                  className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-blue-500' : 'border-slate-300'}`}
+                  className={`w-6 h-6 rounded-full object-cover border-2 ${isActive ? 'border-white' : 'border-slate-500'}`}
                 />
               ) : isAuthenticated ? (
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
