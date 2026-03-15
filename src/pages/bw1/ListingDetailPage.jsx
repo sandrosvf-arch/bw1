@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -438,10 +439,13 @@ export default function ListingDetailPage() {
                       setFavAdded(true);
                       setTimeout(() => setFavAdded(false), 2500);
                     }}
-                    className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
+                    className="p-2 rounded-xl hover:bg-slate-800 transition-all text-white active:scale-125"
                     title="Favoritar"
                   >
-                    <Heart size={20} className={item && isFavorite(item.id) ? 'fill-red-500 text-red-500' : ''} />
+                    <Heart
+                      size={20}
+                      className={`transition-all duration-200 ${item && isFavorite(item.id) ? 'fill-red-500 text-red-500 scale-110' : ''}`}
+                    />
                   </button>
                   <button
                     onClick={async () => {
@@ -1195,14 +1199,34 @@ export default function ListingDetailPage() {
         <Footer brand={BRAND} footer={FOOTER} />
 
         <BottomNav />
-
-        {/* Toast fixo — compartilhar / favorito */}
-        {(shareCopied || favAdded) && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[99999] px-5 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-xl flex items-center gap-2 animate-fade-in">
-            {shareCopied ? '🔗 Link copiado!' : (isFavorite(item?.id) ? '❤️ Adicionado aos favoritos' : '🤍 Removido dos favoritos')}
-          </div>
-        )}
       </AppShell>
+
+      {/* Toast portal — renderizado direto no body */}
+      {(shareCopied || favAdded) && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed',
+          bottom: '96px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 999999,
+          background: '#0f172a',
+          color: '#fff',
+          padding: '10px 20px',
+          borderRadius: '16px',
+          fontSize: '14px',
+          fontWeight: 600,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          animation: 'fade-in 0.2s ease-out both',
+        }}>
+          {shareCopied
+            ? '🔗 Link copiado!'
+            : (isFavorite(item?.id) ? '❤️ Adicionado aos favoritos' : '🤍 Removido dos favoritos')
+          }
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
