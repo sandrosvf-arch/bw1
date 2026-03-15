@@ -11,7 +11,7 @@ function Item({ to, label, Icon }) {
       className={({ isActive }) =>
         [
           "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-          isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
+          "text-white",
         ].join(" ")
       }
       title={label}
@@ -19,8 +19,8 @@ function Item({ to, label, Icon }) {
     >
       {({ isActive }) => (
         <>
-          <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
-          <span className="text-[10px] font-semibold leading-none mt-0.5">{label}</span>
+          <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+          <span className="text-[11px] font-semibold leading-none mt-0.5">{label}</span>
         </>
       )}
     </NavLink>
@@ -46,7 +46,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             [
               "relative flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-              isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
+              "text-white",
             ].join(" ")
           }
           title="Chat"
@@ -54,8 +54,8 @@ export default function BottomNav() {
         >
           {({ isActive }) => (
             <>
-              <MessageCircle size={22} strokeWidth={isActive ? 2.5 : 1.8} />
-              <span className="text-[10px] font-semibold leading-none mt-0.5">Chat</span>
+              <MessageCircle size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="text-[11px] font-semibold leading-none mt-0.5">Chat</span>
               {unreadChats > 0 && (
                 <span className="absolute top-1.5 left-1/2 translate-x-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">
                   {unreadChats > 99 ? "99+" : unreadChats}
@@ -68,14 +68,14 @@ export default function BottomNav() {
         {/* Anunciar — botão central destacado */}
         <NavLink
           to="/criar-anuncio"
-          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors text-slate-400 hover:text-slate-300"
+          className="flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors text-white"
           title="Anunciar"
           aria-label="Anunciar"
         >
-          <div className="w-9 h-9 -mt-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+          <div className="w-9 h-9 -mt-5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
             <Plus size={20} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-[10px] font-semibold leading-none text-slate-400 -mt-0.5">Anunciar</span>
+          <span className="text-[11px] font-semibold leading-none text-white mt-0.5">Anunciar</span>
         </NavLink>
 
         {/* Conta */}
@@ -84,7 +84,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             [
               "flex flex-col items-center justify-center gap-0.5 py-2 flex-1 transition-colors",
-              isActive ? "text-white" : "text-slate-400 hover:text-slate-300",
+              "text-white",
             ].join(" ")
           }
           title="Conta"
@@ -103,9 +103,9 @@ export default function BottomNav() {
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               ) : (
-                <User size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                <User size={22} strokeWidth={isActive ? 2.5 : 2} />
               )}
-              <span className="text-[10px] font-semibold leading-none mt-0.5">Conta</span>
+              <span className="text-[11px] font-semibold leading-none mt-0.5">Conta</span>
             </>
           )}
         </NavLink>
