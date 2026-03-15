@@ -210,7 +210,7 @@ router.get('/', async (req, res) => {
     }
 
     // Sempre inclui bumped_at — colunas existem após a migração SQL
-    const selectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at';
+    const selectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at,slug';
 
     let query = (supabase as any)
       .from('listings')
@@ -491,7 +491,7 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
 router.get('/user/my-listings', authMiddleware, async (req: AuthRequest, res) => {
   try {
     // Sempre inclui bumped_at e bumps_remaining — colunas existem após a migração SQL
-    const mySelectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at';
+    const mySelectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumps_remaining,bumped_at,slug';
 
     const { data, error } = await (supabase as any)
       .from('listings')
