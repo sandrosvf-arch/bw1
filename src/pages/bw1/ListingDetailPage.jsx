@@ -813,7 +813,7 @@ export default function ListingDetailPage() {
               
               {/* Coluna Direita - Informações principais (1/3 no desktop) */}
               <div className="lg:col-span-1">
-                <div className="lg:sticky lg:top-24 space-y-6">
+                <div className="px-4 lg:px-0 lg:sticky lg:top-24 space-y-6">
                   {/* Preço e título */}
                   <div className="bg-white rounded-3xl p-4 lg:p-6 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
@@ -1001,7 +1001,7 @@ export default function ListingDetailPage() {
             </div>
 
             {/* Mobile - Seções que aparecem abaixo no mobile */}
-            <div className="lg:hidden px-4 space-y-4 mt-4">
+            <div className="lg:hidden space-y-4 px-4 mt-4">
               {/* Características - Mobile */}
               <div className="bg-white rounded-3xl p-4 shadow-sm">
                 <h2 className="text-lg font-bold text-slate-900 mb-4">
