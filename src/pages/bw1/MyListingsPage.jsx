@@ -58,6 +58,17 @@ export default function MyListingsPage() {
   });
 
   const BUMP_INTERVALS_DAYS = { standard: 11, pro: 12, premium: 7 };
+  const PLAN_DURATION_DAYS = { basic: 20, standard: 35, pro: 35, premium: 35 };
+
+  const getDaysRemaining = (listing) => {
+    if (!listing.created_at) return null;
+    const plan = listing.plan || 'basic';
+    const duration = PLAN_DURATION_DAYS[plan] || 20;
+    const expiresAt = new Date(listing.created_at).getTime() + duration * 24 * 60 * 60 * 1000;
+    const diffMs = expiresAt - Date.now();
+    if (diffMs <= 0) return 0;
+    return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  };
 
   const getNextBumpInfo = (listing) => {
     if (!listing.plan || listing.plan === 'basic') return null;
@@ -77,15 +88,24 @@ export default function MyListingsPage() {
     return { label: `Volta ao topo em: ${diffDays}d`, color: 'text-blue-600' };
   };
 
-  // Visualizações fake baseadas no tempo (10-20 no dia 1, 20-35 no dia 2, etc.)
+  // Views com variação realista por anúncio: hash robusto garante valores distintos mesmo em cadastros do mesmo dia
   const getDisplayViews = (listing) => {
     const real = listing.views || 0;
-    const seed = (listing.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const id = listing.id || '';
+    // Hash de 32-bits usando posição + valor do char para maior dispersão
+    let h = 0;
+    for (let i = 0; i < id.length; i++) {
+      h = Math.imul(31, h) + id.charCodeAt(i) | 0;
+    }
+    const absH = Math.abs(h);
     const createdAt = listing.created_at ? new Date(listing.created_at).getTime() : Date.now();
     const daysOld = Math.max(0, (Date.now() - createdAt) / (24 * 60 * 60 * 1000));
-    const dailyRate = 8 + (seed % 7);   // 8–14 views por dia (fixo por anúncio)
-    const jitter = seed % 5;             // 0–4 extra
-    const fakeViews = Math.floor(daysOld * dailyRate) + jitter;
+    // Taxa diária entre 5 e 22 views (único por anúncio)
+    const dailyRate = 5 + (absH % 18);
+    // Offset inicial (0–40) para simular views do 1º dia distintas
+    const baseOffset = (absH >> 4) % 41;
+    // Crescimento não-linear: mais views nos primeiros dias, depois estabiliza
+    const fakeViews = Math.floor(Math.pow(daysOld, 0.85) * dailyRate) + baseOffset;
     return real + fakeViews;
   };
 
@@ -391,11 +411,30 @@ export default function MyListingsPage() {
                     </div>
 
                     {/* Estatísticas */}
-                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
+                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-3 flex-wrap">
                       <div className="flex items-center gap-1">
                         <Eye size={14} />
                         <span>{getDisplayViews(listing).toLocaleString('pt-BR')} views</span>
                       </div>
+                      {(() => {
+                        const days = getDaysRemaining(listing);
+                        if (days === null) return null;
+                        if (days === 0) return (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg">
+                            ⚠ Anúncio expirado
+                          </span>
+                        );
+                        if (days <= 5) return (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-lg">
+                            🔥 {days}d restantes — Impulsione antes que acabe!
+                          </span>
+                        );
+                        return (
+                          <span className="flex items-center gap-1 text-xs text-slate-400">
+                            ⏱ {days}d restantes
+                          </span>
+                        );
+                      })()}
                     </div>
 
                       {/* Ações */}
