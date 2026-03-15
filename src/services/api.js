@@ -439,6 +439,10 @@ class ApiService {
     return this.request(`/api/profile/${userId}`);
   }
 
+  async getAvatarUploadUrl() {
+    return this.request('/api/users/avatar-upload-url');
+  }
+
   async updateProfile(data) {
     return this.request('/api/users/profile', {
       method: 'PUT',

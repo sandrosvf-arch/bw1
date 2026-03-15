@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, supabaseAdmin } from '../config/supabase';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
@@ -64,6 +65,31 @@ router.delete('/favorites/:listingId', authMiddleware, async (req: AuthRequest, 
   } catch (error) {
     console.error('Remove favorite error:', error);
     res.status(500).json({ error: 'Failed to remove favorite' });
+  }
+});
+
+// Gerar URL assinada para upload de avatar
+router.get('/avatar-upload-url', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const fileName = `${req.userId}/${uuidv4()}.jpg`;
+    const AVATAR_BUCKET = 'avatars';
+
+    if (!supabaseAdmin) {
+      return res.status(500).json({ error: 'Storage admin n\u00e3o configurado' });
+    }
+
+    const { data: signData, error: signErr } = await supabaseAdmin.storage
+      .from(AVATAR_BUCKET)
+      .createSignedUploadUrl(fileName);
+
+    if (signErr || !signData) throw signErr || new Error('Erro ao gerar URL de upload');
+
+    const { data: { publicUrl } } = supabaseAdmin.storage.from(AVATAR_BUCKET).getPublicUrl(fileName);
+
+    return res.json({ signedUrl: signData.signedUrl, publicUrl, path: fileName });
+  } catch (error: any) {
+    console.error('Avatar upload URL error:', error);
+    return res.status(500).json({ error: 'Erro ao gerar URL de upload' });
   }
 });
 

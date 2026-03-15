@@ -158,7 +158,7 @@ export default function AccountPage() {
               <MenuItem
                 icon={User}
                 label="Perfil"
-                onClick={() => navigate("/perfil")}
+                onClick={() => navigate("/perfil/editar")}
               />
               <MenuItem
                 icon={Heart}

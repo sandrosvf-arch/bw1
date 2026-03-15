@@ -28,6 +28,7 @@ const UserProfilePage = lazy(() => import("./pages/bw1/UserProfilePage.jsx"));
 const PaymentPage = lazy(() => import('./pages/bw1/PaymentPage.jsx'));
 const VideoUploadPage = lazy(() => import('./pages/bw1/VideoUploadPage.jsx'));
 const EditListingPage = lazy(() => import('./pages/bw1/EditListingPage.jsx'));
+const EditProfilePage = lazy(() => import('./pages/bw1/EditProfilePage.jsx'));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage.jsx"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage.jsx"));
 const OAuthCallbackPage = lazy(() => import("./pages/auth/OAuthCallbackPage.jsx"));
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/meus-anuncios" element={<ProtectedRoute><MyListingsPage /></ProtectedRoute>} />
           <Route path="/criar-anuncio" element={<ProtectedRoute><CreateListingPage /></ProtectedRoute>} />
           <Route path="/editar-anuncio/:id" element={<ProtectedRoute><EditListingPage /></ProtectedRoute>} />
+          <Route path="/perfil/editar" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
           <Route path="/menu" element={<MenuPage />} />
           <Route path="/conta" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
           <Route path="/favoritos" element={<ProtectedRoute><FavoritesPage /></ProtectedRoute>} />
