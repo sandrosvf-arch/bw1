@@ -315,20 +315,35 @@ export default function MyListingsPage() {
                   key={listing.id}
                   className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col sm:flex-row gap-4"
                 >
-                  {/* Imagem */}
-                  <div
-                    className="w-full sm:w-48 h-48 sm:h-32 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer bg-slate-200"
-                    onClick={() => navigate(`/anuncio/${listing.id}`)}
-                  >
-                    {listing.images && listing.images.length > 0 ? (
-                      <img
-                        src={listing.images[0]}
-                        alt={listing.title}
-                        className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-4xl">
-                        📷
+                  {/* Imagem + badge de plano */}
+                  <div className="w-full sm:w-48 flex-shrink-0 flex flex-col">
+                    <div
+                      className={`w-full h-48 sm:h-32 overflow-hidden cursor-pointer bg-slate-200 ${
+                        listing.plan && listing.plan !== 'basic' ? 'rounded-t-xl' : 'rounded-xl'
+                      }`}
+                      onClick={() => navigate(`/anuncio/${listing.id}`)}
+                    >
+                      {listing.images && listing.images.length > 0 ? (
+                        <img
+                          src={listing.images[0]}
+                          alt={listing.title}
+                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-4xl">
+                          📷
+                        </div>
+                      )}
+                    </div>
+                    {listing.plan && listing.plan !== 'basic' && (
+                      <div className={`w-full flex items-center justify-center gap-1 py-1 rounded-b-xl text-[10px] font-bold text-white ${
+                        listing.plan === 'standard' ? 'bg-blue-600'
+                        : listing.plan === 'pro' ? 'bg-violet-600'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                      }`}>
+                        {listing.plan === 'standard' && '· DESTAQUE ·'}
+                        {listing.plan === 'pro' && '· DESTAQUE PRO ·'}
+                        {listing.plan === 'premium' && '★ SUPER DESTAQUE PREMIUM'}
                       </div>
                     )}
                   </div>
@@ -347,14 +362,19 @@ export default function MyListingsPage() {
                         </div>
                         {getStatusBadge(listing.status)}
                       </div>
-                      {listing.plan && listing.plan !== 'basic' && (
-                        <div className="flex justify-center my-1">
-                          {getPlanBadge(listing.plan)}
-                        </div>
-                      )}
-                      <p className="text-2xl font-extrabold text-slate-900 mb-3">
-                        {formatPrice(listing.price)}
-                      </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <p className="text-2xl font-extrabold text-slate-900">
+                          {formatPrice(listing.price)}
+                        </p>
+                        {(!listing.plan || listing.plan === 'basic') && (
+                          <button
+                            onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition"
+                          >
+                            <Zap size={12} /> Impulsionar
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Estatísticas */}
@@ -402,25 +422,17 @@ export default function MyListingsPage() {
                           </button>
                         </div>
 
-                        {/* Linha 2: bump info ou impulsionar */}
-                        <div className="flex gap-2 items-center">
-                          {listing.plan && listing.plan !== 'basic' && (() => {
-                            const info = getNextBumpInfo(listing);
-                            return info ? (
+                        {/* Linha 2: bump info */}
+                        {listing.plan && listing.plan !== 'basic' && (() => {
+                          const info = getNextBumpInfo(listing);
+                          return info ? (
+                            <div className="flex gap-2 items-center">
                               <span className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
                                 <TrendingUp size={12} />{info.label}
                               </span>
-                            ) : null;
-                          })()}
-                          {(!listing.plan || listing.plan === 'basic') && (
-                            <button
-                              onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition"
-                            >
-                              <Zap size={12} /> Impulsionar
-                            </button>
-                          )}
-                        </div>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                   </div>
                 </div>
