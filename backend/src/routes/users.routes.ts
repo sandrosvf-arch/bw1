@@ -8,11 +8,11 @@ const router = Router();
 // Favoritos (deve vir ANTES de /:id para não ser capturado como ID)
 router.get('/favorites', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('favorites')
       .select(`
         *,
-        listings:listing_id (*)
+        listings:listing_id (id, title, price, images, location, category, type, dealType, description, details, contact, status, tag, slug, plan, featured, bumped_at, created_at, user_id)
       `)
       .eq('user_id', req.userId)
       .order('created_at', { ascending: false });
