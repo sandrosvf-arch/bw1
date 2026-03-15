@@ -572,15 +572,15 @@ export default function ListingDetailPage() {
                         setShowVideoModal(m => !m);
                         if (showVideoModal) { videoRef.current?.pause(); setVideoPlaying(false); }
                       }}
-                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-base shadow-lg hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-md hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
                     >
-                      <span className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                        {showVideoModal ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                      <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                        {showVideoModal ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
                       </span>
                       {showVideoModal ? 'Fechar vídeo' : 'Ver vídeo do anúncio'}
                     </button>
                     {showVideoModal && (
-                      <div className="rounded-2xl overflow-hidden bg-black relative select-none aspect-[9/16] w-full max-w-sm mx-auto">
+                      <div className="overflow-hidden bg-black relative select-none aspect-[9/16] w-full max-w-sm mx-auto">
                         <div
                           className="w-full h-full"
                           onClick={() => {
