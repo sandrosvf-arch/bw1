@@ -16,42 +16,64 @@ const BRAND = BrandMod.default ?? BrandMod.BRAND;
 const FOOTER = FooterMod.default ?? FooterMod.FOOTER;
 
 export default function FavoritesPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [logoOk, setLogoOk] = useState(true);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     loadFavorites();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading]);
 
   const loadFavorites = async () => {
     try {
       setLoading(true);
 
+      // IDs salvos localmente (favoritados mesmo sem login)
+      const saved = localStorage.getItem("bw1-favorites");
+      const localIds = saved ? JSON.parse(saved) : [];
+
       if (isAuthenticated) {
+        // 1. Busca favoritos do banco
         const response = await api.getFavorites();
         const apiListings = (response.favorites || [])
           .map((fav) => fav.listings)
           .filter(Boolean);
+        const apiIds = apiListings.map((item) => item.id);
 
-        setFavorites(apiListings);
+        // 2. Sincroniza IDs locais que ainda não estão no banco
+        const idsToSync = localIds.filter((id) => !apiIds.includes(id));
+        if (idsToSync.length > 0) {
+          await Promise.allSettled(idsToSync.map((id) => api.addFavorite(id)));
+        }
 
-        const favoriteIds = apiListings.map((item) => item.id);
-        localStorage.setItem("bw1-favorites", JSON.stringify(favoriteIds));
+        // 3. Busca os listings dos IDs locais que não vieram da API
+        const extraListings = idsToSync.length > 0
+          ? (await Promise.allSettled(
+              idsToSync.map((id) => api.getListing(id, { forceRefresh: true }))
+            ))
+              .filter((r) => r.status === "fulfilled" && r.value?.listing)
+              .map((r) => r.value.listing)
+          : [];
+
+        const allListings = [...apiListings, ...extraListings];
+
+        // 4. Atualiza localStorage com todos os IDs
+        const allIds = allListings.map((item) => item.id);
+        localStorage.setItem("bw1-favorites", JSON.stringify(allIds));
+        setFavorites(allListings);
         return;
       }
 
-      const saved = localStorage.getItem("bw1-favorites");
-      const favoriteIds = saved ? JSON.parse(saved) : [];
-
-      if (!favoriteIds.length) {
+      // Não autenticado: busca cada listing por ID
+      if (!localIds.length) {
         setFavorites([]);
         return;
       }
 
       const results = await Promise.allSettled(
-        favoriteIds.map((id) => api.getListing(id, { forceRefresh: true }))
+        localIds.map((id) => api.getListing(id, { forceRefresh: true }))
       );
       const listings = results
         .filter((r) => r.status === "fulfilled" && r.value?.listing)
