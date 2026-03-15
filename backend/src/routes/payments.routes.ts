@@ -6,9 +6,9 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 const router = Router();
 
 const PLANS: Record<string, { amount: number; label: string; days: number | null }> = {
-  standard: { amount: 1, label: 'Destaque Standard - BW1', days: 35 },
-  pro:      { amount: 1, label: 'Destaque PRO - BW1',      days: 60 },
-  premium:  { amount: 1, label: 'Super Destaque Premium - BW1', days: null }, // sem expiração
+  standard: { amount: 19, label: 'Destaque Standard - BW1', days: 35 },
+  pro:      { amount: 39, label: 'Destaque PRO - BW1',      days: 60 },
+  premium:  { amount: 79, label: 'Super Destaque Premium - BW1', days: null }, // sem expiração
 };
 
 function getMPClient() {
