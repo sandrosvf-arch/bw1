@@ -163,12 +163,32 @@ export default function ListingDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [favAdded, setFavAdded] = useState(false);
   const [localFav, setLocalFav] = useState(false);
+  const [navHidden, setNavHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
   const [item, setItem] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
 
   useEffect(() => {
     if (item?.id) setLocalFav(isFavorite(item.id));
   }, [item?.id]);
+
+  useEffect(() => {
+    lastScrollYRef.current = window.scrollY || 0;
+    const onScroll = () => {
+      const y = window.scrollY || 0;
+      const delta = y - lastScrollYRef.current;
+      const HIDE_AFTER_Y = 80;
+      const DELTA = 6;
+      if (delta < -DELTA || y <= HIDE_AFTER_Y) {
+        setNavHidden(false);
+      } else if (y > HIDE_AFTER_Y && delta > DELTA) {
+        setNavHidden(true);
+      }
+      lastScrollYRef.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (location.state?.item) {
@@ -398,7 +418,7 @@ export default function ListingDetailPage() {
     <div className="min-h-screen bg-slate-50">
       <AppShell
         header={
-          <nav className="fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10">
+          <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-slate-900 text-white border-b border-white/10 transition-transform duration-300 ${navHidden ? '-translate-y-full' : 'translate-y-0'}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-20">
                 {/* Left - Botão Voltar + Logo */}
