@@ -303,8 +303,8 @@ class ApiService {
     ]);
   }
 
-  async getListing(id) {
-    return this.request(`/api/listings/${id}`);
+  async getListing(id, options = {}) {
+    return this.request(`/api/listings/${id}`, options);
   }
 
   async createListing(listingData) {
@@ -448,7 +448,7 @@ class ApiService {
 
   // Favorites
   async getFavorites() {
-    return this.request('/api/users/favorites');
+    return this.request('/api/users/favorites', { forceRefresh: true });
   }
 
   async addFavorite(listingId) {

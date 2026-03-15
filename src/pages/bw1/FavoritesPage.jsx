@@ -51,7 +51,7 @@ export default function FavoritesPage() {
       }
 
       const results = await Promise.allSettled(
-        favoriteIds.map((id) => api.getListing(id))
+        favoriteIds.map((id) => api.getListing(id, { forceRefresh: true }))
       );
       const listings = results
         .filter((r) => r.status === "fulfilled" && r.value?.listing)
