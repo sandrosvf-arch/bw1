@@ -64,10 +64,12 @@ export default function MyListingsPage() {
     if (!listing.created_at) return null;
     const plan = listing.plan || 'basic';
     const duration = PLAN_DURATION_DAYS[plan] || 20;
-    const expiresAt = new Date(listing.created_at).getTime() + duration * 24 * 60 * 60 * 1000;
-    const diffMs = expiresAt - Date.now();
-    if (diffMs <= 0) return 0;
-    return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    const createdAt = new Date(listing.created_at).getTime();
+    const elapsed = Date.now() - createdAt;
+    // Ciclo: quando zera, recomeça
+    const elapsedInCycle = elapsed % (duration * 24 * 60 * 60 * 1000);
+    const remaining = duration * 24 * 60 * 60 * 1000 - elapsedInCycle;
+    return Math.ceil(remaining / (24 * 60 * 60 * 1000));
   };
 
   const getNextBumpInfo = (listing) => {
@@ -419,11 +421,6 @@ export default function MyListingsPage() {
                       {(() => {
                         const days = getDaysRemaining(listing);
                         if (days === null) return null;
-                        if (days === 0) return (
-                          <span className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg">
-                            ⚠ Anúncio expirado
-                          </span>
-                        );
                         if (days <= 5) return (
                           <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-lg">
                             🔥 {days}d restantes — Impulsione antes que acabe!
