@@ -50,13 +50,13 @@ export default function FavoritesPage() {
         return;
       }
 
-      const cached = api.getListingsFromCache();
-      if (cached?.listings?.length) {
-        setFavorites(cached.listings.filter((item) => favoriteIds.includes(item.id)));
-      } else {
-        const response = await api.getListings({ limit: 100 });
-        setFavorites((response.listings || []).filter((item) => favoriteIds.includes(item.id)));
-      }
+      const results = await Promise.allSettled(
+        favoriteIds.map((id) => api.getListing(id))
+      );
+      const listings = results
+        .filter((r) => r.status === "fulfilled" && r.value?.listing)
+        .map((r) => r.value.listing);
+      setFavorites(listings);
     } catch (error) {
       console.error("Erro ao carregar favoritos:", error);
       setFavorites([]);
