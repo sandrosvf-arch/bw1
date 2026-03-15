@@ -1001,7 +1001,7 @@ export default function ListingDetailPage() {
             </div>
 
             {/* Mobile - Seções que aparecem abaixo no mobile */}
-            <div className="lg:hidden space-y-4 px-4 mt-4">
+            <div className="lg:hidden space-y-4 px-4 mt-2">
               {/* Características - Mobile */}
               <div className="bg-white rounded-3xl p-4 shadow-sm">
                 <h2 className="text-lg font-bold text-slate-900 mb-4">
