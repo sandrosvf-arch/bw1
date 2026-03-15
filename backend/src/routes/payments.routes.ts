@@ -6,6 +6,7 @@ import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 const router = Router();
 
 const PLANS: Record<string, { amount: number; label: string; days: number | null }> = {
+  // Standard R$19 | PRO R$39 | Premium R$79
   standard: { amount: 19, label: 'Destaque Standard - BW1', days: 35 },
   pro:      { amount: 39, label: 'Destaque PRO - BW1',      days: 60 },
   premium:  { amount: 79, label: 'Super Destaque Premium - BW1', days: null }, // sem expiração
