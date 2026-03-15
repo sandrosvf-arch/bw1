@@ -61,7 +61,7 @@ export default function CreateListingPage() {
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [imagesError, setImagesError] = useState(false);
   const [step2Errors, setStep2Errors] = useState({});
-  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [selectedPlan, setSelectedPlan] = useState(isUpgradeMode ? 'standard' : 'basic');
   const [customColor, setCustomColor] = useState('');
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -1242,9 +1242,10 @@ export default function CreateListingPage() {
                   : 'Escolha um plano e pague via PIX. Pagamento confirmado em segundos.'}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className={`grid grid-cols-1 gap-4 mb-6 ${isUpgradeMode ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
 
-                {/* Básico - Grátis */}
+                {/* Básico - Grátis (oculto no modo impulsionar) */}
+                {!isUpgradeMode && (
                 <div
                   onClick={() => setSelectedPlan('basic')}
                   className={`border-2 rounded-2xl p-5 cursor-pointer transition-all ${
@@ -1263,6 +1264,7 @@ export default function CreateListingPage() {
                     <li className="flex gap-2"><span className="text-green-500">✓</span> 1× no topo ao publicar</li>
                   </ul>
                 </div>
+                )}
 
                 {/* Destaque Standard */}
                 <div
