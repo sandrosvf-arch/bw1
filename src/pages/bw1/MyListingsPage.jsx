@@ -371,6 +371,22 @@ export default function MyListingsPage() {
                         <p className="text-2xl font-extrabold text-slate-900">
                           {formatPrice(listing.price)}
                         </p>
+                        {(!listing.plan || listing.plan === 'basic') ? (
+                          <button
+                            onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
+                            className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/50 hover:shadow-amber-400/80 transition"
+                          >
+                            <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+                            <Zap size={14} /> Impulsionar
+                          </button>
+                        ) : (() => {
+                          const info = getNextBumpInfo(listing);
+                          return info ? (
+                            <span className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
+                              <TrendingUp size={11} />{info.label}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
 
@@ -419,25 +435,7 @@ export default function MyListingsPage() {
                           </button>
                         </div>
 
-                        {/* Linha 2: impulsionar ou volta ao topo */}
-                        {(!listing.plan || listing.plan === 'basic') ? (
-                          <button
-                            onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
-                            className="relative overflow-hidden flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/50 hover:shadow-amber-400/80 transition"
-                          >
-                            <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
-                            <Zap size={14} /> Impulsionar
-                          </button>
-                        ) : (() => {
-                          const info = getNextBumpInfo(listing);
-                          return info ? (
-                            <div className="flex gap-2 items-center">
-                              <span className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
-                                <TrendingUp size={12} />{info.label}
-                              </span>
-                            </div>
-                          ) : null;
-                        })()}
+
                       </div>
                   </div>
                 </div>
