@@ -471,14 +471,6 @@ export default function ListingDetailPage() {
                       }}
                     />
 
-                    {/* Tag Mobile */}
-                    <div className="absolute top-4 left-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
-                      >
-                        {tag}
-                      </span>
-                    </div>
 
                     {/* Navegação Mobile */}
                     {images.length > 1 && (
@@ -542,15 +534,7 @@ export default function ListingDetailPage() {
                             e.currentTarget.src = PLACEHOLDER_IMG;
                           }}
                         />
-                        {i === 0 && (
-                          <div className="absolute top-4 left-4">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
-                            >
-                              {tag}
-                            </span>
-                          </div>
-                        )}
+
                         {i === 4 && images.length > 5 && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                             <span className="text-white text-2xl font-bold">
@@ -562,6 +546,13 @@ export default function ListingDetailPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* TAG VENDA/ALUGUEL — abaixo das fotos */}
+                {tag && tag !== '—' && (
+                  <div className={`w-full flex items-center justify-center gap-2 py-2 ${isVenda ? 'bg-green-600' : 'bg-blue-600'}`}>
+                    <span className="text-white text-[11px] font-bold uppercase tracking-[0.15em]">{tag}</span>
+                  </div>
+                )}
 
                 {/* BADGE DE PLANO — abaixo das fotos */}
                 {item.plan && item.plan !== 'basic' && (
