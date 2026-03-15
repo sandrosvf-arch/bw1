@@ -79,7 +79,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
-          <Route path="/anuncio/:id" element={<ListingDetailPage />} />
+          <Route path="/anuncio/:slug" element={<ListingDetailPage />} />
           <Route path="/veiculos" element={<VehiclesPage />} />
           <Route path="/imoveis" element={<PropertiesPage />} />
           <Route path="/buscar" element={<SearchPage />} />

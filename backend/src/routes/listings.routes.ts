@@ -55,6 +55,43 @@ let bumpColumnsReady = false;
 
 const router = Router();
 
+// ─── Slug helpers ────────────────────────────────────────────────────────────
+
+/** Converte um título em slug URL-safe sem acentos */
+function titleToSlug(title: string): string {
+  return String(title || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')      // remove chars especiais
+    .trim()
+    .replace(/\s+/g, '-')              // espaços → hífens
+    .replace(/-+/g, '-')               // colapsa hífens duplos
+    .substring(0, 80)                  // limite de comprimento
+    .replace(/-$/, '');                // remove hífen final
+}
+
+/** Gera um slug garantidamente único para a tabela listings */
+async function generateUniqueSlug(title: string, excludeId?: string): Promise<string> {
+  const base = titleToSlug(title);
+  if (!base) return excludeId ?? String(Date.now());
+
+  let slug = base;
+  let attempt = 2;
+
+  while (true) {
+    let query = supabaseAdmin.from('listings').select('id').eq('slug', slug);
+    if (excludeId) query = query.neq('id', excludeId);
+    const { data } = await query.limit(1);
+    if (!data || data.length === 0) break;
+    slug = `${base}-${attempt++}`;
+  }
+
+  return slug;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function parseJsonField(value: any) {
   if (typeof value !== 'string') return value;
   try {
@@ -259,20 +296,25 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Tentar buscar do cache
+    // Tentar buscar do cache (pela chave recebida)
     const cachedListing = CacheService.getListing(id);
     if (cachedListing) {
       return res.json({ listing: cachedListing });
     }
 
-    const { data, error } = await supabase
+    // Detecta se é UUID (ex: "e5b2151a-eeb8-41cf-945e-14c299454b62") ou slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    let query = supabase
       .from('listings')
       .select(`
         *,
         users:user_id (id, name, phone, email, avatar)
-      `)
-      .eq('id', id)
-      .single();
+      `);
+
+    query = isUUID ? query.eq('id', id) : query.eq('slug', id);
+
+    const { data, error } = await query.single();
 
     if (error || !data) {
       return res.status(404).json({ error: 'Listing not found' });
@@ -316,6 +358,9 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Gera slug único a partir do título
+    const slug = await generateUniqueSlug(title);
+
     const { data, error } = await supabase
       .from('listings')
       .insert({
@@ -331,6 +376,7 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
         details: details || {},
         contact: contact || {},
         status: 'active',
+        slug,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -373,12 +419,15 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    // Se o título foi alterado, regenera o slug
+    const updateBody: any = { ...req.body, updated_at: new Date().toISOString() };
+    if (req.body.title) {
+      updateBody.slug = await generateUniqueSlug(req.body.title, id);
+    }
+
     const { data, error } = await supabase
       .from('listings')
-      .update({
-        ...req.body,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateBody)
       .eq('id', id)
       .select()
       .single();

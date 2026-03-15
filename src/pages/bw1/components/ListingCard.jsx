@@ -237,7 +237,7 @@ function ListingCard({ item, onViewMore }) {
 
     const receiverId = item?.user_id;
     if (!receiverId || receiverId === user?.id) {
-      navigate(`/anuncio/${item.id}`);
+      navigate(`/anuncio/${item.slug || item.id}`);
       return;
     }
 
@@ -254,7 +254,7 @@ function ListingCard({ item, onViewMore }) {
       }
     } catch (error) {
       console.error("Erro ao iniciar conversa:", error);
-      navigate(`/anuncio/${item.id}`);
+      navigate(`/anuncio/${item.slug || item.id}`);
     }
   };
 
@@ -345,7 +345,7 @@ function ListingCard({ item, onViewMore }) {
         : 'border border-slate-100 shadow-sm hover:shadow-2xl'
     }`}>
       {/* Image */}
-      <Link to={`/anuncio/${item.id}`} className="block">
+      <Link to={`/anuncio/${item.slug || item.id}`} className="block">
         <div 
           className="relative h-64 overflow-hidden cursor-pointer rounded-t-3xl"
           onTouchStart={handleTouchStart}

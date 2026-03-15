@@ -155,7 +155,7 @@ function formatPrice(price) {
 }
 
 export default function ListingDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
@@ -192,18 +192,18 @@ export default function ListingDetailPage() {
 
   useEffect(() => {
     if (location.state?.item) {
-      api.getListing(id).then((response) => {
+      api.getListing(slug).then((response) => {
         setItem(response.listing);
       }).catch(() => {}).finally(() => setLoading(false));
     } else {
       loadListing();
     }
-  }, [id]);
+  }, [slug]);
 
   const loadListing = async () => {
     try {
       setLoading(true);
-      const response = await api.getListing(id);
+      const response = await api.getListing(slug);
       setItem(response.listing);
     } catch (error) {
       setItem(null);
@@ -212,10 +212,10 @@ export default function ListingDetailPage() {
     }
   };
 
-  // Scroll to top quando a página carrega ou o id muda
+  // Scroll to top quando a página carrega ou o slug muda
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [id]);
+  }, [slug]);
 
   // Auto-abrir WhatsApp após redirect do login
   useEffect(() => {
@@ -307,7 +307,7 @@ export default function ListingDetailPage() {
 
   useEffect(() => {
     setImgIndex(0);
-  }, [id]);
+  }, [slug]);
 
   const handleTouchStart = (e) => {
     touchStartXRef.current = e.targetTouches[0].clientX;
