@@ -162,11 +162,15 @@ export default function ListingDetailPage() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [shareCopied, setShareCopied] = useState(false);
   const [favAdded, setFavAdded] = useState(false);
+  const [localFav, setLocalFav] = useState(false);
   const [item, setItem] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
 
   useEffect(() => {
-    // Se já veio via state, faz fetch em background
+    if (item?.id) setLocalFav(isFavorite(item.id));
+  }, [item?.id]);
+
+  useEffect(() => {
     if (location.state?.item) {
       api.getListing(id).then((response) => {
         setItem(response.listing);
@@ -435,54 +439,50 @@ export default function ListingDetailPage() {
                   <button
                     onClick={() => {
                       if (!item) return;
+                      const next = !localFav;
+                      setLocalFav(next);
                       toggleFavorite(item.id);
-                      setFavAdded(true);
-                      setTimeout(() => setFavAdded(false), 2500);
                     }}
-                    className="p-2 rounded-xl hover:bg-slate-800 transition-all text-white active:scale-125"
-                    title="Favoritar"
+                    className="p-2 rounded-xl hover:bg-slate-800 transition-all text-white"
+                    title={localFav ? 'Remover favorito' : 'Favoritar'}
                   >
                     <Heart
-                      size={20}
-                      className={`transition-all duration-200 ${item && isFavorite(item.id) ? 'fill-red-500 text-red-500 scale-110' : ''}`}
+                      size={22}
+                      style={localFav ? { fill: '#ef4444', color: '#ef4444', transform: 'scale(1.15)' } : {}}
                     />
                   </button>
                   <button
                     onClick={async () => {
                       const url = window.location.href;
-                      const title = item?.title || 'Anúncio BW1';
-                      const text = `${title} — ${formatPrice(item?.price)}`;
-                      let copied = false;
                       if (navigator.share) {
-                        try { await navigator.share({ title, text, url }); return; } catch {}
-                      }
-                      // Fallback 1: Clipboard API
-                      try {
-                        await navigator.clipboard.writeText(url);
-                        copied = true;
-                      } catch {
-                        // Fallback 2: execCommand
                         try {
-                          const ta = document.createElement('textarea');
-                          ta.value = url;
-                          ta.style.position = 'fixed';
-                          ta.style.opacity = '0';
-                          document.body.appendChild(ta);
-                          ta.focus();
-                          ta.select();
-                          copied = document.execCommand('copy');
-                          document.body.removeChild(ta);
+                          await navigator.share({ title: item?.title || 'Anúncio BW1', url });
+                          setShareCopied(true);
+                          setTimeout(() => setShareCopied(false), 2500);
+                          return;
                         } catch {}
                       }
-                      if (copied) {
-                        setShareCopied(true);
-                        setTimeout(() => setShareCopied(false), 2500);
+                      // fallback: clipboard
+                      try {
+                        await navigator.clipboard.writeText(url);
+                      } catch {
+                        const ta = document.createElement('textarea');
+                        ta.value = url;
+                        Object.assign(ta.style, { position:'fixed', opacity:'0', top:'0', left:'0' });
+                        document.body.appendChild(ta);
+                        ta.focus(); ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
                       }
+                      setShareCopied(true);
+                      setTimeout(() => setShareCopied(false), 2500);
                     }}
                     className="p-2 rounded-xl hover:bg-slate-800 transition text-white"
                     title="Compartilhar"
                   >
-                    <Share2 size={20} />
+                    {shareCopied
+                      ? <CheckCircle size={22} style={{ color: '#4ade80' }} />
+                      : <Share2 size={22} />}
                   </button>
                 </div>
               </div>
