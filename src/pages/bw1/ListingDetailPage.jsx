@@ -19,6 +19,10 @@ import {
   XCircle,
   ShieldAlert,
   Flag,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
 } from "lucide-react";
 
 import api from "../../services/api";
@@ -221,6 +225,28 @@ export default function ListingDetailPage() {
   const [logoOk, setLogoOk] = useState(true);
   const [showFloatingBar, setShowFloatingBar] = useState(false);
   const contactButtonRef = useRef(null);
+
+  const videoRef = useRef(null);
+  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  // Auto-play/pause video when it enters/leaves viewport
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.play().then(() => setVideoPlaying(true)).catch(() => {});
+        } else {
+          el.pause();
+          setVideoPlaying(false);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [item?.details?.video_url]);
 
   const images = useMemo(() => {
     if (!item) return [PLACEHOLDER_IMG];
@@ -536,16 +562,56 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                {/* VIDEO (premium) */}
+                {/* VIDEO (premium) — TikTok style */}
                 {item.details?.video_url && (
-                  <div className="bg-white rounded-3xl p-6 shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-900 mb-3">Vídeo</h2>
-                    <video
-                      src={item.details.video_url}
-                      controls
-                      className="w-full rounded-xl bg-black max-h-72"
-                      playsInline
-                    />
+                  <div className="rounded-2xl overflow-hidden bg-black shadow-lg relative select-none">
+                    {/* Aspect ratio container — portrait 9:16 */}
+                    <div
+                      className="relative w-full"
+                      style={{ aspectRatio: '9/16', maxHeight: '75vh' }}
+                      onClick={() => {
+                        const el = videoRef.current;
+                        if (!el) return;
+                        if (el.paused) { el.play(); setVideoPlaying(true); }
+                        else { el.pause(); setVideoPlaying(false); }
+                      }}
+                    >
+                      <video
+                        ref={videoRef}
+                        src={item.details.video_url}
+                        loop
+                        playsInline
+                        muted={videoMuted}
+                        className="w-full h-full object-contain"
+                        onPlay={() => setVideoPlaying(true)}
+                        onPause={() => setVideoPlaying(false)}
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                      {/* Bottom info */}
+                      <div className="absolute bottom-4 left-4 right-14 pointer-events-none">
+                        <p className="text-white font-bold text-base drop-shadow truncate">{item.title}</p>
+                        <p className="text-white/80 text-sm drop-shadow">
+                          {item.price ? `R$ ${Number(item.price).toLocaleString('pt-BR')}` : ''}
+                        </p>
+                      </div>
+                      {/* Mute/Unmute button */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setVideoMuted(m => !m); }}
+                        className="absolute bottom-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm"
+                      >
+                        {videoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                      </button>
+                      {/* Play/Pause center indicator (shows briefly on tap) */}
+                      {!videoPlaying && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
+                            <Play size={28} className="text-white ml-1" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
