@@ -563,86 +563,64 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
 
-                {/* VIDEO BUTTON (premium) */}
+                {/* VIDEO BUTTON + INLINE PLAYER */}
                 {item.details?.video_url && (
-                  <button
-                    type="button"
-                    onClick={() => setShowVideoModal(true)}
-                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 text-white font-bold text-base shadow-lg hover:from-slate-800 hover:to-slate-600 active:scale-[0.98] transition-all"
-                  >
-                    <span className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center">
-                      <Play size={20} className="ml-0.5" />
-                    </span>
-                    Ver vídeo do anúncio
-                  </button>
-                )}
-
-                {/* VIDEO MODAL */}
-                {showVideoModal && item.details?.video_url && (
-                  <div
-                    className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-                    onClick={() => { setShowVideoModal(false); videoRef.current?.pause(); setVideoPlaying(false); }}
-                  >
-                    {/* Close button */}
+                  <>
                     <button
                       type="button"
-                      className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition"
-                      onClick={(e) => { e.stopPropagation(); setShowVideoModal(false); videoRef.current?.pause(); setVideoPlaying(false); }}
-                    >
-                      <span className="text-xl font-bold leading-none">×</span>
-                    </button>
-                    {/* Video container — portrait TikTok */}
-                    <div
-                      className="relative w-full max-w-sm mx-auto select-none"
-                      style={{ height: '100dvh', maxHeight: '100dvh' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const el = videoRef.current;
-                        if (!el) return;
-                        if (el.paused) { el.play(); setVideoPlaying(true); }
-                        else { el.pause(); setVideoPlaying(false); }
+                      onClick={() => {
+                        setShowVideoModal(m => !m);
+                        if (showVideoModal) { videoRef.current?.pause(); setVideoPlaying(false); }
                       }}
+                      className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-base shadow-lg hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] transition-all"
                     >
-                      <video
-                        ref={videoRef}
-                        src={item.details.video_url}
-                        loop
-                        playsInline
-                        autoPlay
-                        muted={videoMuted}
-                        className="w-full h-full object-contain"
-                        onPlay={() => setVideoPlaying(true)}
-                        onPause={() => setVideoPlaying(false)}
-                      />
-                      {/* Gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-                      {/* Bottom info */}
-                      <div className="absolute bottom-20 left-4 right-16 pointer-events-none">
-                        <p className="text-white font-bold text-lg drop-shadow truncate">{item.title}</p>
-                        <p className="text-white/80 text-sm drop-shadow">
-                          {item.price ? `R$ ${Number(item.price).toLocaleString('pt-BR')}` : ''}
-                        </p>
-                      </div>
-                      {/* Right controls */}
-                      <div className="absolute bottom-20 right-4 flex flex-col gap-4">
+                      <span className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                        {showVideoModal ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                      </span>
+                      {showVideoModal ? 'Fechar vídeo' : 'Ver vídeo do anúncio'}
+                    </button>
+                    {showVideoModal && (
+                      <div className="rounded-2xl overflow-hidden bg-black relative select-none aspect-[9/16] w-full max-w-sm mx-auto">
+                        <div
+                          className="w-full h-full"
+                          onClick={() => {
+                            const el = videoRef.current;
+                            if (!el) return;
+                            if (el.paused) { el.play(); setVideoPlaying(true); }
+                            else { el.pause(); setVideoPlaying(false); }
+                          }}
+                        >
+                          <video
+                            ref={videoRef}
+                            src={item.details.video_url}
+                            loop
+                            playsInline
+                            autoPlay
+                            muted={videoMuted}
+                            className="w-full h-full object-contain"
+                            onPlay={() => setVideoPlaying(true)}
+                            onPause={() => setVideoPlaying(false)}
+                          />
+                        </div>
+                        {/* Mute button */}
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setVideoMuted(m => !m); }}
-                          className="w-12 h-12 flex flex-col items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm gap-1"
+                          className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm"
                         >
-                          {videoMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+                          {videoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                         </button>
-                      </div>
-                      {/* Play/Pause center */}
-                      {!videoPlaying && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-20 h-20 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
-                            <Play size={36} className="text-white ml-1" />
+                        {/* Play/Pause overlay */}
+                        {!videoPlaying && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
+                              <Play size={28} className="text-white ml-1" />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Descrição - Desktop: Abaixo da galeria, Mobile: Mais abaixo */}
