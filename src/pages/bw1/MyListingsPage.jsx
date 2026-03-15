@@ -68,13 +68,13 @@ export default function MyListingsPage() {
       return { label: 'Ciclo encerrado', color: 'text-gray-400' };
     }
     if (!listing.bumped_at) {
-      return { label: 'Próximo bump: em breve', color: 'text-green-600' };
+      return { label: 'Volta ao topo: em breve', color: 'text-green-600' };
     }
     const nextBump = new Date(listing.bumped_at).getTime() + interval * 24 * 60 * 60 * 1000;
     const diffMs = nextBump - Date.now();
-    if (diffMs <= 0) return { label: 'Próximo bump: em breve', color: 'text-green-600' };
+    if (diffMs <= 0) return { label: 'Volta ao topo: em breve', color: 'text-green-600' };
     const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-    return { label: `Próximo bump: ${diffDays}d`, color: 'text-blue-600' };
+    return { label: `Volta ao topo em: ${diffDays}d`, color: 'text-blue-600' };
   };
 
   // Visualizações fake baseadas no tempo (10-20 no dia 1, 20-35 no dia 2, etc.)
@@ -313,7 +313,12 @@ export default function MyListingsPage() {
               {filteredListings.map((listing) => (
                 <div
                   key={listing.id}
-                  className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col sm:flex-row gap-4"
+                  className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col sm:flex-row gap-4 border-2 ${
+                    listing.plan === 'premium' ? 'border-amber-500'
+                    : listing.plan === 'pro' ? 'border-violet-600'
+                    : listing.plan === 'standard' ? 'border-blue-600'
+                    : 'border-transparent'
+                  }`}
                 >
                   {/* Imagem + badge de plano */}
                   <div className="w-full sm:w-48 flex-shrink-0 flex flex-col">
@@ -366,14 +371,22 @@ export default function MyListingsPage() {
                         <p className="text-2xl font-extrabold text-slate-900">
                           {formatPrice(listing.price)}
                         </p>
-                        {(!listing.plan || listing.plan === 'basic') && (
+                        {(!listing.plan || listing.plan === 'basic') ? (
                           <button
                             onClick={() => navigate('/criar-anuncio', { state: { impulsionar: listing.id, step: 4 } })}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-400 hover:to-orange-400 transition"
+                            className="relative overflow-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-400/50 hover:shadow-amber-400/80 transition"
                           >
+                            <span className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
                             <Zap size={12} /> Impulsionar
                           </button>
-                        )}
+                        ) : (() => {
+                          const info = getNextBumpInfo(listing);
+                          return info ? (
+                            <span className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
+                              <TrendingUp size={11} />{info.label}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
 
@@ -422,17 +435,7 @@ export default function MyListingsPage() {
                           </button>
                         </div>
 
-                        {/* Linha 2: bump info */}
-                        {listing.plan && listing.plan !== 'basic' && (() => {
-                          const info = getNextBumpInfo(listing);
-                          return info ? (
-                            <div className="flex gap-2 items-center">
-                              <span className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 ${info.color}`}>
-                                <TrendingUp size={12} />{info.label}
-                              </span>
-                            </div>
-                          ) : null;
-                        })()}
+
                       </div>
                   </div>
                 </div>

@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-150%); }
+  100% { transform: translateX(250%); }
+}
+.animate-shimmer {
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
