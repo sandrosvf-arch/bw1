@@ -197,6 +197,44 @@ router.get('/states', async (req, res) => {
   }
 });
 
+// ─── Ordenação de anúncios por data efetiva (publicação + bump expirável) ───────
+//
+// Lógica:
+//   Todos os anúncios seguem ordem de publicação (created_at).
+//   O plano pago dá o benefício de "voltar ao topo" automaticamente conforme o
+//   intervalo de cada plano (autoBump). Enquanto o bump estiver dentro da janela
+//   do plano, usa bumped_at como posição. Quando expira, volta à posição natural.
+//
+//   Intervalos:
+//     premium  → volta ao topo a cada 7 dias
+//     pro      → volta ao topo a cada 12 dias
+//     standard → volta ao topo a cada 11 dias
+//     basic    → nunca sobe, fica fixo por created_at
+//
+const LISTING_BUMP_INTERVALS_MS: Record<string, number> = {
+  premium:  7 * 24 * 60 * 60 * 1000,  // 7 dias
+  pro:     12 * 24 * 60 * 60 * 1000,  // 12 dias
+  standard:11 * 24 * 60 * 60 * 1000,  // 11 dias
+};
+
+function getEffectiveSortTime(listing: any): number {
+  if (listing.featured && listing.bumped_at) {
+    const interval = LISTING_BUMP_INTERVALS_MS[listing.plan];
+    const bumpAge  = Date.now() - new Date(listing.bumped_at).getTime();
+    // Bump ainda dentro da janela → usa bumped_at (anúncio voltou ao topo)
+    if (!interval || bumpAge < interval) {
+      return new Date(listing.bumped_at).getTime();
+    }
+  }
+  // Bump expirou ou anúncio básico → posição natural por data de publicação
+  return new Date(listing.created_at).getTime();
+}
+
+function sortListings(listings: any[]): any[] {
+  // Ordenação única: data efetiva (bumped_at válido OU created_at), mais recente primeiro
+  return [...listings].sort((a, b) => getEffectiveSortTime(b) - getEffectiveSortTime(a));
+}
+
 // Listar todos os anúncios (público)
 router.get('/', async (req, res) => {
   try {
@@ -212,13 +250,15 @@ router.get('/', async (req, res) => {
     // Sempre inclui bumped_at — colunas existem após a migração SQL
     const selectFields = 'id,user_id,title,price,category,type,dealType,location,images,details,contact,status,created_at,plan,featured,bumped_at,slug';
 
+    // Busca todos os resultados filtrados sem limit/offset no banco —
+    // a ordenação correta (por hierarquia de plano + bump expirável) é feita
+    // em memória antes de paginar, garantindo consistência entre páginas.
     let query = (supabase as any)
       .from('listings')
       .select(selectFields)
       .eq('status', 'active')
-      .order('featured', { ascending: false })
-      .order('bumped_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }) // pré-ordenação leve no banco
+      .limit(1000); // teto de segurança; ajustar se o catálogo crescer muito
 
     if (category) {
       // Suportar filtro por categoria em PT e EN
@@ -259,15 +299,21 @@ router.get('/', async (req, res) => {
       query = (query as any).or(orClauses);
     }
 
-    query = query.range(Number(offset), Number(offset) + Number(limit) - 1);
-
     const { data, error } = await query;
 
     if (error) throw error;
 
+    // Ordenação em memória: hierarquia de plano + bump expirável
+    const sorted = sortListings(data || []);
+
+    // Paginação após ordenação correta
+    const start  = Number(offset);
+    const end    = start + Number(limit);
+    const paged  = sorted.slice(start, end);
+
     // Processar dados para garantir que campos JSONB sejam objetos
     // Apenas a 1ª imagem é retornada na listagem para reduzir bandwidth
-    const processedData = (data || []).map((listing: any) => {
+    const processedData = paged.map((listing: any) => {
       const imgs = parseJsonField(listing.images);
       const imgsArray = Array.isArray(imgs) ? imgs : (imgs ? [imgs] : []);
       return {
@@ -279,7 +325,7 @@ router.get('/', async (req, res) => {
       };
     });
 
-    const response = { listings: processedData, total: processedData.length };
+    const response = { listings: processedData, total: sorted.length };
     
     // Salvar no cache
     CacheService.setListings(cacheParams, response);

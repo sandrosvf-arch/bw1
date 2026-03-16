@@ -134,7 +134,7 @@ router.get('/:paymentId/status', async (req, res) => {
 
           await supabaseAdmin
             .from('listings')
-            .update({ plan, plan_expires_at: expiresAt, featured: true })
+            .update({ plan, plan_expires_at: expiresAt, featured: true, bumped_at: new Date().toISOString() })
             .eq('id', listingId);
 
           return res.json({
@@ -204,13 +204,14 @@ router.post('/webhook', async (req, res) => {
         .update({ status: 'approved', paid_at: new Date().toISOString() })
         .eq('mp_payment_id', String(data.id));
 
-      // Atualiza anúncio
+      // Atualiza anúncio — seta bumped_at para iniciar o contador do boost imediatamente
       await supabaseAdmin
         .from('listings')
         .update({
           plan,
           plan_expires_at: expiresAt,
           featured: true,
+          bumped_at: new Date().toISOString(),
         })
         .eq('id', listingId);
 
