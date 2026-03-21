@@ -168,6 +168,12 @@ export default function ListingDetailPage() {
   const [item, setItem] = useState(location.state?.item || null);
   const [loading, setLoading] = useState(!location.state?.item);
 
+  // Garante que a página sempre começa no topo ao entrar no anúncio
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    lastScrollYRef.current = 0;
+  }, []);
+
   useEffect(() => {
     if (item?.id) setLocalFav(isFavorite(item.id));
   }, [item?.id]);
