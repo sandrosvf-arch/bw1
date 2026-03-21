@@ -6,7 +6,7 @@ import SkeletonCard from "./SkeletonCard";
 function ListingsGrid({ listings, onViewMore, loading = false }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6 lg:gap-8">
         {[...Array(8)].map((_, i) => (
           <SkeletonCard key={i} />
         ))}
@@ -31,7 +31,7 @@ function ListingsGrid({ listings, onViewMore, loading = false }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6 lg:gap-8">
       {listings.map((item) => (
         <ListingCard key={item.id} item={item} onViewMore={onViewMore} />
       ))}

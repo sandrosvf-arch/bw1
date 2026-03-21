@@ -335,7 +335,7 @@ function ListingCard({ item, onViewMore }) {
   const [showWhatsLogo, setShowWhatsLogo] = useState(true);
 
   return (
-    <div className={`group bg-white rounded-3xl transition-all duration-300 overflow-hidden flex flex-col relative ${
+    <div className={`group bg-white rounded-xl md:rounded-3xl transition-all duration-300 overflow-hidden flex flex-col relative ${
       item.plan === 'standard' && item.featured
         ? 'border-2 border-blue-500 shadow-md shadow-blue-100 hover:shadow-lg hover:shadow-blue-200'
         : item.plan === 'pro' && item.featured
@@ -347,7 +347,7 @@ function ListingCard({ item, onViewMore }) {
       {/* Image */}
       <Link to={`/anuncio/${item.slug || item.id}`} className="block">
         <div 
-          className="relative h-64 overflow-hidden cursor-pointer rounded-t-3xl"
+          className="relative h-28 md:h-64 overflow-hidden cursor-pointer rounded-t-xl md:rounded-t-3xl"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -363,19 +363,19 @@ function ListingCard({ item, onViewMore }) {
           />
 
         {/* ✅ Tag no topo esquerdo */}
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-2 left-2 md:top-4 md:left-4">
           <span
-            className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
+            className={`inline-block px-1.5 md:px-2.5 py-0.5 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide text-white shadow-sm ${tagClass}`}
           >
             {tag}
           </span>
         </div>
 
         {/* Heart */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-2 right-2 md:top-4 md:right-4">
           <button 
             onClick={toggleFavorite}
-            className={`p-2 backdrop-blur-md rounded-full transition-colors ${
+            className={`p-1.5 md:p-2 backdrop-blur-md rounded-full transition-colors ${
               isFavorite 
                 ? "bg-white text-red-500" 
                 : "bg-white/20 text-white hover:bg-white hover:text-red-500"
@@ -394,7 +394,7 @@ function ListingCard({ item, onViewMore }) {
                 e.stopPropagation();
                 setImgIndex((prev) => (prev - 1 + images.length) % images.length);
               }}
-              className="flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
             >
               <ChevronLeft size={20} />
             </button>
@@ -405,7 +405,7 @@ function ListingCard({ item, onViewMore }) {
                 e.stopPropagation();
                 setImgIndex((prev) => (prev + 1) % images.length);
               }}
-              className="flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
+              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full text-slate-900 hover:bg-white transition-all"
             >
               <ChevronRight size={20} />
             </button>
@@ -415,7 +415,7 @@ function ListingCard({ item, onViewMore }) {
         {/* Carousel Dots + Counter */}
         {images.length > 1 && (
           <>
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+            <div className="hidden md:flex absolute bottom-3 left-0 right-0 justify-center">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur">
                 {images.map((_, i) => (
                   <button
@@ -432,7 +432,7 @@ function ListingCard({ item, onViewMore }) {
               </div>
             </div>
 
-            <div className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded-full bg-black/30 text-white backdrop-blur">
+            <div className="hidden md:block absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded-full bg-black/30 text-white backdrop-blur">
               {imgIndex + 1}/{images.length}
             </div>
           </>
@@ -450,29 +450,29 @@ function ListingCard({ item, onViewMore }) {
             ? 'bg-violet-600'
             : 'bg-gradient-to-r from-amber-500 to-orange-500'
         }`}>
-          <span className={`block w-1.5 h-1.5 rounded-full ${
+          <span className={`hidden md:block w-1.5 h-1.5 rounded-full ${
             item.plan === 'premium' ? 'bg-white/60' : 'bg-white/50'
           }`} />
-          <span className="text-white text-[11px] font-bold uppercase tracking-[0.15em]">
+          <span className="text-white text-[9px] md:text-[11px] font-bold uppercase tracking-[0.15em]">
             {item.plan === 'standard' && 'Destaque'}
             {item.plan === 'pro' && 'Destaque Pro'}
             {item.plan === 'premium' && 'Super Destaque Premium'}
           </span>
-          <span className={`block w-1.5 h-1.5 rounded-full ${
+          <span className={`hidden md:block w-1.5 h-1.5 rounded-full ${
             item.plan === 'premium' ? 'bg-white/60' : 'bg-white/50'
           }`} />
         </div>
       )}
 
       {/* Content */}
-      <div className="p-6 flex-1 flex flex-col">
+      <div className="p-2.5 md:p-6 flex-1 flex flex-col">
         {/* ✅ Preço + chips (tag venda/aluguel + flag extra) */}
         <div className="flex items-center justify-between gap-3">
-          <p className="text-slate-900 text-2xl font-extrabold leading-none">
+          <p className="text-slate-900 text-base md:text-2xl font-extrabold leading-none">
             {formatPrice(item.price)}
           </p>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             {/* ✅ Venda/Aluguel ao lado do preço */}
             <TagChip tag={tag} />
             {/* Flag extra opcional */}
@@ -480,24 +480,24 @@ function ListingCard({ item, onViewMore }) {
           </div>
         </div>
 
-        <h3 className="mt-3 text-lg font-bold text-slate-900 line-clamp-1">
+        <h3 className="mt-1 md:mt-3 text-sm md:text-lg font-bold text-slate-900 line-clamp-1">
           {item.title}
         </h3>
 
         {/* Cidade + Data - Updated 2026-02-07 */}
-        <div className="mt-2 mb-4">
-          <div className="flex items-center text-slate-500 text-sm">
-            <MapPin size={14} className="mr-1" />
-            <span>{formatLocation(item.location)}</span>
+        <div className="mt-1 mb-2 md:mt-2 md:mb-4">
+          <div className="flex items-center text-slate-500 text-xs md:text-sm">
+            <MapPin size={12} className="mr-1 shrink-0" />
+            <span className="line-clamp-1">{formatLocation(item.location)}</span>
           </div>
 
           {createdAtLabel && (
-            <div className="text-xs text-slate-400 mt-1">{createdAtLabel}</div>
+            <div className="hidden md:block text-xs text-slate-400 mt-1">{createdAtLabel}</div>
           )}
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-3 gap-2 py-4 border-t border-slate-100 mb-4">
+        <div className="hidden md:grid grid-cols-3 gap-2 py-4 border-t border-slate-100 mb-4">
           {item.type === "vehicle" ? (
             <>
               <div className="text-center">
@@ -549,7 +549,7 @@ function ListingCard({ item, onViewMore }) {
 
         {/* Actions */}
         <div className="mt-auto flex gap-2">
-          {/* CONTATAR / CHAT */}
+          {/* CONTATAR / CHAT — apenas desktop */}
           {hasWhats ? (
             <button
               onClick={(e) => {
@@ -562,7 +562,7 @@ function ListingCard({ item, onViewMore }) {
                 }
                 window.open(waLink, '_blank', 'noreferrer');
               }}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
+              className="hidden md:flex flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE57] text-white shadow-sm hover:shadow-md"
               title="Chamar no WhatsApp"
             >
               {showWhatsLogo && (
@@ -578,7 +578,7 @@ function ListingCard({ item, onViewMore }) {
           ) : (
             <button
               onClick={startChat}
-              className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+              className="hidden md:flex flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
               title="Iniciar conversa no chat"
             >
               <MessageCircle size={18} />
@@ -590,11 +590,11 @@ function ListingCard({ item, onViewMore }) {
           <Link
             to={`/anuncio/${item.id}`}
             state={{ item }}
-            className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white
+            className="hidden md:flex px-4 py-2.5 rounded-xl text-sm font-semibold text-white
                        bg-gradient-to-r from-blue-600 to-indigo-700
                        hover:from-blue-700 hover:to-indigo-800
                        shadow-sm hover:shadow-md transition-all
-                       flex items-center justify-center gap-2"
+                       items-center justify-center gap-2"
           >
             Ver mais <ChevronRight size={16} />
           </Link>
