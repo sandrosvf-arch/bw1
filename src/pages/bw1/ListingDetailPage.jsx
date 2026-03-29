@@ -784,7 +784,7 @@ export default function ListingDetailPage() {
                             {item.details?.fuel}
                           </span>
                         </div>
-                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl col-start-2">
                           <Settings2 size={24} className="text-blue-500 mb-2" />
                           <span className="text-xs text-slate-500 mb-1">Câmbio</span>
                           <span className="text-sm font-bold text-slate-900">
@@ -1050,7 +1050,7 @@ export default function ListingDetailPage() {
                           {item.details?.fuel}
                         </span>
                       </div>
-                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
+                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl col-start-2">
                         <Settings2 size={24} className="text-blue-500 mb-2" />
                         <span className="text-xs text-slate-500 mb-1">Câmbio</span>
                         <span className="text-sm font-bold text-slate-900">
