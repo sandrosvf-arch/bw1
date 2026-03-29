@@ -249,11 +249,13 @@ export default function PropertiesPage() {
 
     // Busca (filtro local complementar ao resultado da API)
     if (committedSearchTerm) {
-      const s = committedSearchTerm.toLowerCase();
+      const normalize = (s) =>
+        String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      const s = normalize(committedSearchTerm);
       result = result.filter(
         (item) =>
-          (item.title && typeof item.title === 'string' && item.title.toLowerCase().includes(s)) ||
-          searchInLocation(item.location, s)
+          normalize(item.title || '').includes(s) ||
+          searchInLocation(item.location, committedSearchTerm.toLowerCase())
       );
     }
 

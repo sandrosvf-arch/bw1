@@ -276,15 +276,9 @@ router.get('/', async (req, res) => {
     }
 
     if (search) {
-      // location é JSONB — busca feita em memória após fetch (mais confiável que or() JSONB inline)
-      // Envia o termo original para ilike title/description (Postgres é case-insensitive mas não desacentua)
-      // Filtragem por localização (com normalização de acentos) é feita abaixo em JS
-      const searchNorm = String(search).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const orParts = [`title.ilike.%${search}%`, `description.ilike.%${search}%`];
-      if (searchNorm !== String(search)) {
-        orParts.push(`title.ilike.%${searchNorm}%`, `description.ilike.%${searchNorm}%`);
-      }
-      query = query.or(orParts.join(','));
+      // Busca por título/descrição feita em memória para suportar normalização de acentos
+      // Ex: "chacara" bate com "Chácara", "araucaria" bate com "Araucária"
+      // Não aplicamos filtro DB aqui — filtragem completa é feita abaixo em JS
     }
 
     if (state) {
@@ -311,46 +305,53 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    // Filtro de busca por localização em memória (JSONB não suporta ilike inline via or())
+    // Filtro de busca em memória — normaliza acentos em ambos os lados
+    // Ex: "chacara" bate com "Chácara", "araucaria" bate com "Araucária"
     let results = data || [];
     if (search) {
-      // Normaliza acentos para comparação — "araucaria" bate com "Araucária"
       const normalize = (s: string) =>
         String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
       const term = normalize(String(search));
-      // IDs já retornados pelo filtro título/descrição do DB
-      const titleDescIds = new Set(results.map((r: any) => r.id));
-      // Busca location entre TODOS os registros ativos para pegar veículos/imóveis por cidade
+
+      // Busca location entre TODOS os registros ativos
       const { data: allActive } = await (supabase as any)
         .from('listings')
-        .select('id,location')
+        .select('id,title,description,location')
         .eq('status', 'active')
         .limit(2000);
-      const locationIds = new Set(
-        (allActive || [])
-          .filter((r: any) => {
-            const loc = parseJsonField(r.location);
-            const city = normalize(loc?.city || '');
-            const neighborhood = normalize(loc?.neighborhood || '');
-            const address = normalize(loc?.address || '');
-            return city.includes(term) || neighborhood.includes(term) || address.includes(term);
-          })
-          .map((r: any) => r.id)
+
+      const matchingIds = new Set(
+        (allActive || []).filter((r: any) => {
+          const title = normalize(r.title || '');
+          const description = normalize(r.description || '');
+          const loc = parseJsonField(r.location);
+          const city = normalize(loc?.city || '');
+          const neighborhood = normalize(loc?.neighborhood || '');
+          const address = normalize(loc?.address || '');
+          return (
+            title.includes(term) ||
+            description.includes(term) ||
+            city.includes(term) ||
+            neighborhood.includes(term) ||
+            address.includes(term)
+          );
+        }).map((r: any) => r.id)
       );
-      const mergedIds = new Set([...titleDescIds, ...locationIds]);
-      if (locationIds.size > 0) {
-        // Buscar os registros da location que não vieram no resultado original
-        const extraIds = [...locationIds].filter(id => !titleDescIds.has(id));
-        if (extraIds.length > 0) {
-          const { data: extraData } = await (supabase as any)
-            .from('listings')
-            .select(selectFields)
-            .in('id', extraIds)
-            .eq('status', 'active')
-            .limit(500);
-          results = [...results, ...(extraData || [])];
-        }
+
+      // Buscar registros que não vieram na query inicial
+      const existingIds = new Set(results.map((r: any) => r.id));
+      const extraIds = [...matchingIds].filter(id => !existingIds.has(id));
+      if (extraIds.length > 0) {
+        const { data: extraData } = await (supabase as any)
+          .from('listings')
+          .select(selectFields)
+          .in('id', extraIds)
+          .eq('status', 'active')
+          .limit(500);
+        results = [...results, ...(extraData || [])];
       }
+      // Filtrar apenas os que batem
+      results = results.filter((r: any) => matchingIds.has(r.id));
     }
 
     // Ordenação em memória: hierarquia de plano + bump expirável
