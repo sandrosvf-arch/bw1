@@ -83,10 +83,13 @@ export default function PropertiesPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(4);
+  const [serverTotal, setServerTotal] = useState(initialListings.length);
   const [hasMore, setHasMore] = useState(initialListings.length > 4);
   const observerRef = useRef(null);
   const searchModeRef = useRef(false); // impede background fetch sobrescrever resultados de busca
+  const serverOffsetRef = useRef(initialListings.length); // próximo offset para busca no servidor
   const BATCH_SIZE = 4;
+  const SERVER_PAGE_SIZE = 40; // itens por página no servidor
   const [filters, setFilters] = useState({
     dealType: "all",
     minPrice: "",
@@ -108,19 +111,24 @@ export default function PropertiesPage() {
   useEffect(() => {
     const fetchUpdatedListings = async () => {
       try {
-        const response = await api.getListings({ category: 'property', limit: 200 });
+        const response = await api.getListings({ category: 'property', limit: SERVER_PAGE_SIZE });
         const fetchedListings = response.listings || [];
+        const total = response.total ?? fetchedListings.length;
         
         // Atualiza os dados em background (ignora se usuário está em modo de busca)
         if (!searchModeRef.current) {
           setAllListings(fetchedListings);
+          setServerTotal(total);
+          serverOffsetRef.current = fetchedListings.length;
         }
         
         // Se não tinha cache inicial, mostra os primeiros resultados
         if (initialListings.length === 0 && !searchModeRef.current) {
           setListings(fetchedListings.slice(0, BATCH_SIZE));
           setOffset(BATCH_SIZE);
-          setHasMore(fetchedListings.length > BATCH_SIZE);
+          setHasMore(total > BATCH_SIZE);
+        } else if (!searchModeRef.current) {
+          setHasMore(total > BATCH_SIZE);
         }
       } catch (error) {
         console.error('Erro ao carregar imóveis:', error);
@@ -157,22 +165,46 @@ export default function PropertiesPage() {
 
   const loadMoreListings = async () => {
     if (loadingMore || !hasMore || isSearching) return;
-
     setLoadingMore(true);
-    try {
-      const newListings = allListings.slice(offset, offset + BATCH_SIZE);
-      
-      if (newListings.length > 0) {
-        setListings(prev => [...prev, ...newListings]);
-        setOffset(prev => prev + BATCH_SIZE);
-        setHasMore(offset + BATCH_SIZE < allListings.length);
-      } else {
+
+    const currentAll = allListings;
+    const nextBatch = currentAll.slice(offset, offset + BATCH_SIZE);
+
+    if (nextBatch.length > 0) {
+      // Dados disponíveis no buffer local
+      setListings(prev => [...prev, ...nextBatch]);
+      const nextOffset = offset + BATCH_SIZE;
+      setOffset(nextOffset);
+      setHasMore(nextOffset < serverTotal);
+      setLoadingMore(false);
+    } else if (currentAll.length < serverTotal) {
+      // Buffer local esgotado — buscar próxima página no servidor
+      try {
+        const response = await api.getListings({
+          category: 'property',
+          limit: SERVER_PAGE_SIZE,
+          offset: serverOffsetRef.current,
+        });
+        const incoming = response.listings || [];
+        const total = response.total ?? serverTotal;
+        const combined = [...currentAll, ...incoming];
+        setAllListings(combined);
+        setServerTotal(total);
+        serverOffsetRef.current += incoming.length;
+
+        const newBatch = combined.slice(offset, offset + BATCH_SIZE);
+        setListings(prev => [...prev, ...newBatch]);
+        const nextOffset = offset + BATCH_SIZE;
+        setOffset(nextOffset);
+        setHasMore(nextOffset < total);
+      } catch (err) {
+        console.error('Erro ao carregar mais imóveis:', err);
         setHasMore(false);
+      } finally {
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error('Erro ao carregar mais imóveis:', error);
+    } else {
       setHasMore(false);
-    } finally {
       setLoadingMore(false);
     }
   };
@@ -226,12 +258,15 @@ export default function PropertiesPage() {
     setNotifySubmitted(false);
     setIsSearching(true);
     try {
-      const response = await api.getListings({ category: 'property', limit: 200 }, { forceRefresh: true });
+      const response = await api.getListings({ category: 'property', limit: SERVER_PAGE_SIZE }, { forceRefresh: true });
       const fetched = response.listings || [];
+      const total = response.total ?? fetched.length;
       setAllListings(fetched);
+      setServerTotal(total);
+      serverOffsetRef.current = fetched.length;
       setListings(fetched.slice(0, BATCH_SIZE));
       setOffset(BATCH_SIZE);
-      setHasMore(fetched.length > BATCH_SIZE);
+      setHasMore(total > BATCH_SIZE);
     } catch (err) {
       console.error('Erro ao limpar busca:', err);
     } finally {
