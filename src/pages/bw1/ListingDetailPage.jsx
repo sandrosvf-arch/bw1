@@ -26,8 +26,6 @@ import {
   Pause,
   Zap,
   Settings2,
-  Palette,
-  DoorOpen,
 } from "lucide-react";
 
 import api from "../../services/api";
@@ -793,20 +791,6 @@ export default function ListingDetailPage() {
                             {item.details?.transmission || "—"}
                           </span>
                         </div>
-                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                          <Palette size={24} className="text-blue-500 mb-2" />
-                          <span className="text-xs text-slate-500 mb-1">Cor</span>
-                          <span className="text-sm font-bold text-slate-900">
-                            {item.details?.color || "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                          <DoorOpen size={24} className="text-blue-500 mb-2" />
-                          <span className="text-xs text-slate-500 mb-1">Portas</span>
-                          <span className="text-sm font-bold text-slate-900">
-                            {item.details?.doors || "—"}
-                          </span>
-                        </div>
                       </>
                     ) : (
                       <>
@@ -1071,20 +1055,6 @@ export default function ListingDetailPage() {
                         <span className="text-xs text-slate-500 mb-1">Câmbio</span>
                         <span className="text-sm font-bold text-slate-900">
                           {item.details?.transmission || "—"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                        <Palette size={24} className="text-blue-500 mb-2" />
-                        <span className="text-xs text-slate-500 mb-1">Cor</span>
-                        <span className="text-sm font-bold text-slate-900">
-                          {item.details?.color || "—"}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center p-4 bg-slate-50 rounded-2xl">
-                        <DoorOpen size={24} className="text-blue-500 mb-2" />
-                        <span className="text-xs text-slate-500 mb-1">Portas</span>
-                        <span className="text-sm font-bold text-slate-900">
-                          {item.details?.doors || "—"}
                         </span>
                       </div>
                     </>
