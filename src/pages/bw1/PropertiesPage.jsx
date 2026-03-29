@@ -108,7 +108,7 @@ export default function PropertiesPage() {
   useEffect(() => {
     const fetchUpdatedListings = async () => {
       try {
-        const response = await api.getListings({ category: 'property' });
+        const response = await api.getListings({ category: 'property', limit: 200 });
         const fetchedListings = response.listings || [];
         
         // Atualiza os dados em background (ignora se usuário está em modo de busca)
@@ -226,7 +226,7 @@ export default function PropertiesPage() {
     setNotifySubmitted(false);
     setIsSearching(true);
     try {
-      const response = await api.getListings({ category: 'property', limit: 50 }, { forceRefresh: true });
+      const response = await api.getListings({ category: 'property', limit: 200 }, { forceRefresh: true });
       const fetched = response.listings || [];
       setAllListings(fetched);
       setListings(fetched.slice(0, BATCH_SIZE));
