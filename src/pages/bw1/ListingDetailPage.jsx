@@ -141,12 +141,12 @@ function formatLocation(location) {
 }
 
 function formatPrice(price) {
-  if (!price || price === '0' || price === 0 || price === '0.00' || price === '0.0') return "A combinar";
+  if (!price || price === '0' || price === 0 || price === '0.00' || price === '0.0') return "R$ (A combinar)";
   
   if (typeof price === "string" && price.includes("R$")) return price;
   
   const num = typeof price === "number" ? price : parseFloat(price);
-  if (isNaN(num) || num === 0) return "A combinar";
+  if (isNaN(num) || num === 0) return "R$ (A combinar)";
   
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
