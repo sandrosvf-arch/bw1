@@ -116,14 +116,14 @@ function formatLocation(location) {
 }
 
 function formatPrice(price) {
-  if (!price) return "—";
+  if (!price || price === '0' || price === 0 || price === '0.00' || price === '0.0') return "A combinar";
   
   // Se já é uma string formatada, retorna
   if (typeof price === "string" && price.includes("R$")) return price;
   
   // Se é número, formata
   const num = typeof price === "number" ? price : parseFloat(price);
-  if (isNaN(num)) return price;
+  if (isNaN(num) || num === 0) return "A combinar";
   
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

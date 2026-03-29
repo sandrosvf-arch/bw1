@@ -34,6 +34,7 @@ export default function CreateListingPage() {
     title: "",
     description: "",
     price: "",
+    priceOnRequest: false,
     dealType: "Venda",
     country: "Brasil",
     state: "",
@@ -75,7 +76,7 @@ export default function CreateListingPage() {
   const validateStep2 = () => {
     const errors = {};
     if (!formData.title.trim()) errors.title = 'Título é obrigatório';
-    if (!formData.price.trim()) errors.price = 'Preço é obrigatório';
+    if (!formData.priceOnRequest && !formData.price.trim()) errors.price = 'Preço é obrigatório';
     if (!formData.state.trim()) errors.state = 'Estado é obrigatório';
     if (!formData.city.trim()) errors.city = 'Cidade é obrigatória';
     if (formData.type === 'vehicle') {
@@ -324,7 +325,7 @@ export default function CreateListingPage() {
       };
 
       // Converter preço formatado para número
-      const priceNumber = formData.price.replace(/[^\d,]/g, '').replace(',', '.');
+      const priceNumber = formData.priceOnRequest ? '0' : formData.price.replace(/[^\d,]/g, '').replace(',', '.');
 
       // Prepara os dados para enviar ao backend
       const listingData = {
@@ -634,17 +635,36 @@ export default function CreateListingPage() {
                     <DollarSign size={16} className="inline mr-1" />
                     Preço *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.price}
-                    onChange={(e) => { handlePriceChange(e.target.value); setStep2Errors(p => ({...p, price: ''})); }}
-                    placeholder="R$ 50.000,00"
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.price ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
-                  />
+                  <div className="flex items-center gap-3 mb-2">
+                    <input
+                      type="checkbox"
+                      id="priceOnRequest"
+                      checked={formData.priceOnRequest}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, priceOnRequest: e.target.checked, price: e.target.checked ? '' : prev.price }));
+                        setStep2Errors(p => ({ ...p, price: '' }));
+                      }}
+                      className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                    />
+                    <label htmlFor="priceOnRequest" className="text-sm text-slate-700 cursor-pointer select-none">
+                      A combinar
+                    </label>
+                  </div>
+                  {!formData.priceOnRequest && (
+                    <input
+                      type="text"
+                      value={formData.price}
+                      onChange={(e) => { handlePriceChange(e.target.value); setStep2Errors(p => ({...p, price: ''})); }}
+                      placeholder="R$ 50.000,00"
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${step2Errors.price ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                    />
+                  )}
                   {step2Errors.price && <p className="text-xs text-red-500 mt-1">{step2Errors.price}</p>}
-                  <p className="text-xs text-slate-500 mt-1">
-                    💡 Digite apenas números. Ex: 50000 = R$ 500,00
-                  </p>
+                  {!formData.priceOnRequest && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      💡 Digite apenas números. Ex: 50000 = R$ 500,00
+                    </p>
+                  )}
                 </div>
 
                 {/* Campos específicos para veículos */}

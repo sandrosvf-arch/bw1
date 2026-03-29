@@ -266,6 +266,7 @@ export default function EditListingPage() {
     title: "",
     description: "",
     price: "",
+    priceOnRequest: false,
     dealType: "Venda",
     state: "",
     city: "",
@@ -315,6 +316,7 @@ export default function EditListingPage() {
         title: l.title || "",
         description: det.description || l.description || "",
         price: l.price || "",
+        priceOnRequest: !l.price || l.price === '0' || l.price === '0.00',
         dealType: l.dealType || loc.dealType || "Venda",
         state: loc.state || "",
         city: loc.city || "",
@@ -442,7 +444,7 @@ export default function EditListingPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.price || !form.state || !form.city) {
+    if (!form.title.trim() || (!form.priceOnRequest && !form.price) || !form.state || !form.city) {
       setError("Preencha título, preço, estado e cidade.");
       return;
     }
@@ -464,7 +466,7 @@ export default function EditListingPage() {
 
       const payload = {
         title: form.title.trim(),
-        price: form.price,
+        price: form.priceOnRequest ? '0' : form.price,
         dealType: form.dealType,
         images,
         location: {
@@ -643,12 +645,26 @@ export default function EditListingPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Preço (R$) *</label>
-                    <input
-                      className={inputCls}
-                      value={form.price}
-                      onChange={(e) => handleChange("price", e.target.value)}
-                      placeholder="0,00"
-                    />
+                    <div className="flex items-center gap-3 mb-2">
+                      <input
+                        type="checkbox"
+                        id="editPriceOnRequest"
+                        checked={form.priceOnRequest}
+                        onChange={(e) => handleChange("priceOnRequest", e.target.checked)}
+                        className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                      />
+                      <label htmlFor="editPriceOnRequest" className="text-sm text-slate-700 cursor-pointer select-none">
+                        A combinar
+                      </label>
+                    </div>
+                    {!form.priceOnRequest && (
+                      <input
+                        className={inputCls}
+                        value={form.price}
+                        onChange={(e) => handleChange("price", e.target.value)}
+                        placeholder="0,00"
+                      />
+                    )}
                   </div>
                   <div>
                     <label className={labelCls}>Tipo deal</label>
