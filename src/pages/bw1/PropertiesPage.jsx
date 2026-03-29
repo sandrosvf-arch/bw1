@@ -58,8 +58,9 @@ export default function PropertiesPage() {
   const specificCache = api.getListingsFromCache({ category: 'property' });
   
   // Filtrar imóveis do cache geral
+  const PROPERTY_CATEGORIES = ['property','apartamento','casa','terreno','chacara','sitio','fazenda','lote','rural','comercial'];
   const generalProperties = generalCache?.listings?.filter(item => 
-    item.category === 'property' || item.category === 'apartamento' || item.category === 'casa'
+    PROPERTY_CATEGORIES.includes(item.category)
   ) || [];
   
   // Usar cache específico se houver, senão usar imóveis do cache geral
@@ -241,9 +242,8 @@ export default function PropertiesPage() {
   const filteredListings = useMemo(() => {
     let result = listings.filter((item) => {
       // Apenas imóveis (suporta PT e EN)
-      const isProperty = item.category === "property" || 
-                         item.category === "apartamento" || 
-                         item.category === "casa";
+      const PROPERTY_CATS = ['property','apartamento','casa','terreno','chacara','sitio','fazenda','lote','rural','comercial'];
+      const isProperty = PROPERTY_CATS.includes(item.category);
       return isProperty;
     });
 

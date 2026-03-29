@@ -265,7 +265,7 @@ router.get('/', async (req, res) => {
       if (category === 'vehicle') {
         query = query.or('category.eq.vehicle,category.eq.carro,category.eq.moto,category.eq.caminhao,category.eq.van,category.eq.pickup,category.eq.truck,category.eq.motorcycle,category.eq.onibus,category.eq.barco,category.eq.boat');
       } else if (category === 'property') {
-        query = query.or('category.eq.property,category.eq.apartamento,category.eq.casa');
+        query = query.or('category.eq.property,category.eq.apartamento,category.eq.casa,category.eq.terreno,category.eq.chacara,category.eq.sitio,category.eq.fazenda,category.eq.lote,category.eq.rural,category.eq.comercial');
       } else {
         query = query.eq('category', category);
       }
