@@ -197,15 +197,16 @@ router.get('/states', async (req, res) => {
   }
 });
 
-// ─── Ordenação de anúncios por data efetiva (publicação + bump expirável) ───────
+// ─── Ordenação de anúncios por data efetiva (publicação + bump automático) ──────
 //
 // Lógica:
-//   Todos os anúncios seguem ordem de publicação (created_at).
-//   O plano pago dá o benefício de "voltar ao topo" automaticamente conforme o
-//   intervalo de cada plano (autoBump). Enquanto o bump estiver dentro da janela
-//   do plano, usa bumped_at como posição. Quando expira, volta à posição natural.
+//   Anúncios com plano pago (featured) voltam ao topo AUTOMATICAMENTE a cada N dias,
+//   sem nenhuma ação do dono. O cálculo usa created_at + ciclos completos decorridos.
 //
-//   Intervalos:
+//   Ex: premium criado há 15 dias → está no início do 3º ciclo de 7 dias (15d / 7d = 2 ciclos)
+//       → effective_time = created_at + 2 * 7d = "como se tivesse sido publicado há 1 dia"
+//
+//   Intervalos de bump automático:
 //     premium  → volta ao topo a cada 7 dias
 //     pro      → volta ao topo a cada 12 dias
 //     standard → volta ao topo a cada 11 dias
@@ -218,20 +219,22 @@ const LISTING_BUMP_INTERVALS_MS: Record<string, number> = {
 };
 
 function getEffectiveSortTime(listing: any): number {
-  if (listing.featured && listing.bumped_at) {
+  if (listing.featured && listing.plan) {
     const interval = LISTING_BUMP_INTERVALS_MS[listing.plan];
-    const bumpAge  = Date.now() - new Date(listing.bumped_at).getTime();
-    // Bump ainda dentro da janela → usa bumped_at (anúncio voltou ao topo)
-    if (!interval || bumpAge < interval) {
-      return new Date(listing.bumped_at).getTime();
+    if (interval) {
+      const created = new Date(listing.created_at).getTime();
+      const elapsed = Date.now() - created;
+      // Início do ciclo atual: quantos intervalos completos já passaram desde a criação
+      const currentCycleStart = created + Math.floor(elapsed / interval) * interval;
+      return currentCycleStart;
     }
   }
-  // Bump expirou ou anúncio básico → posição natural por data de publicação
+  // Plano basic ou sem plano → posição natural por data de publicação
   return new Date(listing.created_at).getTime();
 }
 
 function sortListings(listings: any[]): any[] {
-  // Ordenação única: data efetiva (bumped_at válido OU created_at), mais recente primeiro
+  // Ordenação única: data efetiva (bump automático por ciclo OU created_at), mais recente primeiro
   return [...listings].sort((a, b) => getEffectiveSortTime(b) - getEffectiveSortTime(a));
 }
 
