@@ -113,7 +113,7 @@ export default function Hero({
 
       {/* ── Container que define a altura E posiciona a busca ── */}
       {/* Altura responsiva: mobile ~110vw (banner 390×520), desktop proporcional 1440×560 */}
-      <style>{`.hero-spacer { padding-top: min(85vw, 380px); } @media (min-width: 768px) { .hero-spacer { padding-top: clamp(140px, 38.89vw, 560px); } }`}</style>
+      <style>{`.hero-spacer { padding-top: min(70vw, 320px); } @media (min-width: 768px) { .hero-spacer { padding-top: clamp(140px, 38.89vw, 560px); } }`}</style>
       <div className="hero-spacer relative flex items-end justify-center pb-20 md:pb-36 px-4">
         {/* Mobile: usa altura menor para não ficar gigante */}
         <div className="w-full max-w-xl relative z-10">
