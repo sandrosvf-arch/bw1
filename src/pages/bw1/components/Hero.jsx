@@ -21,18 +21,17 @@ export default function Hero({
   onSearchClear,
   committedSearchTerm,
 }) {
-  // Tenta buscar banners do banco; usa config estática como fallback
-  const staticBanners =
-    Array.isArray(hero?.banners) && hero.banners.length > 0
-      ? hero.banners.map(b => ({ desktop_url: b.desktop, mobile_url: b.mobile, alt: b.alt, link: b.link }))
-      : [FALLBACK_BANNER];
-
-  const [banners, setBanners] = useState(staticBanners);
+  // Começa sem banners estáticos — carrega sempre da API
+  const [banners, setBanners] = useState([FALLBACK_BANNER]);
 
   useEffect(() => {
     api.getPublicBanners()
       .then(res => {
         if (res?.banners?.length > 0) setBanners(res.banners);
+        // Se API retornar vazio, tenta usar config estática do hero.js
+        else if (Array.isArray(hero?.banners) && hero.banners.length > 0) {
+          setBanners(hero.banners.map(b => ({ desktop_url: b.desktop, mobile_url: b.mobile, alt: b.alt, link: b.link })));
+        }
       })
       .catch(() => {}); // mantém fallback silenciosamente
   }, []);

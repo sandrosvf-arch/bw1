@@ -476,9 +476,9 @@ class ApiService {
     return this.request('/api/admin/setup-sql');
   }
 
-  // Banners públicos (Hero)
+  // Banners públicos (Hero) — sem cache para refletir edições imediatamente
   async getPublicBanners() {
-    return this.request('/api/admin/banners/public');
+    return this.request('/api/admin/banners/public', { forceRefresh: true });
   }
 
   // Banners admin

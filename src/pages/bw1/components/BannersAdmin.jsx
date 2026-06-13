@@ -276,8 +276,9 @@ export default function BannersAdmin() {
       const fd = new FormData();
       fd.append("active", String(!banner.active));
       await api.updateBanner(banner.id, fd);
+      // Invalida cache público para refletir no Hero
+      await api.getPublicBanners();
     } catch {
-      // Reverte em caso de erro
       await loadBanners();
     }
   };
@@ -287,8 +288,9 @@ export default function BannersAdmin() {
     setBanners(prev => prev.filter(b => b.id !== id));
     try {
       await api.deleteBanner(id);
+      // Invalida cache público para refletir no Hero
+      await api.getPublicBanners();
     } catch {
-      // Reverte em caso de erro
       await loadBanners();
     }
   };
@@ -297,6 +299,8 @@ export default function BannersAdmin() {
     setFormOpen(false);
     setEditingBanner(null);
     await loadBanners();
+    // Invalida cache público para refletir no Hero
+    await api.getPublicBanners();
   };
 
   const handleAddMaster = async () => {
