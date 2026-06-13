@@ -12,6 +12,7 @@ import usersRoutes from './routes/users.routes';
 import profileRoutes from './routes/profile.routes';
 import paymentsRoutes from './routes/payments.routes';
 import { startAutoBumpService } from './services/autoBump.service';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -54,6 +55,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Request logger (dev)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, _res, next) => {
+    console.log(`[${req.method}] ${req.path}`);
+    next();
+  });
+}
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/auth', googleAuthRoutes);
@@ -62,6 +71,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 404 handler
 app.use((req, res) => {

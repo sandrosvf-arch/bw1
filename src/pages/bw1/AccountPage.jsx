@@ -9,11 +9,14 @@ import {
   ArrowLeft,
   ChevronRight,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 
 import BottomNav from "./components/BottomNav";
 import AppShell from "./components/AppShell";
 import Footer from "./components/Footer";
+import BannersAdmin from "./components/BannersAdmin";
+import api from "../../services/api";
 
 import * as BrandMod from "./content/brand.js";
 import * as FooterMod from "./content/footer.js";
@@ -47,6 +50,34 @@ export default function AccountPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const [logoOk, setLogoOk] = React.useState(true);
+  const BOOTSTRAP_MASTER = 'sandrosvf@gmail.com';
+  const [isMaster, setIsMaster] = React.useState(
+    // Inicializa já como true se o usuário já está carregado e é o mestre raiz
+    isAuthenticated && user?.email === 'sandrosvf@gmail.com'
+  );
+  const [adminOpen, setAdminOpen] = React.useState(
+    isAuthenticated && user?.email === 'sandrosvf@gmail.com'
+  );
+
+  React.useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    // Fallback imediato: se o email bate com o mestre raiz, mostra na hora
+    if (user.email === BOOTSTRAP_MASTER) {
+      setIsMaster(true);
+      setAdminOpen(true);
+      return;
+    }
+
+    // Para outros usuários, confirma via API
+    api.isMaster()
+      .then(r => {
+        const master = !!r?.isMaster;
+        setIsMaster(master);
+        if (master) setAdminOpen(true);
+      })
+      .catch((err) => console.warn('[isMaster]', err));
+  }, [isAuthenticated, user]);
 
   const handleLogout = async () => {
     logout();
@@ -178,6 +209,33 @@ export default function AccountPage() {
               />
             </div>
           </div>
+
+          {/* Admin Master — visível apenas para mestres */}
+          {isMaster && (
+            <div className="mb-8">
+              <button
+                onClick={() => setAdminOpen(v => !v)}
+                className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl hover:opacity-90 transition mb-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">Painel Mestre</p>
+                    <p className="text-xs text-white/70">Banners · Usuários mestres</p>
+                  </div>
+                </div>
+                <ChevronRight size={20} className={`transition-transform ${adminOpen ? "rotate-90" : ""}`} />
+              </button>
+
+              {adminOpen && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                  <BannersAdmin />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sair */}
           <button 

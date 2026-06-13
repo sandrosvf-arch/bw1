@@ -2,9 +2,9 @@
 
 const isDev = import.meta.env.DEV;
 const PROD_API_URL = import.meta.env.VITE_API_URL_PROD || 'https://bw1-backend-g2vf.onrender.com';
-const API_URL = isDev 
-  ? (import.meta.env.VITE_API_URL || PROD_API_URL)
-  : PROD_API_URL;
+
+// Em dev (localhost), sempre aponta para o backend local
+const API_URL = isDev ? 'http://localhost:3001' : PROD_API_URL;
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 const STALE_CACHE_DURATION = 30 * 60 * 1000; // 30 minutos para fallback rápido
@@ -463,6 +463,73 @@ class ApiService {
 
   async removeFavorite(listingId) {
     return this.request(`/api/users/favorites/${listingId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ── Admin ──────────────────────────────────────────────────
+  async isMaster() {
+    return this.request('/api/admin/is-master', { forceRefresh: true });
+  }
+
+  async getSetupSql() {
+    return this.request('/api/admin/setup-sql');
+  }
+
+  // Banners públicos (Hero)
+  async getPublicBanners() {
+    return this.request('/api/admin/banners/public');
+  }
+
+  // Banners admin
+  async getAdminBanners() {
+    return this.request('/api/admin/banners', { forceRefresh: true });
+  }
+
+  async createBanner(formData) {
+    const response = await fetch(`${this.baseURL}/api/admin/banners`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.token}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao criar banner');
+    }
+    return response.json();
+  }
+
+  async updateBanner(id, formData) {
+    const response = await fetch(`${this.baseURL}/api/admin/banners/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${this.token}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao atualizar banner');
+    }
+    return response.json();
+  }
+
+  async deleteBanner(id) {
+    return this.request(`/api/admin/banners/${id}`, { method: 'DELETE' });
+  }
+
+  // Masters
+  async getMasters() {
+    return this.request('/api/admin/masters');
+  }
+
+  async addMaster(email) {
+    return this.request('/api/admin/masters', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async removeMaster(email) {
+    return this.request(`/api/admin/masters/${encodeURIComponent(email)}`, {
       method: 'DELETE',
     });
   }
